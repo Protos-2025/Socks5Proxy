@@ -1,0 +1,128 @@
+name: Check warnings
+
+on:  
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+
+jobs:  
+  pvs:
+    runs-on: ubuntu-latest
+
+    steps: 
+    - uses: actions/checkout@v3
+
+    - name: Install PVS-Studio
+      run: |
+        wget -q -O - https://files.pvs-studio.com/etc/pubkey.txt | \
+        sudo apt-key add -
+
+        sudo wget -O /etc/apt/sources.list.d/viva64.list \
+        https://files.pvs-studio.com/etc/viva64.list
+
+        sudo apt-get update
+        sudo apt-get install pvs-studio
+
+    - name: PVS-Studio
+      shell: bash
+      id: pvs
+      run: |
+        set +e
+        find src/client src/server src/shared -type f -name "*.c" | while read file; do
+            if ! grep -q "Dear PVS-Studio, please check it." "$file"; then
+                echo -e "// This is a personal academic project. Dear PVS-Studio, please check it.\n// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com\n" > "$file.tmp"
+                cat "$file" >> "$file.tmp"
+                mv "$file.tmp" "$file"
+            fi
+        done
+
+        git config --global user.name "PVS Bot"
+        git config --global user.email "pvs@bot.commit"
+        git commit -a --allow-empty -m "pvs-bot"
+        
+        report_name=report-$(date +%Y-%m-%d_%H-%M-%S)
+        echo "Report will be saved as $report_name.log/tasks"
+        echo "report_name=$report_name" >> $GITHUB_OUTPUT
+        
+        make clean || true
+        pvs-studio-analyzer credentials PVS-Studio Free FREE-FREE-FREE-FREE
+        pvs-studio-analyzer trace -- make all
+        pvs-studio-analyzer analyze -o "$report_name.log"
+        plog-converter -a GA:1,2 -t tasklist -o "$report_name.tasks" "$report_name.log"
+
+        tail -n+2 "$report_name.tasks" > "$report_name.tasks.tmp" && mv "$report_name.tasks.tmp" "$report_name.tasks"
+
+        while IFS= read -r line; do
+            file=$(echo "$line" | cut -d $'\t' -f 1 | sed 's|^/home/runner/work/Protos-2025/Socks5Proxy/||')
+            line_number=$(echo "$line" | cut -d $'\t' -f 2)
+            end_line=$(echo "$line" | cut -d $'\t' -f 2)
+            title=$(echo "$line" | cut -d $'\t' -f 3)
+            message=$(echo "$line" | cut -d $'\t' -f 4-)
+            if [[ $line == *"err"* ]]; then
+                echo "::error file=${file},line=${line_number},endLine=${end_line},title=${title}::${message}"
+            else
+                echo "::warning file=${file},line=${line_number},endLine=${end_line},title=${title}::${message}"
+            fi    
+        done < "$report_name.tasks"
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.pvs.outputs.report_name }}.tasks
+        path: ./${{ steps.pvs.outputs.report_name }}.tasks
+
+  compile:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ilammy/setup-nasm@v1
+    
+    - name: Compile
+      shell: bash
+      run: |
+        set +e
+        make clean || true
+        make all &> ./tmp.log
+        ex=$?
+
+        while IFS= read -r line; do
+            if [[ $line == *"error"* ]]; then
+                echo "::error title={Compilation error}::${line}"
+            elif [[ $line == *"warning"* ]]; then
+                echo "::warning title={Compilation warning}::${line}"
+            fi
+        done < ./tmp.log
+
+        exit $?
+
+  pampero:
+      runs-on: ubuntu-latest
+      timeout-minutes: 3
+      steps:
+        # Checks the repository under $GITHUB_WORKSPACE, so the job can access it
+        - uses: actions/checkout@v4
+          with:
+            ref: ${{ github.ref }}
+
+        - name: Pampero
+          env:
+            BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
+          run: |
+            echo "mkdir -p protos && cd protos 
+            git clone https://${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }}.git Socks5Proxy-${{ github.run_id}}
+            cd Socks5Proxy-${{ github.run_id}}
+            git checkout $BRANCH_NAME
+            make clean all
+            ex=$?
+            cd ..
+            rm -r Socks5Proxy-${{ github.run_id}}
+            exit $ex" | sshpass -p "${{ secrets.ITBA_PWD_PAMPERO }}" ssh -o StrictHostKeyChecking=no ${{ secrets.ITBA_USER_PAMPERO }}@pampero.itba.edu.ar
+            PAMPERO_EXITC=$?
+            if [ $PAMPERO_EXITC -ne 0 ]
+            then
+                echo "::error file={test-c.yml}, title={"Tests failed on Pampero"}::Pampero's exit code: $PAMPERO_EXITC"
+                exit $PAMPERO_EXITC
+            fi

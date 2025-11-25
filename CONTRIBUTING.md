@@ -15,6 +15,13 @@ Or modify your global .gitconfig to include the following, which will set your g
 	path = path-of-the-local-repository/.gitconfig
 ```
 
+## C Style
+
+This repo uses `clang-format` (based on Google's cpp format). All code shall be formatted accordingly.
+
+To ensure uniform settings, clang-format shall only be ran inside the `compile` container, as seen in [precommit](./.githooks/pre-commit)
+
+The specific clang-format configurations can be found in the [.clang-format](./.clang-format) file
 
 ## Bypassing hooks
 

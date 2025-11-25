@@ -15,6 +15,7 @@ test: bin
 clean:
 	$(MAKE) -C src/server clean
 	$(MAKE) -C src/client clean
+	$(MAKE) -C src/shared clean
 	$(MAKE) -C tests clean
 	rm -rf bin
 

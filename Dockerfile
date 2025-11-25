@@ -6,5 +6,7 @@ RUN apt-get update --yes \
 		gcc \
 		make \
         clang-format \
+		check \
+		pkg-config \
 	&& rm --force --recursive /var/lib/apt/lists/*
 	

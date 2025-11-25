@@ -3,6 +3,8 @@
 
 #include <sys/time.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <unistd.h>  // size_t, ssize_t
 
 /**
  * selector.c - un muliplexor de entrada salida

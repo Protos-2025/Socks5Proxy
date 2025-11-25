@@ -5,4 +5,12 @@ bin/
 compile_commands.json
 .cache/
 
+# Linux
 .bash_history
+
+
+# VSC
+.vscode
+
+# MacOS
+.DS_Store

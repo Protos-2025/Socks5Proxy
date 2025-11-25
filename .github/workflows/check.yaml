@@ -78,7 +78,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - uses: ilammy/setup-nasm@v1
     
     - name: Compile
       shell: bash
@@ -96,9 +95,10 @@ jobs:
             fi
         done < ./tmp.log
 
-        exit $?
+        exit $ex
 
   pampero:
+      needs: [compile, pvs]
       runs-on: ubuntu-latest
       timeout-minutes: 3
       steps:
@@ -116,15 +116,15 @@ jobs:
             cd Socks5Proxy-${{ github.run_id}}
             git checkout $BRANCH_NAME
             make clean all
-            ex=$?
-            if [ $ex -eq 0 ]
+            ex=\$?
+            if [ \$ex -eq 0 ]
             then
                 ./scripts/tests.sh
-                ex=$?
+                ex=\$?
             fi
             cd ..
             rm -r Socks5Proxy-${{ github.run_id}}
-            exit $ex" | sshpass -p "${{ secrets.ITBA_PWD_PAMPERO }}" ssh -o StrictHostKeyChecking=no ${{ secrets.ITBA_USER_PAMPERO }}@pampero.itba.edu.ar
+            exit \$ex" | sshpass -p "${{ secrets.ITBA_PWD_PAMPERO }}" ssh -o StrictHostKeyChecking=no ${{ secrets.ITBA_USER_PAMPERO }}@pampero.itba.edu.ar
             PAMPERO_EXITC=$?
             if [ $PAMPERO_EXITC -ne 0 ]
             then

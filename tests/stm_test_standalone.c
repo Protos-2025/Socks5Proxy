@@ -6,6 +6,8 @@
 
 #include "selector.h"
 
+#include "../src/shared/stm.c"
+
 enum test_states {
 	A,
 	B,

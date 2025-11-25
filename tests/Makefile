@@ -6,22 +6,34 @@ SHARED_OBJS = $(SHARED_SRCS:.c=.o)
 
 TEST_SRCS = $(wildcard *_test.c)
 TEST_OBJS = $(TEST_SRCS:.c=.o)
-TEST_EXEC = $(BIN_PATH)/run_tests
+TEST_EXECS = $(TEST_SRCS:.c=)
 
-INCLUDES = -I$(SHARED_PATH)/include
+TEST_STANDALONE = $(wildcard *_test_standalone.c)
+TEST_STANDALONE_OBJS = $(TEST_STANDALONE:.c=.o)
+TEST_STANDALONE_EXECS = $(TEST_STANDALONE:.c=)
+
 CFLAGS += $(shell pkg-config --cflags check)
-LDFLAGS = $(shell pkg-config --libs check)
+LDFLAGS += $(shell pkg-config --libs check) -g -DDEBUG
 
-all: $(TEST_EXEC)
-	./$(TEST_EXEC)
+BIN_PATH = ../bin/tests
 
-$(TEST_EXEC): $(TEST_OBJS) $(SHARED_OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+INCLUDES = -I../src/client/include -I../src/server/include -I../src/shared/include -fsanitize=address
+
+all: tests_bin $(TEST_EXECS) $(TEST_STANDALONE_EXECS)
+
+tests_bin: 
+	mkdir -p $(BIN_PATH)
+
+%_test: %_test.o $(SHARED_OBJS)
+	$(CC) $(CFLAGS) $^ -o $(BIN_PATH)/$@ $(LDFLAGS)
+
+%_test_standalone: %_test_standalone.o
+	$(CC) $(CFLAGS) $^ -o $(BIN_PATH)/$@ $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -f $(TEST_OBJS) $(TEST_EXEC)
+	rm -f $(TEST_OBJS) $(TEST_EXECS)
 
 .PHONY: clean all

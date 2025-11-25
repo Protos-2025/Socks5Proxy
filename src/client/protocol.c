@@ -1,6 +1,5 @@
-#include <stdio.h>
 #include "protocol.h"
 
-int test(){
-  return 0;
-}
+#include <stdio.h>
+
+int test() { return 0; }

@@ -2,6 +2,6 @@
 #include <stdio.h>
 
 int main() {
-  printf("Hello, server\n");
-  return 0; 
+	printf("Hello, server\n");
+	return 0;
 }

@@ -1,0 +1,10 @@
+name: socks5proxy
+
+services:
+  compiler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/root
+    working_dir: /

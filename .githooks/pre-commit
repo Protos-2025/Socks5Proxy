@@ -1,0 +1,7 @@
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep "\.c$")
+
+if [ -n "$STAGED_FILES" ]; then
+    DOCKER_FILES=$(echo "$STAGED_FILES" | sed 's|^|root/|')
+    echo "clang-format -i --style=file $DOCKER_FILES" | docker compose run --rm compiler bash
+    echo "$STAGED_FILES" | xargs git add
+fi

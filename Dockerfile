@@ -8,5 +8,6 @@ RUN apt-get update --yes \
         clang-format \
 		check \
 		pkg-config \
+		curl \
 	&& rm --force --recursive /var/lib/apt/lists/*
 	

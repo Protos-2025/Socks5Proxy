@@ -2,9 +2,75 @@ name: socks5proxy
 
 services:
   compiler:
+    container_name: compiler
     build:
       context: .
       dockerfile: Dockerfile
     volumes:
       - .:/root
-    working_dir: /
+    working_dir: /root
+    entrypoint: ["scripts/compile.sh"]
+
+  test:
+    container_name: test
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/root
+    working_dir: /root
+    entrypoint: ["scripts/tests.sh"]
+    depends_on:
+      - compiler
+
+  nginx-test-server:
+    container_name: nginx-test-server
+    networks:
+      - test-server-network
+    image: nginx:latest
+    volumes:
+      - ./bench/data:/usr/share/nginx/html:ro
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD", "service", "nginx", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  benchmark:
+    container_name: benchmark
+    networks:
+      - test-server-network
+    build:
+      context: .
+      dockerfile: Dockerfile.benchmark
+    volumes:
+      - .:/root
+    working_dir: /root
+    entrypoint: ["scripts/benchmark.sh"]
+    depends_on:
+      compiler:
+        condition: service_completed_successfully
+      nginx-test-server:
+        condition: service_healthy
+
+  show-results:
+    container_name: bench-results
+    image: nginx:latest
+    volumes:
+      - ./bench/results/jmeter-html-report:/usr/share/nginx/html:ro
+    ports:
+      - "8000:80"
+    networks:
+      - show-results-network
+    depends_on:
+      benchmark:
+        condition: service_completed_successfully
+
+networks:
+  test-server-network:
+    # driver: bridge
+    internal: true
+  show-results-network:
+    driver: bridge

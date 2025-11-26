@@ -8,6 +8,11 @@ compile_commands.json
 # Linux
 .bash_history
 
+# JMeter
+.java
+*.log
+*.csv
+/bench/results
 
 # VSC
 .vscode

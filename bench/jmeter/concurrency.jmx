@@ -11,7 +11,7 @@
     </TestPlan>
     <hashTree>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Concurrent Users">
-        <intProp name="ThreadGroup.num_threads">750</intProp>
+        <intProp name="ThreadGroup.num_threads">1750</intProp>
         <intProp name="ThreadGroup.ramp_time">1</intProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
@@ -76,7 +76,7 @@
         </JSR223PostProcessor>
         <hashTree/>
         <SyncTimer guiclass="TestBeanGUI" testclass="SyncTimer" testname="Synchronizing Timer">
-          <intProp name="groupSize">500</intProp>
+          <intProp name="groupSize">700</intProp>
           <longProp name="timeoutInMs">5000</longProp>
         </SyncTimer>
         <hashTree/>

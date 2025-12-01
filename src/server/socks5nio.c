@@ -88,13 +88,13 @@ void socksv5_passive_accept(struct selector_key * key) {
     memcpy(&connection->client_addr, &client_addr, client_addr_len);
     connection->client_addr_len = client_addr_len;
 
-    if(SELECTOR_SUCCESS != selector_register(key->s, client_fd, &socks5_handler, OP_READ, connection)) {
+    if (SELECTOR_SUCCESS != selector_register(key->s, client_fd, &socks5_handler, OP_READ, connection)) {
         goto fail;
     }
     
     return ;
 fail:
-    if(client_fd != -1) {
+    if (client_fd != -1) {
         close(client_fd);
     }
     socks5_destroy(connection);
@@ -106,6 +106,7 @@ static struct socks5 * socks5_new(int client_fd) {
         new->client_fd = client_fd;
         buffer_init(&new->client_buffer, BUFFER_SIZE, new->client_buffer_data);
         buffer_init(&new->origin_buffer, BUFFER_SIZE, new->origin_buffer_data);
+        new->origin_fd = -1;
         new->origin_resolution = NULL;
         new->stm = (struct state_machine){
             .initial = GREETING,

@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <limits.h>
 #include <errno.h>
+#include <signal.h>
 #include "../shared/include/selector.h"
 #include "include/socks5nio.h"
 #include "include/defines.h"

@@ -1,6 +1,6 @@
 include ../../Makefile.inc
 
-SRCS = $(wildcard *.c) $(wildcard http/*.c)
+SRCS = $(wildcard *.c) $(wildcard states/*.c)
 SHARED_SRCS = $(wildcard $(SHARED_PATH)/*.c)
 OBJS = $(SRCS:.c=.o)
 SHARED_OBJS = $(SHARED_SRCS:.c=.o)

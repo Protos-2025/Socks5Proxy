@@ -1,4 +1,4 @@
-#include "netutils.h"
+#include "include/netutils.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -6,6 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/socket.h>
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
 
 #define N(x) (sizeof(x) / sizeof((x)[0]))
 

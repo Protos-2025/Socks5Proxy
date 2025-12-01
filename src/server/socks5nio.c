@@ -106,6 +106,7 @@ static struct socks5 * socks5_new(int client_fd) {
         new->client_fd = client_fd;
         buffer_init(&new->client_buffer, BUFFER_SIZE, new->client_buffer_data);
         buffer_init(&new->origin_buffer, BUFFER_SIZE, new->origin_buffer_data);
+        new->origin_resolution = NULL;
         new->stm = (struct state_machine){
             .initial = GREETING,
             .states = socks5_states,

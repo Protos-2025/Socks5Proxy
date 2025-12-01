@@ -11,6 +11,21 @@ services:
     working_dir: /root
     entrypoint: ["scripts/compile.sh"]
 
+  server:
+    container_name: server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/root
+    working_dir: /root
+    entrypoint: ["scripts/server.sh"]
+    ports:
+      - "1080:1080"
+    depends_on:
+      compiler:
+        condition: service_completed_successfully
+
   test:
     container_name: test
     build:
@@ -63,7 +78,7 @@ services:
     ports:
       - "8000:80"
     networks:
-      - show-results-network
+      - host-network
     depends_on:
       benchmark:
         condition: service_completed_successfully
@@ -72,5 +87,5 @@ networks:
   test-server-network:
     # driver: bridge
     internal: true
-  show-results-network:
+  host-network:
     driver: bridge

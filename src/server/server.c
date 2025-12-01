@@ -61,6 +61,7 @@ int main(const int argc, const char **argv) {
 
 
     // <---------------------------- create proxy server socket ---------------------------->
+    fprintf(stdout, "Starting server...\n", port);
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family      = AF_INET;

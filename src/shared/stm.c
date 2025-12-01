@@ -2,7 +2,7 @@
  * stm.c - pequeño motor de maquina de estados donde los eventos son los
  *         del selector.c
  */
-#include "stm.h"
+#include "include/stm.h"
 
 #include <stdlib.h>
 

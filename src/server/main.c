@@ -6,19 +6,20 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <limits.h>
+#include <errno.h>
 #include "../shared/include/selector.h"
+#include "include/socks5nio.h"
+#include "include/defines.h"
 
-#define PROXY_SERVER_PORT 8080
-#define BUFFER_SIZE 1024
+#define PORT 1080
+#define MAX_PENDING_CONNECTIONS 20
+#define SELECTOR_CAPACITY 1024
 
 #define GET_BUFFER_IDX(i, n) (((i) + (n)) == BUFFER_SIZE ? 0 : ((i) + (n)))
 #define GET_BUFFER_MAX_IDX_TO_READ(w) ((w) == 0 ? BUFFER_SIZE : (w))
 
-static void handle_client_read(struct selector_key * key);
-static void handle_client_write(struct selector_key * key);
-static void handle_origin_read(struct selector_key * key);
-static void handle_origin_write(struct selector_key * key);
-static void terminate_connection(int exit_code);
+static void signal_handler(const int signal);
 
 typedef struct custom_key {
     uint8_t * buffer;
@@ -27,233 +28,144 @@ typedef struct custom_key {
     struct custom_key * other_party;
 } custom_key;
 
-static int proxy_server_fd, client_fd, origin_fd;
-static fd_selector selector;
-static custom_key client_custom_key, origin_custom_key;
+static int server;
+static bool done = false;
 
-int main(void) {
-    struct sockaddr_in proxy_server_addr, client_addr;
-    socklen_t client_addr_len = sizeof(client_addr);
-    selector_status ret;
-    struct addrinfo hints;
-    struct addrinfo * result, * rp;
-    
+int main(const int argc, const char **argv) {
+    unsigned port;
+
+    if(argc == 1) {
+        port = PORT;
+    } else if(argc == 2) {
+        char * end = 0;
+        const long sl = strtol(argv[1], &end, 10);
+
+        if (end == argv[1]|| '\0' != *end 
+           || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno)
+           || sl < 0 || sl > USHRT_MAX) {
+            fprintf(stderr, "port should be an integer: %s\n", argv[1]);
+            return 1;
+        }
+        port = sl;
+    } else {
+        fprintf(stderr, "Usage: %s <port>\n", argv[0]);
+        return 1;
+    }
+
+    close(STDIN_FILENO);
+
+    const char * error_msg = NULL;
+    fd_selector selector = NULL;
+    selector_status ss = SELECTOR_SUCCESS;
+
 
     // <---------------------------- create proxy server socket ---------------------------->
-    if ((proxy_server_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        perror("socket failed (proxy server)");
-        exit(EXIT_FAILURE);
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family      = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_port        = htons(port);
+
+    if ((server = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        error_msg = "unable to create socket";
+        goto finally;
     }
 
-    int opt = 1;
-    if (setsockopt(proxy_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
-        perror("setsockopt failed");
-        close(proxy_server_fd);
-        exit(EXIT_FAILURE);
+    setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int));
+
+    if (bind(server, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+        error_msg = "unable to bind socket";
+        goto finally;
     }
 
-    proxy_server_addr.sin_family = AF_INET;
-    proxy_server_addr.sin_addr.s_addr = INADDR_ANY;
-    proxy_server_addr.sin_port = htons(PROXY_SERVER_PORT);
-
-    if (bind(proxy_server_fd, (struct sockaddr *) &proxy_server_addr, sizeof(proxy_server_addr)) == -1) {
-        perror("bind failed (proxy server)");
-        close(proxy_server_fd);
-        exit(EXIT_FAILURE);
+    if (listen(server, MAX_PENDING_CONNECTIONS) < 0) {
+        error_msg = "unable to listen";
+        goto finally;
     }
 
-    if (listen(proxy_server_fd, 10) == -1) {
-        perror("listen failed");
-        close(proxy_server_fd);
-        exit(EXIT_FAILURE);
-    }
+    fprintf(stdout, "Proxy server listening on TCP port %d\n", port);
 
-    printf("Proxy server listening on port %d\n", PROXY_SERVER_PORT);
-
-
-    // <------------------------------------ accept client ------------------------------------>
-    if ((client_fd = accept(proxy_server_fd, (struct sockaddr *) &client_addr, &client_addr_len)) == -1) {
-        perror("accept failed");
-        close(proxy_server_fd);
-        exit(EXIT_FAILURE);
-    }
-
-    char client_ip[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
-    printf("Accepted connection from %s:%d\n", client_ip, ntohs(client_addr.sin_port));
-
-
-    // <---------------------------------- connect to origin ---------------------------------->
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = 0;
-    hints.ai_protocol = 0;
-    hints.ai_canonname = NULL;
-    hints.ai_addr = NULL;
-    hints.ai_next = NULL;
-
-    if (0 != getaddrinfo("google.com", "80", &hints, &result)) {
-        perror("getaddrinfo failed");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Found google\n");
-
-    int i;
-    for (rp = result, i = 0; rp != NULL; rp = rp->ai_next, i++) {
-        printf("Doing socket (%d)...\n", i);
-        origin_fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        printf("Socket done (%d)...\n", i);
-        if (origin_fd == -1) {
-            printf("%d socket failed\n", i);
-            continue;
-        }
-
-        printf("Doing connect (%d)...\n", i);
-        if (connect(origin_fd, rp->ai_addr, rp->ai_addrlen) != -1) {
-            printf("Connect done (%d)...\n", i);
-            break;
-        }
-
-        close(origin_fd);
-        printf("%d connect failed\n", i);
-    }
-
-    freeaddrinfo(result);
-
-    if (rp == NULL) {
-        perror("Could not connect to origin\n");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Connected to google\n");
+    signal(SIGTERM, signal_handler);
+    signal(SIGINT,  signal_handler);
 
 
     // <--------------------------------- configure selector --------------------------------->
-    client_custom_key.buffer = malloc(BUFFER_SIZE);
-    client_custom_key.idx_to_read = 0;
-    client_custom_key.idx_to_write = 0;
-    client_custom_key.other_party = &origin_custom_key;
-    origin_custom_key.buffer = malloc(BUFFER_SIZE);
-    origin_custom_key.idx_to_read = 0;
-    origin_custom_key.idx_to_write = 0;
-    origin_custom_key.other_party = &client_custom_key;
-
-    if ((selector = selector_new(10)) == NULL) {
-        perror("selector new failed");
-        free(client_custom_key.buffer);
-        free(origin_custom_key.buffer);
-        close(proxy_server_fd);
-        close(client_fd);
-        close(origin_fd);
-        exit(EXIT_FAILURE);
+    if (selector_fd_set_nio(server) == -1) {
+        error_msg = "getting server socket flags";
+        goto finally;
     }
 
-    fd_handler client_handler = {handle_client_read, handle_client_write, NULL};
-    fd_handler origin_handler = {handle_origin_read, handle_origin_write, NULL};
-    
-    if(selector_register(selector, client_fd, &client_handler, OP_READ, &client_custom_key) != SELECTOR_SUCCESS) {
-        perror("selector register (client) failed");
-        terminate_connection(EXIT_FAILURE);
+    const struct selector_init conf = {
+        .signal = SIGALRM,
+        .select_timeout = {
+            .tv_sec  = 10,
+            .tv_nsec = 0,
+        },
+    };
+
+    if(0 != selector_init(&conf)) {
+        error_msg = "initializing selector";
+        goto finally;
     }
 
-    if(selector_register(selector, origin_fd, &origin_handler, OP_NOOP, &origin_custom_key) != SELECTOR_SUCCESS) {
-        perror("selector register (origin) failed");
-        terminate_connection(EXIT_FAILURE);
+    selector = selector_new(SELECTOR_CAPACITY);
+
+    if (selector == NULL) {
+        error_msg = "unable to create selector";
+        goto finally;
     }
 
+    const struct fd_handler socksv5 = {
+        .handle_read = socksv5_passive_accept,
+        .handle_write = NULL,
+        .handle_close = NULL, // nada que liberar
+    };
 
-    // <--------------------------------- execute server ---------------------------------->
-    while(1) {
-        ret = selector_select(selector);
-        if(ret != SELECTOR_SUCCESS) {
-            perror("selector select failed");
-            terminate_connection(EXIT_FAILURE);
+    ss = selector_register(selector, server, &socksv5, OP_READ, NULL);
+
+    if (ss != SELECTOR_SUCCESS) {
+        error_msg = "registering fd";
+        goto finally;
+    }
+
+    // <------------------------------------ execute server ------------------------------------>
+    while (!done) {
+        error_msg = NULL;
+        ss = selector_select(selector);
+        if(ss != SELECTOR_SUCCESS) {
+            error_msg = "serving";
+            goto finally;
         }
     }
-
-    return 0;
-}
-
-static void handle_client_read(struct selector_key * key) {
-    custom_key * client_key_data = (custom_key *) key->data;
-    int readn = read(key->fd, client_key_data->buffer + client_key_data->idx_to_write, BUFFER_SIZE - client_key_data->idx_to_write);
-
-    if (readn == 0) {
-        // TODO: manage correctly
-        printf("Client closed the connection.\n");
-        terminate_connection(EXIT_SUCCESS);
+    if (error_msg == NULL) {
+        error_msg = "closing";
     }
 
-    printf("Received %d bytes from client\n", readn);
+    int ret = 0;
 
-    client_key_data->idx_to_write = GET_BUFFER_IDX(client_key_data->idx_to_write, readn);
-
-    selector_set_interest(key->s, key->fd, OP_NOOP);
-    selector_set_interest(key->s, origin_fd, OP_WRITE);
-}
-
-static void handle_client_write(struct selector_key * key) {
-    custom_key * client_key_data = (custom_key *) key->data;
-    int written = write(key->fd,
-                        client_key_data->other_party->buffer + client_key_data->other_party->idx_to_read,
-                        GET_BUFFER_MAX_IDX_TO_READ(client_key_data->other_party->idx_to_write) - client_key_data->other_party->idx_to_read);
-
-    if (written == -1) {
-        perror("write failed");
-        terminate_connection(EXIT_FAILURE);
+finally:
+    if (ss != SELECTOR_SUCCESS) {
+        fprintf(stderr, "%s: %s\n", (error_msg == NULL) ? "": error_msg, ss == SELECTOR_IO ? strerror(errno) : selector_error(ss));
+        ret = 2;
+    } else if (error_msg) {
+        perror(error_msg);
+        ret = 1;
     }
 
-    printf("Sent %d bytes to client\n", written);
-
-    client_key_data->other_party->idx_to_read = GET_BUFFER_IDX(client_key_data->other_party->idx_to_read, written);
-
-    selector_set_interest(key->s, key->fd, OP_READ);
-}
-
-static void handle_origin_read(struct selector_key * key) {
-    custom_key * origin_key_data = (custom_key *) key->data;
-    int readn = read(key->fd, origin_key_data->buffer + origin_key_data->idx_to_write, BUFFER_SIZE - origin_key_data->idx_to_write);
-
-    if (readn == 0) {
-        // TODO: manage correctly
-        printf("Origin closed the connection.\n");
-        terminate_connection(EXIT_SUCCESS);
+    if (selector != NULL) {
+        selector_destroy(selector);
     }
 
-    printf("Received %d bytes from origin\n", readn);
+    selector_close();
 
-    origin_key_data->idx_to_write = GET_BUFFER_IDX(origin_key_data->idx_to_write, readn);
-
-    selector_set_interest(key->s, key->fd, OP_NOOP);
-    selector_set_interest(key->s, client_fd, OP_WRITE);
-}
-
-static void handle_origin_write(struct selector_key * key) {
-    custom_key * origin_key_data = (custom_key *) key->data;
-    int written = write(key->fd,
-                        origin_key_data->other_party->buffer + origin_key_data->other_party->idx_to_read,
-                        GET_BUFFER_MAX_IDX_TO_READ(origin_key_data->other_party->idx_to_write) - origin_key_data->other_party->idx_to_read);
-
-    if (written == -1) {
-        perror("write failed");
-        terminate_connection(EXIT_FAILURE);
+    if (server >= 0) {
+        close(server);
     }
 
-    printf("Sent %d bytes to origin\n", written);
-
-    origin_key_data->other_party->idx_to_read = GET_BUFFER_IDX(origin_key_data->other_party->idx_to_read, written);
-
-    selector_set_interest(key->s, key->fd, OP_READ);
+    return ret;
 }
 
-static void terminate_connection(int exit_code) {
-    selector_destroy(selector);
-    free(client_custom_key.buffer);
-    free(origin_custom_key.buffer);
-    close(proxy_server_fd);
-    close(client_fd);
-    close(origin_fd);
-    exit(exit_code);
+static void signal_handler(const int signal) {
+    printf("signal %d, cleaning up and exiting\n", signal);
+    done = true;
 }

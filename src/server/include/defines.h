@@ -1,0 +1,2 @@
+#define BUFFER_SIZE 1024
+#define SOCKS5_VERSION 0x05

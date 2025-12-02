@@ -86,7 +86,7 @@ void pam_passive_accept(struct selector_key * key) {
     if (SELECTOR_SUCCESS != selector_register(key->s, client_fd, &pam_handler, OP_READ, connection)) {
         goto fail;
     }
-    
+
     return ;
 fail:
     if (client_fd != -1) {
@@ -117,7 +117,7 @@ static struct pam * pam_new(int client_fd) {
 
 
 static void pam_read(struct selector_key * key) {
-  
+
   struct state_machine * stm   = &PAM_ATTACHMENT(key)->stm;
   const enum pam_state st = stm_handler_read(stm, key);
 

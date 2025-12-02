@@ -12,6 +12,7 @@
 #include "../shared/include/selector.h"
 #include "include/socks5nio.h"
 #include "include/defines.h"
+#include "logger.h"
 
 #define PORT 1080
 #define MAX_PENDING_CONNECTIONS 20
@@ -33,9 +34,10 @@ static int server;
 static bool done = false;
 
 int main(const int argc, const char **argv) {
-    unsigned port;
+	loggerInit();
+	unsigned port;
 
-    if(argc == 1) {
+	if(argc == 1) {
         port = PORT;
     } else if(argc == 2) {
         char * end = 0;
@@ -61,7 +63,7 @@ int main(const int argc, const char **argv) {
 
 
     // <---------------------------- create proxy server socket ---------------------------->
-    fprintf(stdout, "Starting server...\n", port);
+    LOG_DEBUG("Starting server...", port);
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family      = AF_INET;
@@ -85,7 +87,7 @@ int main(const int argc, const char **argv) {
         goto finally;
     }
 
-    fprintf(stdout, "Proxy server listening on TCP port %d\n", port);
+    LOG_INFO("Proxy server listening on TCP port %d", port);
 
     signal(SIGTERM, signal_handler);
     signal(SIGINT,  signal_handler);
@@ -168,6 +170,7 @@ finally:
 }
 
 static void signal_handler(const int signal) {
-    printf("signal %d, cleaning up and exiting\n", signal);
+    LOG_INFO("Signal %d, cleaning up and exiting\n", signal);
+    flushAllLogs();
     done = true;
 }

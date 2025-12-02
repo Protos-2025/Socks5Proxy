@@ -35,8 +35,6 @@ services:
       - .:/root
     working_dir: /root
     entrypoint: ["scripts/tests.sh"]
-    depends_on:
-      - compiler
 
   nginx-test-server:
     container_name: nginx-test-server

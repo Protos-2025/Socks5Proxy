@@ -2,6 +2,7 @@
 #include "../include/socks5nio.h"
 #include <stdio.h>
 #include <sys/socket.h>
+#include "logger.h"
 
 #define NO_AUTH_METHOD 0x00
 #define AUTH_METHOD 0x02
@@ -42,14 +43,14 @@ unsigned greeting_read(struct selector_key * key) {
         // check version
         uint8_t ver = buffer_read(&connection->client_buffer);
         if (ver != SOCKS5_VERSION) {
-            fprintf(stdout, "Unsupported version\n");
+            LOG_WARN("Unsupported version\n");
             return ERROR;
         }
     
         // check methods count
         connection->client.greeting.n_methods = buffer_read(&connection->client_buffer);
         if (connection->client.greeting.n_methods == 0) {
-            fprintf(stdout, "Invalid amount of methods\n");
+            LOG_WARN("Invalid amount of methods\n");
             return ERROR;
         }
 
@@ -104,7 +105,7 @@ unsigned greeting_write(struct selector_key * key) {
         return GREETING;
     }
 
-    fprintf(stdout, "Greeting completed\n");
+    LOG_INFO("Greeting completed\n");
 
     buffer_reset(&connection->client_buffer);
 

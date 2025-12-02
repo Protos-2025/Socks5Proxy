@@ -25,10 +25,10 @@ tests_bin:
 	mkdir -p $(BIN_PATH)
 
 %_test: %_test.o $(SHARED_OBJS)
-	$(CC) $(CFLAGS) $^ -o $(BIN_PATH)/$@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $(BIN_PATH)/$@
 
 %_test_standalone: %_test_standalone.o
-	$(CC) $(CFLAGS) $^ -o $(BIN_PATH)/$@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $(BIN_PATH)/$@
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@

@@ -1,9 +1,12 @@
 #ifndef __COPY_H__
 #define __COPY_H__
 
+#include "buffer.h"
+#include "selector.h"
+
 typedef struct copy_st {
     buffer* buffer;
-    int* fd;
+    int fd;
     size_t interests;
     struct copy_st* otherCopySt;
 } copy_st;

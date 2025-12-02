@@ -2,7 +2,11 @@
 #include "socks5nio.h"
 #include "logger.h"
 #include "errno.h"
+<<<<<<< HEAD:src/copy.c
 #include <string.h>
+=======
+#include "selector.h"
+>>>>>>> bd04d7d (chore(tests): copy test basic):src/server/copy.c
 
 #define IS_CLIENT_DATA(connection, key) (connection->client_fd == key->fd)
 
@@ -22,10 +26,10 @@ void socksv5_copy_arrival(struct selector_key * key) {
     copy_st * originCopy = &connection->origin_st.copy;
 
     clientCopy->buffer = &connection->client_buffer;
-    clientCopy->fd = &connection->client_fd;
+    clientCopy->fd = connection->client_fd;
     
     originCopy->buffer = &connection->origin_buffer;
-    originCopy->fd = &connection->origin_fd;
+    originCopy->fd = connection->origin_fd;
 
     originCopy->otherCopySt = clientCopy;
     clientCopy->otherCopySt = originCopy;

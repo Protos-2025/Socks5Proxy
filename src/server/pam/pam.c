@@ -31,6 +31,20 @@ static const struct state_definition pam_states[] = {
 static struct pam * pam_new(int client_fd);
 static void pam_destroy(struct pam * pam);
 
+static void pam_read(struct selector_key * key);
+static void pam_write(struct selector_key * key);
+static void pam_block(struct selector_key * key);
+static void pam_close(struct selector_key * key);
+
+
+static const struct fd_handler pam_handler = {
+    .handle_read   = pam_read,
+    .handle_write  = pam_write,
+    .handle_close  = pam_close,
+    .handle_block  = pam_block,
+};
+
+
 void pam_passive_accept(struct selector_key * key) {
     struct sockaddr_storage client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
@@ -60,7 +74,7 @@ void pam_passive_accept(struct selector_key * key) {
     memcpy(&connection->client_addr, &client_addr, client_addr_len);
     connection->client_addr_len = client_addr_len;
 
-    if (SELECTOR_SUCCESS != selector_register(key->s, client_fd, &socks5_handler, OP_READ, connection)) {
+    if (SELECTOR_SUCCESS != selector_register(key->s, client_fd, &pam_handler, OP_READ, connection)) {
         goto fail;
     }
     
@@ -90,6 +104,20 @@ static struct pam * pam_new(int client_fd) {
 
   }
   return new;
+}
+
+
+static void pam_read(struct selector_key * key) {
+
+}
+static void pam_write(struct selector_key * key) {
+
+}
+static void pam_block(struct selector_key * key) {
+
+}
+static void pam_close(struct selector_key * key) {
+
 }
 
 static void pam_destroy(struct pam * pam) {

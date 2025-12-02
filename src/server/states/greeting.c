@@ -66,16 +66,23 @@ unsigned greeting_read(struct selector_key * key) {
         }
 
         bool found_auth_method = false;
-        for (int i = 0; i < connection->client.greeting.n_methods && buffer_can_read(&connection->client_buffer) && !found_auth_method; i++) {
-            if (AUTH_METHOD == buffer_read(&connection->client_buffer)) {
+        for (int i = 0; i < connection->client.greeting.n_methods && buffer_can_read(&connection->client_buffer); i++) {
+            uint8_t method = buffer_read(&connection->client_buffer);
+            if (method == AUTH_METHOD) {
                 connection->client.greeting.method = AUTH_METHOD;
                 found_auth_method = true;
-                LOG_DEBUG("Auth method chosen");
+                LOG_DEBUG("Auth method chosen: 0x02 (USERNAME/PASSWORD)");
+                break;
+            } else if (method == NO_AUTH_METHOD && connection->client.greeting.method != AUTH_METHOD) {
+                connection->client.greeting.method = NO_AUTH_METHOD;
+                LOG_DEBUG("Auth method: 0x00 (NO AUTH) - fallback");
             }
         }
 
-        if (found_auth_method) {
-            // TODO
+        // If no valid method found, set to no acceptable methods
+        if (connection->client.greeting.method == NO_AUTH_METHOD && !found_auth_method) {
+            LOG_WARN("No supported auth methods found");
+            connection->client.greeting.method = 0xFF; // No acceptable methods
         }
         
         buffer_reset(&connection->client_buffer);
@@ -111,7 +118,13 @@ unsigned greeting_write(struct selector_key * key) {
 
     buffer_reset(&connection->client_buffer);
 
-    // TODO: replace both lines once request_read is implemented
-    selector_set_interest_key(key, OP_NOOP); // selector_set_interest_key(key, OP_READ);
-    return DONE; // return REQUEST;
+  
+    if (connection->client.greeting.method == AUTH_METHOD) {
+        selector_set_interest_key(key, OP_READ);
+        return AUTH;
+    }
+
+    // If no auth set, go to request state
+    selector_set_interest_key(key, OP_READ);
+    return REQUEST;
 }

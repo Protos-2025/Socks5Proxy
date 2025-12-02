@@ -24,6 +24,12 @@ static const struct state_definition socks5_states[] = {
         .on_write_ready = greeting_write
     },
     {
+      .state = AUTH,          
+        .on_arrival = auth_arrival,
+        .on_read_ready = auth_read,
+        .on_write_ready = auth_write,
+    },
+    {
         .state = REQUEST,
         // .on_arrival = request_arrival,
         // .on_read_ready = request_read,

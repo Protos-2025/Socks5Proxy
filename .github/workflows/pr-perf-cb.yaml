@@ -1,9 +1,19 @@
 name: Continuous Benchmarking
 on:
+  workflow_dispatch:
+  workflow_call:
   push:
+    paths:
+      - '**/*.c'
+      - '**/*.h'
+      - '**/Makefile'
     branches:
       - main
   pull_request:
+    paths:
+      - '**/*.c'
+      - '**/*.h'
+      - '**/Makefile'
     branches:
       - main
 
@@ -54,8 +64,9 @@ jobs:
           # Workflow will fail when an alert happens
           fail-on-alert: true
           # GitHub API token to make a commit comment
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.ACCESS_TOKEN }}
           alert-threshold: '200%'
           auto-push: false
+          skip-fetch-gh-pages: true
           comment-always: true
           summary-always: true

@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   workflow_call:
   push:
+    paths:
+      - '**/*.c'
+      - '**/*.h'
+      - '**/Makefile'
     branches:
       - main
 

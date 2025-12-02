@@ -42,7 +42,7 @@ static buffer logBuffer;
 static char * currentLog = NULL;
 
 void loggerInit() {
-    logQueue = createQueue(NULL, freeLog, sizeof(char *), MAX_LOG_QUEUE_SIZE);
+    logQueue = createQueue(freeLog, sizeof(char *), MAX_LOG_QUEUE_SIZE);
     buffer_init(&logBuffer, MAX_LOG_SIZE, NULL);
 }
 
@@ -82,7 +82,7 @@ static char * formatLogMessage(const char* levelStr, const char * file, int line
 
     char body[MAX_LOG_SIZE];
 
-    int size = vsnprintf(body, (size_t)MAX_LOG_SIZE, fmt, args);
+    vsnprintf(body, (size_t)MAX_LOG_SIZE, fmt, args);
 
     char *out = (char *)malloc((size_t)MAX_LOG_SIZE);
 	if (!out) return NULL;
@@ -110,11 +110,12 @@ void loggerLogMessageDeferred(int level, const char* file, int line, time_t * no
 }
 
 static void writeLogsDeferred(struct selector_key* key) {
-	uint8_t* r_ptr;
-    size_t to_read = 0, written = 0;
+	uint8_t* r_ptr = 0;
+	size_t to_read = 0;
+	int written = 0;
 
 	if (buffer_can_read(&logBuffer)) {
-		r_ptr = buffer_read_ptr(&logBuffer, &to_read);
+		r_ptr = buffer_read_ptr(&logBuffer, (size_t *) &to_read);
 		written = write(STDOUT_FILENO, r_ptr, to_read);
 		buffer_read_adv(&logBuffer, written);
         if (written == to_read) {
@@ -126,7 +127,7 @@ static void writeLogsDeferred(struct selector_key* key) {
     char * peekPtr = NULL;
 	if (to_read == 0 && written == to_read && queuePeek(logQueue, &peekPtr) != NULL) {
         dequeue(logQueue, &currentLog);
-        buffer_init(&logBuffer, strlen(currentLog), currentLog);
+        buffer_init(&logBuffer, strlen(currentLog), (uint8_t *) currentLog);
         buffer_write_adv(&logBuffer, strlen(currentLog));
 	}
 }

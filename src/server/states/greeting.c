@@ -16,9 +16,10 @@ void greeting_arrival(const unsigned state, struct selector_key * key) {
 unsigned greeting_read(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
     uint8_t * w_ptr;
-    size_t count, readn, to_read;
+	size_t count, to_read;
+	ssize_t readn;
 
-    w_ptr = buffer_write_ptr(&connection->client_buffer, &count);
+	w_ptr = buffer_write_ptr(&connection->client_buffer, &count);
     readn = recv(key->fd, w_ptr, count, 0);
 
     if (readn < 0) {
@@ -90,9 +91,10 @@ unsigned greeting_read(struct selector_key * key) {
 unsigned greeting_write(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
     uint8_t * r_ptr;
-    size_t to_read, written;
-    
-    r_ptr = buffer_read_ptr(&connection->client_buffer, &to_read);
+	size_t to_read;
+	int written;
+
+	r_ptr = buffer_read_ptr(&connection->client_buffer, &to_read);
     written = send(connection->client_fd, r_ptr, to_read, 0);
     buffer_read_adv(&connection->client_buffer, written);
 

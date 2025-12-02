@@ -8,11 +8,10 @@ typedef struct QueueCDT * Queue;
 typedef int (*QueueElemCmpFn)(void *, void *);
 typedef void (*QueueElemFreeFn)(void *);
 
-Queue createQueue(QueueElemCmpFn cmp, QueueElemFreeFn freeFn, size_t elemSize, size_t max_capacity);
+Queue createQueue(QueueElemFreeFn freeFn, size_t elemSize, size_t max_capacity);
 Queue enqueue(Queue queue, void * data);
 void * dequeue(Queue queue, void * buffer);
 void * queuePeek(Queue queue, void * buffer);
-void * queueRemove(Queue queue, void * data);
 size_t queueSize(Queue queue);
 void freeQueue(Queue queue);
 

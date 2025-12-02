@@ -55,10 +55,8 @@ const struct parser_event *parser_feed(struct parser *p, const uint8_t c) {
 			matched = (c == when);
 		} else if (state[i].when == ANY) {
 			matched = true;
-		} else if (state[i].when > 0xFF) {
+		} else { // (state[i].when > 0xFF)
 			matched = (type & when);
-		} else {
-			matched = false;
 		}
 
 		if (matched) {

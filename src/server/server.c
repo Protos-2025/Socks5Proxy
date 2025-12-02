@@ -146,9 +146,6 @@ int main(const int argc, const char **argv) {
             goto finally;
         }
     }
-    if (error_msg == NULL) {
-        error_msg = "closing";
-    }
 
     int ret = 0;
 

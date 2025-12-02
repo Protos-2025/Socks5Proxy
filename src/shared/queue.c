@@ -16,7 +16,6 @@ typedef struct QueueCDT {
     /** Zero if unlimited */
     size_t max_capacity;
     size_t size;
-    QueueElemCmpFn cmpFn;
     QueueElemFreeFn freeFn;
     struct Node * iterNode;
 } QueueCDT;
@@ -29,14 +28,16 @@ typedef struct QueueCDT {
  * @param max_capacity Zero if unlimited. Drops if full.
  * @return Queue 
  */
-Queue createQueue(QueueElemCmpFn cmp, QueueElemFreeFn freeFn, size_t elemSize, size_t max_capacity) {
+Queue createQueue(QueueElemFreeFn freeFn, size_t elemSize, size_t max_capacity) {
     Queue queue = (Queue)malloc(sizeof(QueueCDT));
+    if (!queue) {
+        return NULL;
+    }
     queue->first = NULL;
     queue->last = NULL;
     queue->iterNode = NULL;
     queue->elemSize = elemSize;
     queue->size = 0;
-    queue->cmpFn = cmp;
     queue->freeFn = freeFn;
     queue->max_capacity = max_capacity;
     return queue;
@@ -47,6 +48,9 @@ Queue enqueue(Queue queue, void * data) {
         return NULL;
     }
     struct Node *newNode = (struct Node *)malloc(sizeof(struct Node));
+    if (!newNode) {
+        return NULL;
+    }
     newNode->data = (uint8_t *)malloc(queue->elemSize);
     memcpy(newNode->data, data, queue->elemSize);
     newNode->next = NULL;
@@ -91,42 +95,6 @@ void * queuePeek(Queue queue, void * buffer) {
     }
     memcpy(buffer, queue->first->data, queue->elemSize);
     return buffer;
-}
-
-void * queueRemove(Queue queue, void * data) {
-    if (!queue || queue->size == 0) {
-        return NULL;
-    }
-
-    if (!queue->cmpFn) {
-        assert(("No comparison function provided for queueRemove" == 0));
-        return NULL;
-    }
-    
-    struct Node *current = queue->first;
-    struct Node *previous = NULL;
-
-    while (current) {
-        if (queue->cmpFn(current->data, data) == 0) {
-            if (previous) {
-                previous->next = current->next;
-            } else {
-                queue->first = current->next;
-            }
-            if (current == queue->last) {
-                queue->last = previous;
-            }
-            void *removedData = malloc(queue->elemSize);
-            memcpy(removedData, current->data, queue->elemSize);
-            free(current->data);
-            free(current);
-            queue->size--;
-            return removedData;
-        }
-        previous = current;
-        current = current->next;
-    }
-    return NULL;
 }
 
 size_t queueSize(Queue queue) {

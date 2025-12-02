@@ -18,6 +18,7 @@
 ## 2. Descripción.
 
 El presente detalla el desarrollo de un proxy para el protocolo SOCKSv5\[[RFC1928](https://datatracker.ietf.org/doc/html/rfc1928)\].
+El protocolo implementa autenticacion siguiendo los lineamientos de [RFC1929](https://datatracker.ietf.org/doc/html/rfc1929).
 
 ## 3. Problemas encontrados durante el diseño y la implementación.
 

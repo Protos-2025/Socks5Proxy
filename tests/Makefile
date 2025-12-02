@@ -12,7 +12,7 @@ TEST_STANDALONE = $(wildcard *_test_standalone.c)
 TEST_STANDALONE_OBJS = $(TEST_STANDALONE:.c=.o)
 TEST_STANDALONE_EXECS = $(TEST_STANDALONE:.c=)
 
-CFLAGS += $(shell pkg-config --cflags check)
+CFLAGS += $(shell pkg-config --cflags check) -DNO_COLOR_LOGS
 LDFLAGS += $(shell pkg-config --libs check) -g -DDEBUG
 
 BIN_PATH = ../bin/tests

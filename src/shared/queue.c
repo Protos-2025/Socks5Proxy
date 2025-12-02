@@ -17,6 +17,7 @@ typedef struct QueueCDT {
     size_t max_capacity;
     size_t size;
     QueueElemCmpFn cmpFn;
+    QueueElemFreeFn freeFn;
     struct Node * iterNode;
 } QueueCDT;
 
@@ -28,7 +29,7 @@ typedef struct QueueCDT {
  * @param max_capacity Zero if unlimited. Drops if full.
  * @return Queue 
  */
-Queue createQueue(QueueElemCmpFn cmp, size_t elemSize, size_t max_capacity) {
+Queue createQueue(QueueElemCmpFn cmp, QueueElemFreeFn freeFn, size_t elemSize, size_t max_capacity) {
     Queue queue = (Queue)malloc(sizeof(QueueCDT));
     queue->first = NULL;
     queue->last = NULL;
@@ -36,6 +37,7 @@ Queue createQueue(QueueElemCmpFn cmp, size_t elemSize, size_t max_capacity) {
     queue->elemSize = elemSize;
     queue->size = 0;
     queue->cmpFn = cmp;
+    queue->freeFn = freeFn;
     queue->max_capacity = max_capacity;
     return queue;
 }
@@ -50,6 +52,9 @@ Queue enqueue(Queue queue, void * data) {
     newNode->next = NULL;
 
     if (queue->max_capacity != 0 && queue->size >= queue->max_capacity) {
+        if (queue->freeFn) {
+            queue->freeFn(queue->first->data);
+        }
         dequeue(queue, NULL);
     }
 

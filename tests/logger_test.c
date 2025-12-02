@@ -26,11 +26,11 @@ START_TEST(logger_test_misc) {
 	char * msg = NULL;
 	queueIterNext(logQueue, &msg);
 	ck_assert_ptr_nonnull(msg);
-	ck_assert_str_eq(msg, "[INFO] [my_file.c:42 @ 2022-03-21 15:42:16] Test message 1");
+	ck_assert_str_eq(msg, "[INFO] [my_file.c:42 @ 2022-03-21 15:42:16] Test message 1\n");
 
 	queueIterNext(logQueue, &msg);
 	ck_assert_ptr_nonnull(msg);
-	ck_assert_str_eq(msg, "[ERROR] [other_file.c:43 @ 2022-03-21 15:42:16] Test message 2");
+	ck_assert_str_eq(msg, "[ERROR] [other_file.c:43 @ 2022-03-21 15:42:16] Test message 2\n");
 	freeLogger();
 }
 END_TEST
@@ -60,7 +60,7 @@ START_TEST(logger_big_log_msg) {
 	ck_assert_ptr_nonnull(msg);
 	ck_assert_msg(strncmp(msg, "[ERROR] [big_error.c:100 @ 2022-03-21 15:42:16] ", 48) == 0, "Log message prefix mismatch");
 	ck_assert_int_eq(strlen(msg), MAX_LOG_SIZE - 1);
-	ck_assert_msg(strcmp(msg + strlen(msg) - 3, "...") == 0, "Log message should end with ellipsis");
+	ck_assert_msg(strcmp(msg + strlen(msg) - 4, "...\n") == 0, "Log message should end with ellipsis");
 	freeLogger();
 }
 

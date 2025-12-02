@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 START_TEST(test_queue_misc) {
-	Queue queue = createQueue(NULL, sizeof(int), 0);
+	Queue queue = createQueue(NULL, NULL, sizeof(int), 0);
 	ck_assert_uint_eq(0, queueSize(queue));
 	ck_assert_ptr_null(queuePeek(queue, NULL));
 
@@ -40,7 +40,7 @@ START_TEST(test_queue_misc) {
 END_TEST
 
 START_TEST(test_queue_with_capacity) {
-	Queue queue = createQueue(NULL, sizeof(int), 2);
+	Queue queue = createQueue(NULL, NULL, sizeof(int), 2);
 	ck_assert_uint_eq(0, queueSize(queue));
 
 	int val1 = 1;
@@ -66,7 +66,7 @@ START_TEST(test_queue_with_capacity) {
 END_TEST
 
 START_TEST(test_queue_iter) {
-	Queue queue = createQueue(NULL, sizeof(int), 0);
+	Queue queue = createQueue(NULL, NULL, sizeof(int), 0);
 	ck_assert_uint_eq(0, queueSize(queue));
 	ck_assert_int_eq(0, queueHasNextIter(queue));
 	queueBeginIter(queue);

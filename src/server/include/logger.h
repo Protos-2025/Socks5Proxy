@@ -4,15 +4,6 @@
 #include <time.h>
 #include "selector.h"
 
-#define LOGGER_TRACE 0
-#define LOGGER_DEBUG 1
-#define LOGGER_INFO 2
-#define LOGGER_WARN 3
-#define LOGGER_ERROR 4
-#define LOGGER_FATAL 5
-
-#define LOG_LEVEL LOGGER_DEBUG
-
 void loggerInit();
 
 int loggerRegisterSelector(fd_selector selector);

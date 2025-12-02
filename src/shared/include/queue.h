@@ -6,8 +6,9 @@
 
 typedef struct QueueCDT * Queue;
 typedef int (*QueueElemCmpFn)(void *, void *);
+typedef void (*QueueElemFreeFn)(void *);
 
-Queue createQueue(QueueElemCmpFn cmp, size_t elemSize, size_t max_capacity);
+Queue createQueue(QueueElemCmpFn cmp, QueueElemFreeFn freeFn, size_t elemSize, size_t max_capacity);
 Queue enqueue(Queue queue, void * data);
 void * dequeue(Queue queue, void * buffer);
 void * queuePeek(Queue queue, void * buffer);

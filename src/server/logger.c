@@ -1,4 +1,5 @@
 #include "logger.h"
+#include "buffer.h"
 #include "queue.h"
 #include <stddef.h>
 #include <stdarg.h>
@@ -6,11 +7,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <errno.h>
 #include "selector.h"
-
-#define MAX_LOG_SIZE 1024
+#include "defines.h"
 
 static const char* logLevelToString(int level);
+static void writeLogsDeferred(struct selector_key* key);
+static void freeLog(void * data);
 
 static const char * logLevelToString(int level) {
     switch (level) {
@@ -35,19 +38,25 @@ static const char * logLevelToString(int level) {
 }
 
 static Queue logQueue = NULL;
+static buffer logBuffer;
+static char * currentLog = NULL;
 
 void loggerInit() {
-    logQueue = createQueue(NULL, sizeof(char *), 100);
+    logQueue = createQueue(NULL, freeLog, sizeof(char *), MAX_LOG_QUEUE_SIZE);
+    buffer_init(&logBuffer, MAX_LOG_SIZE, NULL);
 }
 
 int loggerRegisterSelector(fd_selector selector) {
-    	if (!selector) return 0;
+    if (!selector) return 0;
 
-	selector_fd_set_nio(STDOUT_FILENO);
+	if (selector_fd_set_nio(STDOUT_FILENO) < 0) {
+        fprintf(stderr, "Failed to set STDOUT to non-blocking mode\n");
+        return -1;
+    };
 
     static const struct fd_handler loggerHandlers = {
         .handle_read = NULL,
-        .handle_write = flushAllLogs,
+        .handle_write = writeLogsDeferred,
         .handle_close = freeLogger,
     };
 
@@ -58,6 +67,13 @@ int loggerRegisterSelector(fd_selector selector) {
     }
 
     return ss == SELECTOR_SUCCESS ? 0 : -1;
+}
+
+static void freeLog(void * data) {
+    if (data) {
+        char * msg = *(char **)data;
+        free(msg);
+    }
 }
 
 static char * formatLogMessage(const char* levelStr, const char * file, int line, const time_t * now_ptr, const char* fmt, va_list args) {
@@ -75,10 +91,10 @@ static char * formatLogMessage(const char* levelStr, const char * file, int line
     struct tm *t = localtime(&now);
 
     int prefix_size = snprintf(out, (size_t)MAX_LOG_SIZE , "[%s] [%s:%d @ %04d-%02d-%02d %02d:%02d:%02d] ", levelStr, file, line, (t->tm_year + 1900), t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
-	snprintf(out + prefix_size, MAX_LOG_SIZE - prefix_size, "%s", body);
-	char* ellipsis = size >= (MAX_LOG_SIZE - strlen(out)) ? "..." : "\0";
+	snprintf(out + prefix_size, MAX_LOG_SIZE - prefix_size, "%s\n", body);
+	const char* ellipsis = "...\n";
 	if (strlen(out) >= MAX_LOG_SIZE - 1) {
-		strncpy(out + MAX_LOG_SIZE - 4, ellipsis, 4);
+		strncpy(out + MAX_LOG_SIZE - 5, ellipsis, 5);
 		out[MAX_LOG_SIZE - 1] = '\0';
 	}
 	return out;
@@ -91,6 +107,28 @@ void loggerLogMessageDeferred(int level, const char* file, int line, time_t * no
     va_end(args);
 
     if (formattedMsg) enqueue(logQueue, &formattedMsg);
+}
+
+static void writeLogsDeferred(struct selector_key* key) {
+	uint8_t* r_ptr;
+    size_t to_read = 0, written = 0;
+
+	if (buffer_can_read(&logBuffer)) {
+		r_ptr = buffer_read_ptr(&logBuffer, &to_read);
+		written = write(STDOUT_FILENO, r_ptr, to_read);
+		buffer_read_adv(&logBuffer, written);
+        if (written == to_read) {
+            free(currentLog);
+            currentLog = NULL;
+        }
+	};
+
+    char * peekPtr = NULL;
+	if (to_read == 0 && written == to_read && queuePeek(logQueue, &peekPtr) != NULL) {
+        dequeue(logQueue, &currentLog);
+        buffer_init(&logBuffer, strlen(currentLog), currentLog);
+        buffer_write_adv(&logBuffer, strlen(currentLog));
+	}
 }
 
 void flushAllLogs() {
@@ -107,13 +145,7 @@ void flushAllLogs() {
 
 void freeLogger() {
     if (!logQueue) return;
-    while (queueSize(logQueue) > 0) {
-        char * msg = NULL;
-        dequeue(logQueue, &msg);
-        if (msg) {
-            free(msg);
-        }
-    }
-    freeQueue(logQueue);
-    logQueue = NULL;
+	flushAllLogs();
+	freeQueue(logQueue);
+	logQueue = NULL;
 }

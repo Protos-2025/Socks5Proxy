@@ -23,11 +23,11 @@ unsigned greeting_read(struct selector_key * key) {
 
     if (readn < 0) {
         // TODO: handle error correctly
-        perror("recv failed (GREETING)");
+        LOG_FATAL("recv failed (GREETING)");
         return ERROR;
     }
     if (readn == 0) {
-        fprintf(stdout, "Client closed connection (GREETING)\n");
+        LOG_INFO("Client closed connection (GREETING)");
         return DONE;
     }
 
@@ -43,14 +43,14 @@ unsigned greeting_read(struct selector_key * key) {
         // check version
         uint8_t ver = buffer_read(&connection->client_buffer);
         if (ver != SOCKS5_VERSION) {
-            LOG_WARN("Unsupported version\n");
+            LOG_WARN("Unsupported version");
             return ERROR;
         }
     
         // check methods count
         connection->client.greeting.n_methods = buffer_read(&connection->client_buffer);
         if (connection->client.greeting.n_methods == 0) {
-            LOG_WARN("Invalid amount of methods\n");
+            LOG_WARN("Invalid amount of methods");
             return ERROR;
         }
 
@@ -69,7 +69,7 @@ unsigned greeting_read(struct selector_key * key) {
             if (AUTH_METHOD == buffer_read(&connection->client_buffer)) {
                 connection->client.greeting.method = AUTH_METHOD;
                 found_auth_method = true;
-                fprintf(stdout, "Auth method chosen\n");
+                LOG_DEBUG("Auth method chosen");
             }
         }
 
@@ -97,7 +97,7 @@ unsigned greeting_write(struct selector_key * key) {
     buffer_read_adv(&connection->client_buffer, written);
 
     if (written < 0) {
-        perror("send failed (GREETING)");
+        LOG_FATAL("send failed (GREETING)");
         return ERROR;
     }
 
@@ -105,7 +105,7 @@ unsigned greeting_write(struct selector_key * key) {
         return GREETING;
     }
 
-    LOG_INFO("Greeting completed\n");
+    LOG_INFO("Greeting completed");
 
     buffer_reset(&connection->client_buffer);
 

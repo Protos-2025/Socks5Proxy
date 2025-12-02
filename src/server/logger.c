@@ -14,13 +14,23 @@ static const char* logLevelToString(int level);
 
 static const char * logLevelToString(int level) {
     switch (level) {
-        case LOGGER_TRACE: return "TRACE";
-        case LOGGER_DEBUG: return "DEBUG";
-        case LOGGER_INFO:  return "INFO";
-        case LOGGER_WARN:  return "WARN";
-        case LOGGER_ERROR: return "ERROR";
-        case LOGGER_FATAL: return "FATAL";
-        default:    return "UNKNOWN";
+        #ifndef NO_COLOR_LOGS
+            case LOGGER_TRACE: return "\x1b[0;90mTRACE\x1b[0m";
+            case LOGGER_DEBUG: return "\x1b[36mDEBUG\x1b[0m";
+            case LOGGER_INFO:  return "\x1b[34mINFO\x1b[0m";
+            case LOGGER_WARN:  return "\x1b[33mWARN\x1b[0m";
+            case LOGGER_ERROR: return "\x1b[31mERROR\x1b[0m";
+            case LOGGER_FATAL: return "\x1b[41;37mFATAL\x1b[0m";
+            default:    return "UNKNOWN";
+        #else
+            case LOGGER_TRACE: return "TRACE";
+            case LOGGER_DEBUG: return "DEBUG";
+            case LOGGER_INFO:  return "INFO";
+            case LOGGER_WARN:  return "WARN";
+            case LOGGER_ERROR: return "ERROR";
+            case LOGGER_FATAL: return "FATAL";
+            default:    return "UNKNOWN";
+        #endif
     }
 }
 
@@ -28,17 +38,26 @@ static Queue logQueue = NULL;
 
 void loggerInit() {
     logQueue = createQueue(NULL, sizeof(char *), 100);
+}
+
+int loggerRegisterSelector(fd_selector selector) {
+    	if (!selector) return 0;
 
 	selector_fd_set_nio(STDOUT_FILENO);
-    selector_fd_set_nio(STDERR_FILENO);
 
-    struct selector_key * key = malloc(sizeof(struct selector_key));
-
-    const struct fd_handler socksv5 = {
+    static const struct fd_handler loggerHandlers = {
         .handle_read = NULL,
         .handle_write = flushAllLogs,
         .handle_close = freeLogger,
     };
+
+	selector_status ss = SELECTOR_SUCCESS;
+    ss = selector_register(selector, STDOUT_FILENO, &loggerHandlers, OP_WRITE, NULL);
+    if (ss != SELECTOR_SUCCESS) {
+        fprintf(stderr, "Failed to register logger flush handler: %s\n", selector_error(ss));
+    }
+
+    return ss == SELECTOR_SUCCESS ? 0 : -1;
 }
 
 static char * formatLogMessage(const char* levelStr, const char * file, int line, const time_t * now_ptr, const char* fmt, va_list args) {

@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 struct Node {
 	struct Node *next;
@@ -40,6 +41,9 @@ Queue createQueue(QueueElemCmpFn cmp, size_t elemSize, size_t max_capacity) {
 }
 
 Queue enqueue(Queue queue, void * data) {
+    if (!queue || !data) {
+        return NULL;
+    }
     struct Node *newNode = (struct Node *)malloc(sizeof(struct Node));
     newNode->data = (uint8_t *)malloc(queue->elemSize);
     memcpy(newNode->data, data, queue->elemSize);
@@ -60,7 +64,7 @@ Queue enqueue(Queue queue, void * data) {
 }
 
 void * dequeue(Queue queue, void * buffer) {
-    if (queue->size == 0) {
+    if (!queue || queue->size == 0) {
         return NULL;
     }
     struct Node *temp = queue->first;
@@ -77,7 +81,7 @@ void * dequeue(Queue queue, void * buffer) {
 }
 
 void * queuePeek(Queue queue, void * buffer) {
-    if (queue->size == 0) {
+    if (!queue || queue->size == 0) {
         return NULL;
     }
     memcpy(buffer, queue->first->data, queue->elemSize);
@@ -85,6 +89,15 @@ void * queuePeek(Queue queue, void * buffer) {
 }
 
 void * queueRemove(Queue queue, void * data) {
+    if (!queue || queue->size == 0) {
+        return NULL;
+    }
+
+    if (!queue->cmpFn) {
+        assert(("No comparison function provided for queueRemove" == 0));
+        return NULL;
+    }
+    
     struct Node *current = queue->first;
     struct Node *previous = NULL;
 
@@ -117,6 +130,7 @@ size_t queueSize(Queue queue) {
 }
 
 void freeQueue(Queue queue) {
+    if (!queue) return;
     struct Node *current = queue->first;
     while (current) {
         struct Node *temp = current;
@@ -128,10 +142,12 @@ void freeQueue(Queue queue) {
 }
 
 void queueBeginIter(Queue queue) {
+    if (!queue) return;
     queue->iterNode = queue->first;
 }
 
 int queueHasNextIter(Queue queue) {
+    if (!queue) return 0;
     return queue->iterNode != NULL;
 }
 

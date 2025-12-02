@@ -119,6 +119,11 @@ int main(const int argc, const char **argv) {
         goto finally;
     }
 
+    if (loggerRegisterSelector(selector) < 0) {
+		error_msg = "initializing logger";
+		goto finally;
+    };
+
     const struct fd_handler socksv5 = {
         .handle_read = socksv5_passive_accept,
         .handle_write = NULL,
@@ -148,6 +153,7 @@ int main(const int argc, const char **argv) {
     int ret = 0;
 
 finally:
+    freeLogger();
     if (ss != SELECTOR_SUCCESS) {
         fprintf(stderr, "%s: %s\n", (error_msg == NULL) ? "": error_msg, ss == SELECTOR_IO ? strerror(errno) : selector_error(ss));
         ret = 2;

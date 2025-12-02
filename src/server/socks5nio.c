@@ -76,7 +76,7 @@ void socksv5_passive_accept(struct selector_key * key) {
     struct sockaddr_in * s = (struct sockaddr_in *) &client_addr;
     char client_ip[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &s->sin_addr, client_ip, INET_ADDRSTRLEN); // TODO manage IPv6
-    LOG_INFO("Accepted connection from %s:%d\n", client_ip, ntohs(s->sin_port));
+    LOG_INFO("Accepted connection from %s:%d", client_ip, ntohs(s->sin_port));
 
     connection = socks5_new(client_fd);
 

@@ -2,6 +2,7 @@
 #define __LOGGER_H__
 
 #include <time.h>
+#include "selector.h"
 
 #define LOGGER_TRACE 0
 #define LOGGER_DEBUG 1
@@ -13,6 +14,8 @@
 #define LOG_LEVEL LOGGER_DEBUG
 
 void loggerInit();
+
+int loggerRegisterSelector(fd_selector selector);
 
 void loggerLogMessageDeferred(int level, const char* file, int line, time_t * now, const char* msg, ...);
 

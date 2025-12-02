@@ -45,7 +45,7 @@ unsigned auth_read(struct selector_key * key) {
     
     //check version 
     uint8_t ver = buffer_read(&connection->client_buffer);
-    if (ver != PAM_VERSION) {
+    if (ver != PAM_VERSION_1) {
         fprintf(stdout, "Unsupported pam version\n");
         return PAM_ERROR;
     }

@@ -56,5 +56,6 @@ jobs:
           # GitHub API token to make a commit comment
           github-token: ${{ secrets.GITHUB_TOKEN }}
           alert-threshold: '200%'
+          auto-push: false
           comment-always: true
           summary-always: true

@@ -11,6 +11,7 @@
 #include <signal.h>
 #include "../shared/include/selector.h"
 #include "include/socks5nio.h"
+#include "include/pam.h"
 #include "include/defines.h"
 #include "include/metrics.h"
 #include "logger.h"
@@ -30,6 +31,7 @@ typedef struct custom_key {
 } CustomKey;
 
 static int server;
+static int pamServer;
 static bool done = false;
 
 int main(const int argc, const char **argv) {
@@ -78,14 +80,48 @@ int main(const int argc, const char **argv) {
 
     LOG_INFO("Proxy server listening on addr %s:%d (TCP)", args.socks_addr, args.socks_port);
 
-    signal(SIGTERM, signal_handler);
-    signal(SIGINT,  signal_handler);
-    signal(SIGQUIT, signal_handler);
+	// <---------------------------- create pam server socket ---------------------------->
+	unsigned pamPort = 4242; /* TODO: grab it from an argument*/
+	LOG_DEBUG("Starting pam server\n", pamPort);
+	struct sockaddr_in pamAddr;
+	memset(&pamAddr, 0, sizeof(pamAddr));
+	pamAddr.sin_family      = AF_INET;
+	pamAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	pamAddr.sin_port        = htons(pamPort);
+
+	if ((pamServer = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		errorMsg = "unable to create pam socket";
+		goto finally;
+	}
+
+	setsockopt(pamServer, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int));
+
+	if (bind(pamServer, (struct sockaddr *) &pamAddr, sizeof(pamAddr)) < 0) {
+		errorMsg = "unable to bind pam socket";
+		goto finally;
+	}
+
+	if (listen(pamServer, MAX_PENDING_CONNECTIONS) < 0) {
+		errorMsg = "unable to listen on pam server";
+		goto finally;
+	}
+
+	LOG_INFO("Pam server listening on TCP port %d\n", pamPort);
+
+	// <----------------------------------- setup signals ----------------------------------->
+	signal(SIGTERM, signal_handler);
+	signal(SIGINT,  signal_handler);
+	signal(SIGQUIT, signal_handler);
     signal(SIGABRT, signal_handler);
-    
+
     // <--------------------------------- configure selector --------------------------------->
     if (selector_fd_set_nio(server) == -1) {
         errorMsg = "getting server socket flags";
+        goto finally;
+    }
+
+    if (selector_fd_set_nio(pamServer) == -1) {
+        errorMsg = "getting pam server socket flags";
         goto finally;
     }
 
@@ -119,11 +155,23 @@ int main(const int argc, const char **argv) {
         .handle_write = NULL,
         .handle_close = NULL, // nada que liberar
     };
+    const struct fd_handler pam = {
+        .handle_read = pam_passive_accept,
+        .handle_write = NULL,
+        .handle_close = NULL,
+    };
 
     ss = selector_register(selector, server, &socksv5, OP_READ, NULL);
 
     if (ss != SELECTOR_SUCCESS) {
-        errorMsg = "registering fd";
+        errorMsg = "registering socks fd";
+        goto finally;
+    }
+
+    ss = selector_register(selector, pamServer, &pam, OP_READ, NULL);
+
+    if (ss != SELECTOR_SUCCESS) {
+        errorMsg = "registering pam fd";
         goto finally;
     }
 

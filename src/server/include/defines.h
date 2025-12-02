@@ -41,8 +41,9 @@
 
 #ifndef SOCKS5_VERSION
 #define SOCKS5_VERSION 0x05
+#endif
 
-
+#ifndef PAM_VERSION_1
 #define PAM_VERSION_1 0x01
 #endif
 

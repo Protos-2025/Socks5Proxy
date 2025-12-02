@@ -42,7 +42,7 @@ unsigned pam_auth_read(struct selector_key * key) {
     // wait until we receive first three bytes 
     if(to_read < 3) {
       return PAM_AUTH;
-    }  
+    }
     
     //check version 
     uint8_t ver = buffer_read(&connection->client_buffer);
@@ -74,7 +74,7 @@ unsigned pam_auth_read(struct selector_key * key) {
       // wait until we receive the whole username
       if(to_read < connection->client.auth.n_user) {
         return PAM_AUTH;
-      }  
+      }
 
       //read username
       for(size_t i = 0; i < connection->client.auth.n_user; i++) {
@@ -91,7 +91,7 @@ unsigned pam_auth_read(struct selector_key * key) {
       // wait until we receive the whole pass
       if(to_read < connection->client.auth.n_pass) {
         return PAM_AUTH;
-      }  
+      }
 
       //read pass
       for(size_t i = 0; i < connection->client.auth.n_pass && buffer_can_read(&connection->client_buffer); i++) {

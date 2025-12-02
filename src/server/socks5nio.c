@@ -44,6 +44,13 @@ static const struct state_definition socks5_states[] = {
         // TODO
     },
     {
+        .state = COPY,
+        .on_read_ready = socksv5_copy_read,
+        .on_write_ready = socksv5_copy_write,
+        .on_arrival = socksv5_copy_arrival,
+        .on_departure = socksv5_copy_close,
+    },
+    {
         .state = DONE
     },
     {

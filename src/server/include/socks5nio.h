@@ -5,6 +5,8 @@
 #include "../../shared/include/buffer.h"
 #include "greeting.h"
 #include "auth.h" 
+#include "copy.h"
+
 // #include "request.h"
 #include "../../shared/include/stm.h"
 #include <sys/socket.h>
@@ -22,6 +24,7 @@ enum socks_v5state {
     REQUEST,
     RESPONSE,
     DNS_RESOLUTION,
+    COPY,
     DONE,
     ERROR,
 };
@@ -45,7 +48,7 @@ struct socks5 {
         struct greeting_st greeting;
         struct auth_st auth;
         // struct request_st request;
-        // struct copy_st copy;
+        struct copy_st copy;
     } client;
     uint8_t username[USERNAME_MAX_LENGHT];
     uint8_t password[PASSWORD_MAX_LENGHT];
@@ -57,10 +60,10 @@ struct socks5 {
     struct addrinfo * origin_resolution;
     buffer origin_buffer;
     uint8_t origin_buffer_data[BUFFER_SIZE];
-    // union {
-    //     struct connecting conn;
-    //     struct copy copy;
-    // } origin_st;
+    union {
+        // struct connecting conn;
+        struct copy_st copy;
+    } origin_st;
 
     struct state_machine stm;
 

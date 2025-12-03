@@ -10,6 +10,7 @@ services:
       - .:/root
     working_dir: /root
     entrypoint: ["scripts/compile.sh"]
+    env_file: .env
 
   server:
     container_name: server

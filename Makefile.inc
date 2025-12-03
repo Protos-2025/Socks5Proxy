@@ -12,7 +12,7 @@ else
   CFLAGS += -O3 -DNO_COLOR_LOGS
 endif
 
-; Override constants w/ env vars:
+# Override constants w/ env vars:
 ifdef BUFFER_SIZE
   CFLAGS += -DBUFFER_SIZE=$(BUFFER_SIZE)
 endif

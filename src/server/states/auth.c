@@ -18,8 +18,6 @@ void auth_arrival(const unsigned state, struct selector_key * key) {
     connection->client.auth.state = AUTH_VER;
     connection->client.auth.ulen = 0;
     connection->client.auth.plen = 0;
-    memset(connection->client.auth.username, 0, sizeof(connection->client.auth.username));
-    memset(connection->client.auth.password, 0, sizeof(connection->client.auth.password));
 }
 
 unsigned auth_read(struct selector_key * key) {

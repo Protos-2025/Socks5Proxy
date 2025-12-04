@@ -17,7 +17,8 @@ unsigned auth_read(struct selector_key * key) {
 
   struct pam * connection = PAM_ATTACHMENT(key);
   uint8_t * w_ptr;
-  size_t count, readn, to_read;
+  size_t count, to_read;
+  ssize_t readn;
 
   w_ptr = buffer_write_ptr(&connection->client_buffer, &count);
   readn = recv(key->fd, w_ptr, count, 0);
@@ -103,7 +104,7 @@ unsigned auth_read(struct selector_key * key) {
       connection->client.auth.status = AUTH_SUCCESS; // TODO: validate credentials
 
       buffer_reset(&connection->client_buffer);
-      buffer_write(&connection->client_buffer, SOCKS5_VERSION);
+      buffer_write(&connection->client_buffer, PAM_VERSION_1);
       buffer_write(&connection->client_buffer, connection->client.auth.status);
       
       selector_set_interest_key(key, OP_WRITE);

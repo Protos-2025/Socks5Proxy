@@ -122,14 +122,14 @@ static void pam_read(struct selector_key * key) {
   const enum pam_state st = stm_handler_read(stm, key);
 
   if(PAM_ERROR == st || PAM_DONE == st) {
-      pam_close(key);
+      pam_done(key);
   }
 }
 
 static void pam_write(struct selector_key * key) {
 
   struct state_machine * stm = &PAM_ATTACHMENT(key)->stm;
-  const enum pam_state st = stm_handler_read(stm, key);
+  const enum pam_state st = stm_handler_write(stm, key);
 
   if (PAM_ERROR == st || PAM_DONE == st) {
     pam_done(key);

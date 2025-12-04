@@ -21,7 +21,7 @@ int main() {
 	char *pass = "password";
 	uint8_t ulen = strlen(user);
 	uint8_t plen = strlen(pass);
-	uint8_t auth_msg[1 + 1 + 255 + 1 + 255];
+	uint8_t auth_msg[64]; // Sufficient size for auth message (might whant to check bounds in the future)
 	inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
 
 	if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
@@ -39,10 +39,11 @@ int main() {
 	};
 
 	if(send(sock, greeting, sizeof(greeting), 0) < 0) {
-		perror("send greeting");
+		printf("Error send greeting\n");
 		close(sock);
 		exit(1);
 	}
+
 
 	uint8_t greeting_response[2];
     recv(sock, greeting_response, 2, 0);

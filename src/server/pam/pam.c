@@ -22,7 +22,7 @@
 
 static const struct state_definition pam_states[] = {
   {
-    .state = AUTH,
+    .state = PAM_AUTH,
     .on_arrival = auth_arrival,
     .on_read_ready = auth_read,
     .on_write_ready = auth_write
@@ -103,7 +103,7 @@ static struct pam * pam_new(int client_fd) {
     new->client_fd = client_fd;
     buffer_init(&new->client_buffer, BUFFER_SIZE, new->client_buffer_data);
     new->stm = (struct state_machine){
-      .initial = AUTH,
+      .initial = PAM_AUTH,
       .states = pam_states,
       .max_state = PAM_ERROR,
       .current = NULL,

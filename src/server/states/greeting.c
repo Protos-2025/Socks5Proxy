@@ -20,7 +20,6 @@ unsigned greeting_read(struct selector_key * key) {
 	ssize_t readn;
 
 	w_ptr = buffer_write_ptr(&connection->client_buffer, &count);
-  LOG_DEBUG("About to recv on fd=%d", key->fd);
     readn = recv(key->fd, w_ptr, count, 0);
 
     if (readn < 0) {
@@ -105,7 +104,6 @@ unsigned greeting_write(struct selector_key * key) {
 	int written;
 
 	r_ptr = buffer_read_ptr(&connection->client_buffer, &to_read);
-  LOG_DEBUG("About to send to fd=%d", key->fd);
     written = send(connection->client_fd, r_ptr, to_read, 0);
     buffer_read_adv(&connection->client_buffer, written);
 

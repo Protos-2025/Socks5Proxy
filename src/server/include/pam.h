@@ -12,7 +12,7 @@
 #define PAM_ATTACHMENT(key) ( (struct pam *)(key)->data)
 
 enum pam_state {
-	AUTH,
+	PAM_AUTH,
 	// add more
 
 

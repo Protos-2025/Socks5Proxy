@@ -41,7 +41,7 @@ unsigned auth_read(struct selector_key * key) {
      
     // wait until we receive first three bytes 
     if(to_read < 3) {
-      return AUTH;
+      return PAM_AUTH;
     }  
     
     //check version 
@@ -73,7 +73,7 @@ unsigned auth_read(struct selector_key * key) {
 
       // wait until we receive the whole username
       if(to_read < connection->client.auth.n_user) {
-        return AUTH;
+        return PAM_AUTH;
       }  
 
       //read username
@@ -90,7 +90,7 @@ unsigned auth_read(struct selector_key * key) {
 
       // wait until we receive the whole pass
       if(to_read < connection->client.auth.n_pass) {
-        return AUTH;
+        return PAM_AUTH;
       }  
 
       //read pass
@@ -101,7 +101,7 @@ unsigned auth_read(struct selector_key * key) {
 
       LOG_DEBUG("Received username: %s", connection->client.auth.username);
       LOG_DEBUG("Received password: %s", connection->client.auth.pass);
-      connection->client.auth.status = AUTH_SUCCESS; // TODO: validate credentials
+      connection->client.auth.status = PAM_AUTH_SUCCESS; // TODO: validate credentials
 
       buffer_reset(&connection->client_buffer);
       buffer_write(&connection->client_buffer, PAM_VERSION_1);
@@ -110,7 +110,7 @@ unsigned auth_read(struct selector_key * key) {
       selector_set_interest_key(key, OP_WRITE);
     }
 
-  return AUTH;
+  return PAM_AUTH;
 }
 
 
@@ -130,7 +130,7 @@ unsigned auth_write(struct selector_key * key) {
     }
 
     if (buffer_can_read(&connection->client_buffer)) {
-        return AUTH;
+        return PAM_AUTH;
     }
 
     LOG_INFO("Pam auth completed");

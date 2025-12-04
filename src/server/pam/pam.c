@@ -14,6 +14,8 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include "logger.h"
+
 
 #include "../../shared/include/selector.h"
 
@@ -25,6 +27,12 @@ static const struct state_definition pam_states[] = {
     .on_read_ready = auth_read,
     .on_write_ready = auth_write
   },
+  {
+    .state = PAM_DONE
+  },
+  {
+    .state = PAM_ERROR
+  }
   //  TODO: add more!
 };
 
@@ -35,6 +43,7 @@ static void pam_read(struct selector_key * key);
 static void pam_write(struct selector_key * key);
 static void pam_block(struct selector_key * key);
 static void pam_close(struct selector_key * key);
+static void pam_done(struct selector_key * key);
 
 
 static const struct fd_handler pam_handler = {
@@ -61,7 +70,7 @@ void pam_passive_accept(struct selector_key * key) {
     struct sockaddr_in * s = (struct sockaddr_in *) &client_addr;
     char client_ip[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &s->sin_addr, client_ip, INET_ADDRSTRLEN); // TODO: manage IPv6
-    fprintf(stdout, "Accepted connection from %s:%d\n", client_ip, ntohs(s->sin_port));
+    LOG_DEBUG( "Accepted connection on pam server from %s:%d\n", client_ip, ntohs(s->sin_port));
 
     connection = pam_new(client_fd);
 
@@ -96,27 +105,58 @@ static struct pam * pam_new(int client_fd) {
     new->stm = (struct state_machine){
       .initial = AUTH,
       .states = pam_states,
-      .max_state = AUTH,
+      .max_state = PAM_ERROR,
       .current = NULL,
     };
     stm_init(&new->stm);
     new->references = 1;
-
   }
+
   return new;
 }
 
 
 static void pam_read(struct selector_key * key) {
+  
+  struct state_machine * stm   = &PAM_ATTACHMENT(key)->stm;
+  const enum pam_state st = stm_handler_read(stm, key);
 
+  if(PAM_ERROR == st || PAM_DONE == st) {
+      pam_close(key);
+  }
 }
+
 static void pam_write(struct selector_key * key) {
 
+  struct state_machine * stm = &PAM_ATTACHMENT(key)->stm;
+  const enum pam_state st = stm_handler_read(stm, key);
+
+  if (PAM_ERROR == st || PAM_DONE == st) {
+    pam_done(key);
+  }
 }
+
 static void pam_block(struct selector_key * key) {
 
+  struct state_machine *stm   = &PAM_ATTACHMENT(key)->stm;
+    const enum pam_state st = stm_handler_block(stm, key);
+
+    if(PAM_ERROR == st || PAM_DONE == st) {
+        pam_done(key);
+    }
 }
+
 static void pam_close(struct selector_key * key) {
+  pam_destroy(PAM_ATTACHMENT(key));
+}
+
+static void pam_done(struct selector_key * key) {
+  const int fd = PAM_ATTACHMENT(key)->client_fd;
+
+  if(SELECTOR_SUCCESS != selector_unregister_fd(key->s, fd)) {
+    abort();
+  }
+  close(fd);
 
 }
 

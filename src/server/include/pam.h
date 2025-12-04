@@ -11,7 +11,7 @@
 
 #define PAM_ATTACHMENT(key) ( (struct pam *)(key)->data)
 
-enum pamela_state {
+enum pam_state {
 	AUTH,
 	// add more
 

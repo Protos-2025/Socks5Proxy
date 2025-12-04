@@ -82,7 +82,7 @@ int main(const int argc, const char **argv) {
 
 	// <---------------------------- create pam server socket ---------------------------->
 	unsigned pamPort = 4242; /* TODO: grab it from an argument*/
-	LOG_DEBUG("Starting pam server\n", pamPort);
+	LOG_DEBUG("Starting pam server", pamPort);
 	struct sockaddr_in pamAddr;
 	memset(&pamAddr, 0, sizeof(pamAddr));
 	pamAddr.sin_family      = AF_INET;
@@ -106,7 +106,7 @@ int main(const int argc, const char **argv) {
 		goto finally;
 	}
 
-	LOG_INFO("Pam server listening on TCP port %d\n", pamPort);
+	LOG_INFO("Pam server listening on TCP port %d", pamPort);
 
 	// <----------------------------------- setup signals ----------------------------------->
 	signal(SIGTERM, signal_handler);

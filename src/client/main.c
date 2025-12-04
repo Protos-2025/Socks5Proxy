@@ -26,7 +26,7 @@ int main() {
 	inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
 
 	if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-		perror("connect");
+		printf("Error conecting to socket\n");
 		exit(1);
 	}
 	printf("Connected to SOCKS5 server!\n");
@@ -38,7 +38,7 @@ int main() {
 	};
 
 	if(send(sock, greeting, sizeof(greeting), 0) < 0) {
-		perror("send greeting");
+		printf("Error send greeting\n");
 		close(sock);
 		exit(1);
 	}
@@ -46,12 +46,12 @@ int main() {
 	uint8_t response[2];
 	ssize_t bytes_recived = recv(sock, response, 2, 0);
 	if (bytes_recived <= 0) {
-		perror("recv greeting response");
+		printf("No respone bytes recived, error\n");
 		close(sock);
 		exit(1);
 	}
 	if (bytes_recived != 2) {
-		fprintf(stderr, "Expected 2 bytes, got %zd\n", bytes_recived);
+		printf("Expected 2 bytes, got %zd\n", bytes_recived);
 		close(sock);
 		exit(1);
 	}
@@ -76,24 +76,24 @@ int main() {
 	send(sock, auth_msg, idx, 0);
 	ssize_t sent = send(sock, auth_msg, idx, 0);
 	if (sent < 0) {
-		perror("send auth");
+		printf("Error sending auth\n");
 		close(sock);
 		exit(1);
 	}
 	if (sent != idx) {
-		fprintf(stderr, "Partial send: %zd of %d bytes\n", sent, idx);
+		printf("Partial send: %zd of %d bytes\n", sent, idx);
 	}
 
 	uint8_t auth_resp[2];
 	recv(sock, auth_resp, 2, 0);
 	bytes_recived = recv(sock, auth_resp, 2, 0);
 	if (bytes_recived <= 0) {
-		perror("recv auth response");
+		printf("No response bytes recived, error\n");
 		close(sock);
 		exit(1);
 	}
 	if (bytes_recived != 2) {
-		fprintf(stderr, "Expected 2 bytes in auth response, got %zd\n", bytes_recived);
+		printf("Expected 2 bytes in auth response, got %zd\n", bytes_recived);
 		close(sock);
 		exit(1);
 	}

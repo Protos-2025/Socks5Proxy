@@ -83,6 +83,7 @@ unsigned greeting_read(struct selector_key * key) {
         if (connection->client.greeting.method == NO_AUTH_METHOD && !found_auth_method) {
             LOG_WARN("No supported auth methods found");
             connection->client.greeting.method = 0xFF; // No acceptable methods
+            return ERROR;
         }
         
         buffer_reset(&connection->client_buffer);

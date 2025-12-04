@@ -14,9 +14,10 @@
 static const char* logLevelToString(int level);
 static void writeLogsDeferred(struct selector_key* key);
 static void freeLog(void * data);
+static void flushAndFree();
 
-static const char * logLevelToString(int level) {
-    switch (level) {
+static const char* logLevelToString(int level) {
+	switch (level) {
         #ifndef NO_COLOR_LOGS
             case LOGGER_TRACE: return "\x1b[0;90mTRACE\x1b[0m";
             case LOGGER_DEBUG: return "\x1b[36mDEBUG\x1b[0m";
@@ -46,6 +47,11 @@ void loggerInit() {
     buffer_init(&logBuffer, MAX_LOG_SIZE, NULL);
 }
 
+static void flushAndFree() {
+    flushAllLogs();
+    freeLogger();
+}
+
 int loggerRegisterSelector(fd_selector selector) {
     if (!selector) return 0;
 
@@ -57,7 +63,7 @@ int loggerRegisterSelector(fd_selector selector) {
     static const struct fd_handler loggerHandlers = {
         .handle_read = NULL,
         .handle_write = writeLogsDeferred,
-        .handle_close = freeLogger,
+        .handle_close = flushAndFree,
     };
 
 	selector_status ss = SELECTOR_SUCCESS;
@@ -146,7 +152,13 @@ void flushAllLogs() {
 
 void freeLogger() {
     if (!logQueue) return;
-	flushAllLogs();
+	while (queueSize(logQueue) > 0) {
+        char * msg = NULL;
+        dequeue(logQueue, &msg);
+        if (msg) {
+            free(msg);
+        }
+    }
 	freeQueue(logQueue);
 	logQueue = NULL;
 }

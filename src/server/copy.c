@@ -2,11 +2,8 @@
 #include "socks5nio.h"
 #include "logger.h"
 #include "errno.h"
-<<<<<<< HEAD:src/copy.c
 #include <string.h>
-=======
 #include "selector.h"
->>>>>>> bd04d7d (chore(tests): copy test basic):src/server/copy.c
 
 #define IS_CLIENT_DATA(connection, key) (connection->client_fd == key->fd)
 
@@ -18,9 +15,10 @@ static fd_interest update_target_interests(fd_selector s, copy_st * target) {
 		ret |= target->interests |= OP_READ;
 	}
 	selector_set_interest(s, target->fd, ret);
+	return ret;
 }
 
-void socksv5_copy_arrival(struct selector_key * key) {
+void socksv5_copy_arrival(fd_selector s, struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
 	copy_st * clientCopy = &connection->client.copy;
     copy_st * originCopy = &connection->origin_st.copy;
@@ -40,9 +38,9 @@ void socksv5_copy_arrival(struct selector_key * key) {
     selector_set_interest(key->s, originCopy->fd, OP_READ);
 }
 
-unsigned socksv5_copy_read(struct selector_key * key) {
-    struct socks5 * connection = ATTACHMENT(key);
-	copy_st * from = IS_CLIENT_DATA(connection, key) ? &connection->client.copy : &connection->origin_st.copy;
+unsigned socksv5_copy_read(fd_selector s, struct selector_key * key) {
+	struct socks5* connection = ATTACHMENT(key);
+    copy_st * from = IS_CLIENT_DATA(connection, key) ? &connection->client.copy : &connection->origin_st.copy;
 	copy_st * to = from->otherCopySt;
 
 	LOG_TRACE("Attemping READ data from fd=%d to fd=%d", from->fd, to->fd);
@@ -74,39 +72,42 @@ unsigned socksv5_copy_read(struct selector_key * key) {
 	return (from->interests | to->interests) ^ OP_NOOP ? COPY : DONE;
 }
 
-unsigned socksv5_copy_write(struct selector_key * key) {
+unsigned socksv5_copy_write(fd_selector s, struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
-	copy_st * from = IS_CLIENT_DATA(connection, key) ? &connection->origin_st.copy : &connection->client.copy;
-	copy_st * to = from->otherCopySt;
+	copy_st* from = IS_CLIENT_DATA(connection, key) ? &connection->client.copy : &connection->origin_st.copy;
+	int toFd = from->fd;
 
-	LOG_TRACE("Attempting WRITE data from fd=%d to fd=%d", from->fd, to->fd);
+	LOG_TRACE("Attempting WRITE data to fd=%d\n", toFd);
 
-    if (!buffer_can_read(from->buffer)) {
+	if (!buffer_can_read(from->buffer)) {
         return COPY;
-    }
+	}
 
-    size_t can_read = 0;
+	size_t can_read = 0;
     uint8_t* read_ptr = buffer_read_ptr(from->buffer, &can_read);
 
-    ssize_t writtenBytes = send(to->fd, read_ptr, can_read, 0);
+    ssize_t writtenBytes = send(toFd, read_ptr, can_read, 0);
+
 
     if (writtenBytes > 0) {
-        LOG_TRACE("Wrote %zd bytes to fd=%d from fd=%d's buffer", writtenBytes, to->fd, from->fd);
+        LOG_TRACE("Wrote %zd bytes to fd=%d from fd=%d's buffer", writtenBytes, toFd, from->fd);
         buffer_read_adv(from->buffer, writtenBytes);
     } else {
         if (writtenBytes < 0) {
-            LOG_WARN("Write error (%d) to fd=%d: %s", errno, to->fd, strerror(errno));
+            LOG_WARN("Write error (%d) to fd=%d: %s", errno, toFd, strerror(errno));
         }
-        shutdown(to->fd, SHUT_WR);
-        to->interests &= ~OP_WRITE;
+        shutdown(toFd, SHUT_WR);
+        from->otherCopySt->interests &= ~OP_WRITE;
         shutdown(from->fd, SHUT_RD);
         from->interests &= ~OP_READ;
     }
 
-	return (from->interests | to->interests) ^ OP_NOOP ? COPY : DONE;
+    update_target_interests(key->s, from);
+    update_target_interests(key->s, from->otherCopySt);
+	return (from->interests | from->otherCopySt->interests) ^ OP_NOOP ? COPY : DONE;
 }
 
-void socksv5_copy_close(struct selector_key * key) {
+void socksv5_copy_close(fd_selector s, struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
     LOG_INFO("Closing copy connections: client_fd=%d, origin_fd=%d", connection->client_fd, connection->origin_fd);
 }

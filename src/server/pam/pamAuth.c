@@ -28,7 +28,7 @@ unsigned auth_read(struct selector_key * key) {
         return PAM_ERROR;
     }
     if (readn == 0) {
-        fprintf(stdout, "Client closed connection (PAM)\n");
+        LOG_DEBUG(stdout, "Client closed connection (PAM)\n");
         return PAM_DONE;
     }
 
@@ -46,7 +46,7 @@ unsigned auth_read(struct selector_key * key) {
     //check version 
     uint8_t ver = buffer_read(&connection->client_buffer);
     if (ver != PAM_VERSION_1) {
-        fprintf(stdout, "Unsupported pam version\n");
+        LOG_DEBUG("Unsupported pam version\n");
         return PAM_ERROR;
     }
 
@@ -113,7 +113,7 @@ unsigned auth_read(struct selector_key * key) {
 }
 
 
-unsigned greeting_write(struct selector_key * key) {
+unsigned auth_write(struct selector_key * key) {
     struct pam * connection = PAM_ATTACHMENT(key);
     uint8_t * r_ptr;
 	size_t to_read;

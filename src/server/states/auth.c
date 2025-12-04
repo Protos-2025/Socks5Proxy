@@ -23,7 +23,8 @@ void auth_arrival(const unsigned state, struct selector_key * key) {
 unsigned auth_read(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
     uint8_t * w_ptr;
-    size_t count, readn, to_read;
+    size_t count, to_read;
+    ssize_t readn; 
 
     w_ptr = buffer_write_ptr(&connection->client_buffer, &count);
     readn = recv(key->fd, w_ptr, count, 0);
@@ -64,7 +65,7 @@ unsigned auth_read(struct selector_key * key) {
         }
 
         connection->client.auth.ulen = buffer_read(&connection->client_buffer);
-        if (connection->client.auth.ulen == 0 || connection->client.auth.ulen > 255) {
+        if (connection->client.auth.ulen == 0 || connection->client.auth.ulen > 255) { 
             LOG_WARN("Invalid username length: %d", connection->client.auth.ulen);
             return ERROR;
         }
@@ -145,7 +146,8 @@ unsigned auth_read(struct selector_key * key) {
 unsigned auth_write(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
     uint8_t * r_ptr;
-    size_t to_read, written;
+    size_t to_read;
+    ssize_t written; 
     
     r_ptr = buffer_read_ptr(&connection->client_buffer, &to_read);
     written = send(connection->client_fd, r_ptr, to_read, 0);

@@ -23,9 +23,9 @@
 static const struct state_definition pam_states[] = {
   {
     .state = PAM_AUTH,
-    .on_arrival = auth_arrival,
-    .on_read_ready = auth_read,
-    .on_write_ready = auth_write
+    .on_arrival = pam_auth_arrival,
+    .on_read_ready = pam_auth_read,
+    .on_write_ready = pam_auth_write
   },
   {
     .state = PAM_DONE

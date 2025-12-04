@@ -5,9 +5,10 @@
 #include "../../shared/include/buffer.h"
 #include "greeting.h"
 #include "auth.h" 
+#include "request.h"
+#include "connect.h"
+#include "reply.h"
 #include "copy.h"
-
-// #include "request.h"
 #include "../../shared/include/stm.h"
 #include <sys/socket.h>
 
@@ -16,14 +17,16 @@
 #define USERNAME_MAX_LENGHT 256
 #define PASSWORD_MAX_LENGHT 256
 
-#define ATTACHMENT(key) ( (struct socks5 *)(key)->data)
+#define ATTACHMENT(key) ((struct socks5 *)(key)->data)
 
 enum socks_v5state {
     GREETING,
     AUTH,
     REQUEST,
-    RESPONSE,
-    DNS_RESOLUTION,
+    CONNECT,
+    // BIND,
+    // UDP_ASSOCIATE,
+    REPLY,
     COPY,
     DONE,
     ERROR,
@@ -47,7 +50,8 @@ struct socks5 {
     union {
         struct greeting_st greeting;
         struct auth_st auth;
-        // struct request_st request;
+        struct request_st request;
+        struct reply_st reply;
         struct copy_st copy;
     } client;
     uint8_t username[USERNAME_MAX_LENGHT];
@@ -55,9 +59,10 @@ struct socks5 {
 
     /* origin */
     int origin_fd;
-    char origin_host[HOST_MAX_LENGHT];
-    char origin_port[PORT_MAX_LENGHT];
+    uint8_t origin_host[HOST_MAX_LENGHT];
+    uint8_t origin_port[PORT_MAX_LENGHT];
     struct addrinfo * origin_resolution;
+    struct addrinfo * origin_resolutions_list;
     Buffer origin_buffer;
     uint8_t origin_buffer_data[BUFFER_SIZE];
     union {
@@ -71,6 +76,18 @@ struct socks5 {
 
     // TODO: use this?
     // struct socks5 * next;
+};
+
+void socksv5_read(struct selector_key * key);
+void socksv5_write(struct selector_key * key);
+void socksv5_block(struct selector_key * key);
+void socksv5_close(struct selector_key * key);
+
+static const struct fd_handler socks5_handler = {
+    .handle_read   = socksv5_read,
+    .handle_write  = socksv5_write,
+    .handle_close  = socksv5_close,
+    .handle_block  = socksv5_block,
 };
 
 void socksv5_passive_accept(struct selector_key * key);

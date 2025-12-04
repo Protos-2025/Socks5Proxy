@@ -148,13 +148,18 @@ void socksv5_block(struct selector_key * key) {
 }
 
 void socksv5_close(struct selector_key * key) {
-    socks5_destroy(ATTACHMENT(key));
+    struct socks5 * connection = ATTACHMENT(key);
+    if (connection != NULL && key->fd == connection->client_fd) {
+        socks5_destroy(connection);
+        key->data = NULL;
+    }
 }
 
 static void socksv5_done(struct selector_key * key) {
+    struct socks5 * connection = ATTACHMENT(key);
     const int fds[] = {
-        ATTACHMENT(key)->client_fd,
-        ATTACHMENT(key)->origin_fd,
+        connection->origin_fd,
+        connection->client_fd
     };
     for (unsigned i = 0; i < N(fds); i++) {
         if (fds[i] != -1) {
@@ -166,12 +171,14 @@ static void socksv5_done(struct selector_key * key) {
     }
 }
 
-static void socks5_destroy(struct socks5 * s) {
-    if(s->origin_resolution != NULL) {
-        freeaddrinfo(s->origin_resolution);
-        s->origin_resolution = 0;
+static void socks5_destroy(struct socks5 * connection) {
+    if (connection != NULL) {
+        if (connection->origin_resolution != NULL) {
+            freeaddrinfo(connection->origin_resolutions_list);
+            connection->origin_resolutions_list = NULL;
+        }
+        free(connection);
     }
-    free(s);
 }
 
 /**

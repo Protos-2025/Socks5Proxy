@@ -10,6 +10,9 @@
 #include <arpa/inet.h>
 #include <string.h>
 
+#include "auth.h"
+#include "greeting.h"
+#include "copy.h"
 #include "logger.h"
 #include "include/socks5nio.h"
 #include "../shared/include/selector.h"
@@ -43,6 +46,13 @@ static const struct state_definition socks5_states[] = {
         .state = REPLY,
         .on_arrival = reply_arrival,
         .on_write_ready = reply_write
+    },
+    {
+        .state = COPY,
+        .on_read_ready = socksv5_copy_read,
+        .on_write_ready = socksv5_copy_write,
+        .on_arrival = socksv5_copy_arrival,
+        .on_departure = socksv5_copy_close,
     },
     {
         .state = DONE

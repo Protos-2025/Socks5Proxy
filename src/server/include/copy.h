@@ -12,8 +12,8 @@ typedef struct copy_st {
 } copy_st;
 
 void socksv5_copy_arrival(fd_selector s, struct selector_key * key);
-unsigned socksv5_copy_read(fd_selector s, struct selector_key * key);
-unsigned socksv5_copy_write(fd_selector s, struct selector_key * key);
+unsigned socksv5_copy_read(struct selector_key * key);
+unsigned socksv5_copy_write(struct selector_key * key);
 void socksv5_copy_close(fd_selector s, struct selector_key * key);
 
 #endif

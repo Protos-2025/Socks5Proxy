@@ -131,7 +131,7 @@ START_TEST(test_copy_read_write_flow)
     struct selector_key key = { .s = sel, .fd = connection.client_fd, .data = &connection };
 
     /* Call arrival to wire up copy structures and initial interests */
-    socksv5_copy_arrival(&key);
+    socksv5_copy_arrival(sel, &key);
 
     /* The test: write bytes as if client sent them, call copy_read, then copy_write and verify origin receives them */
     const char *payload = "HELLO_COPY";
@@ -196,7 +196,7 @@ START_TEST(test_copy_read_write_read_write_flow) {
     struct selector_key key = { .s = sel, .fd = connection.client_fd, .data = &connection };
 
     /* Call arrival to wire up copy structures and initial interests */
-    socksv5_copy_arrival(&key);
+    socksv5_copy_arrival(sel, &key);
 
     /* The test: write bytes as if client sent them, call copy_read, then copy_write and verify origin receives them */
     const char *payload = "HELLO_COPY";

@@ -18,7 +18,7 @@ static fd_interest update_target_interests(fd_selector s, copy_st * target) {
 	return ret;
 }
 
-void socksv5_copy_arrival(fd_selector s, struct selector_key * key) {
+void socksv5_copy_arrival(const unsigned int state, struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
 	copy_st * clientCopy = &connection->client.copy;
     copy_st * originCopy = &connection->origin_st.copy;
@@ -38,7 +38,7 @@ void socksv5_copy_arrival(fd_selector s, struct selector_key * key) {
     selector_set_interest(key->s, originCopy->fd, OP_READ);
 }
 
-unsigned socksv5_copy_read(fd_selector s, struct selector_key * key) {
+unsigned socksv5_copy_read(struct selector_key * key) {
 	struct socks5* connection = ATTACHMENT(key);
     copy_st * from = IS_CLIENT_DATA(connection, key) ? &connection->client.copy : &connection->origin_st.copy;
 	copy_st * to = from->otherCopySt;
@@ -72,7 +72,7 @@ unsigned socksv5_copy_read(fd_selector s, struct selector_key * key) {
 	return (from->interests | to->interests) ^ OP_NOOP ? COPY : DONE;
 }
 
-unsigned socksv5_copy_write(fd_selector s, struct selector_key * key) {
+unsigned socksv5_copy_write(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
 	copy_st* from = IS_CLIENT_DATA(connection, key) ? &connection->client.copy : &connection->origin_st.copy;
 	int toFd = from->fd;
@@ -107,7 +107,7 @@ unsigned socksv5_copy_write(fd_selector s, struct selector_key * key) {
 	return (from->interests | from->otherCopySt->interests) ^ OP_NOOP ? COPY : DONE;
 }
 
-void socksv5_copy_close(fd_selector s, struct selector_key * key) {
+void socksv5_copy_close(const unsigned int state, struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
     LOG_INFO("Closing copy connections: client_fd=%d, origin_fd=%d", connection->client_fd, connection->origin_fd);
 }

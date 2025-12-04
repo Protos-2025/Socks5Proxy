@@ -28,7 +28,7 @@ unsigned auth_read(struct selector_key * key) {
         return PAM_ERROR;
     }
     if (readn == 0) {
-        LOG_DEBUG(stdout, "Client closed connection (PAM)\n");
+        LOG_DEBUG("Client closed connection (PAM)\n");
         return PAM_DONE;
     }
 

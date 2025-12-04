@@ -171,7 +171,7 @@ unsigned auth_write(struct selector_key * key) {
     LOG_INFO("Authentication completed successfully");
     buffer_reset(&connection->client_buffer);
     
-    selector_set_interest_key(key, OP_NOOP);
-    // Todo: Change this to Request when it's created
-    return DONE;
+    selector_set_interest_key(key, OP_READ);
+
+    return REQUEST;
 }

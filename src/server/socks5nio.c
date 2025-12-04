@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <assert.h>
 #include <errno.h>
 #include <time.h>
@@ -9,6 +8,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <string.h>
 
 #include "logger.h"
 #include "include/socks5nio.h"
@@ -31,17 +31,18 @@ static const struct state_definition socks5_states[] = {
     },
     {
         .state = REQUEST,
-        // .on_arrival = request_arrival,
-        // .on_read_ready = request_read,
-        // .on_write_ready = request_write
+        .on_arrival = request_arrival,
+        .on_read_ready = request_read,
+        .on_block_ready = request_block
     },
     {
-        .state = RESPONSE,
-        // TODO
+        .state = CONNECT,
+        .on_write_ready = connect_write
     },
     {
-        .state = DNS_RESOLUTION,
-        // TODO
+        .state = REPLY,
+        .on_arrival = reply_arrival,
+        .on_write_ready = reply_write
     },
     {
         .state = DONE
@@ -52,19 +53,8 @@ static const struct state_definition socks5_states[] = {
 };
 
 static struct socks5 * socks5_new(int client_fd);
-static void socksv5_read(struct selector_key * key);
-static void socksv5_write(struct selector_key * key);
-static void socksv5_block(struct selector_key * key);
-static void socksv5_close(struct selector_key * key);
 static void socksv5_done(struct selector_key* key);
 static void socks5_destroy(struct socks5 * s);
-
-static const struct fd_handler socks5_handler = {
-    .handle_read   = socksv5_read,
-    .handle_write  = socksv5_write,
-    .handle_close  = socksv5_close,
-    .handle_block  = socksv5_block,
-};
 
 void socksv5_passive_accept(struct selector_key * key) {
     struct sockaddr_storage client_addr;
@@ -115,6 +105,7 @@ static struct socks5 * socks5_new(int client_fd) {
         buffer_init(&new->origin_buffer, BUFFER_SIZE, new->origin_buffer_data);
         new->origin_fd = -1;
         new->origin_resolution = NULL;
+        new->origin_resolutions_list = NULL;
         new->stm = (struct state_machine){
             .initial = GREETING,
             .states = socks5_states,
@@ -129,7 +120,7 @@ static struct socks5 * socks5_new(int client_fd) {
     return new;
 }
 
-static void socksv5_read(struct selector_key *key) {
+void socksv5_read(struct selector_key *key) {
     struct state_machine * stm = &ATTACHMENT(key)->stm;
     const enum socks_v5state st = stm_handler_read(stm, key);
 
@@ -138,7 +129,7 @@ static void socksv5_read(struct selector_key *key) {
     }
 }
 
-static void socksv5_write(struct selector_key * key) {
+void socksv5_write(struct selector_key * key) {
     struct state_machine * stm   = &ATTACHMENT(key)->stm;
     const enum socks_v5state st = stm_handler_write(stm, key);
 
@@ -147,7 +138,7 @@ static void socksv5_write(struct selector_key * key) {
     }
 }
 
-static void socksv5_block(struct selector_key * key) {
+void socksv5_block(struct selector_key * key) {
     struct state_machine *stm   = &ATTACHMENT(key)->stm;
     const enum socks_v5state st = stm_handler_block(stm, key);
 
@@ -156,14 +147,19 @@ static void socksv5_block(struct selector_key * key) {
     }
 }
 
-static void socksv5_close(struct selector_key * key) {
-    socks5_destroy(ATTACHMENT(key));
+void socksv5_close(struct selector_key * key) {
+    struct socks5 * connection = ATTACHMENT(key);
+    if (connection != NULL && key->fd == connection->client_fd) {
+        socks5_destroy(connection);
+        key->data = NULL;
+    }
 }
 
 static void socksv5_done(struct selector_key * key) {
+    struct socks5 * connection = ATTACHMENT(key);
     const int fds[] = {
-        ATTACHMENT(key)->client_fd,
-        ATTACHMENT(key)->origin_fd,
+        connection->origin_fd,
+        connection->client_fd
     };
     for (unsigned i = 0; i < N(fds); i++) {
         if (fds[i] != -1) {
@@ -175,12 +171,14 @@ static void socksv5_done(struct selector_key * key) {
     }
 }
 
-static void socks5_destroy(struct socks5 * s) {
-    if(s->origin_resolution != NULL) {
-        freeaddrinfo(s->origin_resolution);
-        s->origin_resolution = 0;
+static void socks5_destroy(struct socks5 * connection) {
+    if (connection != NULL) {
+        if (connection->origin_resolution != NULL) {
+            freeaddrinfo(connection->origin_resolutions_list);
+            connection->origin_resolutions_list = NULL;
+        }
+        free(connection);
     }
-    free(s);
 }
 
 /**

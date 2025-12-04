@@ -8,12 +8,12 @@
 #include "logger.h"
 
 
-void auth_arrival(const unsigned state, struct selector_key * key) {
+void pam_auth_arrival(const unsigned state, struct selector_key * key) {
 
   struct pam * connection = PAM_ATTACHMENT(key);
   connection->client.auth.state = VER_N_NUSER_N_NPASS;
 }
-unsigned auth_read(struct selector_key * key) {
+unsigned pam_auth_read(struct selector_key * key) {
 
   struct pam * connection = PAM_ATTACHMENT(key);
   uint8_t * w_ptr;
@@ -114,7 +114,7 @@ unsigned auth_read(struct selector_key * key) {
 }
 
 
-unsigned auth_write(struct selector_key * key) {
+unsigned pam_auth_write(struct selector_key * key) {
     struct pam * connection = PAM_ATTACHMENT(key);
     uint8_t * r_ptr;
 	size_t to_read;

@@ -30,9 +30,9 @@ struct pamAuth_st {
     char pass[PAM_AUTH_PASS_MAX_LENGHT];
 };
 
-void auth_arrival(const unsigned state, struct selector_key * key);
-unsigned auth_read(struct selector_key * key);
-unsigned auth_write(struct selector_key * key);
+void pam_auth_arrival(const unsigned state, struct selector_key * key);
+unsigned pam_auth_read(struct selector_key * key);
+unsigned pam_auth_write(struct selector_key * key);
 
 
 #endif

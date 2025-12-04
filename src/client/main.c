@@ -22,7 +22,7 @@ int main() {
 	char *pass = "password";
 	uint8_t ulen = strlen(user);
 	uint8_t plen = strlen(pass);
-	uint8_t auth_msg[1 + 1 + 255 + 1 + 255];
+	uint8_t auth_msg[64]; // Sufficient size for auth message (might whant to check bounds in the future)
 	inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
 
 	if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
@@ -34,7 +34,7 @@ int main() {
 	uint8_t greeting[] = {
 		0x05, // SOCKS version
 		0x01, // Number of authentication methods supported
-		0x02  // No authentication
+		0x03  // USR/PASS authentication
 	};
 
 	if(send(sock, greeting, sizeof(greeting), 0) < 0) {
@@ -44,13 +44,23 @@ int main() {
 	}
 
 	uint8_t response[2];
-    recv(sock, response, 2, 0);
+	ssize_t bytes_recived = recv(sock, response, 2, 0);
+	if (bytes_recived <= 0) {
+		perror("recv greeting response");
+		close(sock);
+		exit(1);
+	}
+	if (bytes_recived != 2) {
+		fprintf(stderr, "Expected 2 bytes, got %zd\n", bytes_recived);
+		close(sock);
+		exit(1);
+	}
 	if (response[1] != 0x02) { 
-    printf("Server does not accept USERNAME/PASSWORD, closing.\n");
+    printf("Error, server response %d, closing.\n", response[1]);
     close(sock);
     return 1;
 	}
-	printf("Server reply: VER=%d METHOD=0x%02x\n", response[0], response[1]);
+	printf("Server reply: VER=%d METHOD=0x%d\n", response[0], response[1]);
 	printf("Handshake: server requires USERNAME/PASSWORD\n");
 
 	int idx = 0;
@@ -64,10 +74,30 @@ int main() {
 
 	// Send auth
 	send(sock, auth_msg, idx, 0);
+	ssize_t sent = send(sock, auth_msg, idx, 0);
+	if (sent < 0) {
+		perror("send auth");
+		close(sock);
+		exit(1);
+	}
+	if (sent != idx) {
+		fprintf(stderr, "Partial send: %zd of %d bytes\n", sent, idx);
+	}
 
 	uint8_t auth_resp[2];
 	recv(sock, auth_resp, 2, 0);
-
+	bytes_recived = recv(sock, auth_resp, 2, 0);
+	if (bytes_recived <= 0) {
+		perror("recv auth response");
+		close(sock);
+		exit(1);
+	}
+	if (bytes_recived != 2) {
+		fprintf(stderr, "Expected 2 bytes in auth response, got %zd\n", bytes_recived);
+		close(sock);
+		exit(1);
+	}
+	printf("Server reply: VER=%d STATE=0x%d\n", auth_resp[0], auth_resp[1]);
 	if (auth_resp[1] == 0x00) {
 		printf("Authentication successful!\n");
 	} else {
@@ -75,12 +105,6 @@ int main() {
 		close(sock);
 		return 1;
 	}
-
-	// if (response[1] != 0x00) {
-    //     printf("Server does not accept NO AUTH, closing.\n");
-    //     close(sock);
-    //     return 1;
-    // }
 
     printf("Handshake successful!\n");
 

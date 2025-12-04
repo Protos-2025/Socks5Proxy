@@ -93,11 +93,11 @@ La conexión entre el cliente y el servidor se realiza a través de TCP utilizan
 El cliente de este protocolo debera comenzar la comunicacion con un pedido con la siguiente estructura:
 
 ~~~~~~~~~~
-+-------+-----------+-----------+------------+------------+
-|  VER  |   NUSER   |   NPASS   |  USERNAME  |  PASSWORD  |
-+-------+-----------+-----------+------------+------------+
-|   1   |     1     |     1     |    NUSER   |    NPASS   |
-+-------+-----------+-----------+------------+------------+
++-------+-------+------------+-------+------------+
+|  VER  | ULEN  |  USERNAME  | PLEN  |  PASSWORD  |
++-------+-------+------------+-------+------------+
+|   1   |   1   |  1 to 255  |   1   |  1 to 255  |
++-------+-------+------------+-------+------------+
 
 ~~~~~~~~~~
 {: #clientreq title="Pedido de autenticacion de un cliente" alt="Pedido de autenticacion de un cliente" }
@@ -118,9 +118,9 @@ Donde el servidor respondera al pedido con un mensaje de la siguiente estructura
 Siendo VER la version del protocolo, y STATUS un byte que indica el estado de la autenticacion:
 - 0x00: Autenticacion exitosa
 - 0x01: Autenticacion fallida
-- 0x02: Error de protocolo
-- 0x03: Error interno del servidor
-- 0x04: Demasiados intentos fallidos de autenticacion
+# - 0x02: Error de protocolo        (devuelve 0x00 si es succses 0x01 si es failure, no dice nada mas, yo sacaria estos)
+# - 0x03: Error interno del servidor
+# - 0x04: Demasiados intentos fallidos de autenticacion
 
 Los estados 0x5 a 0x0F se reservan para futuras definiciones.
 

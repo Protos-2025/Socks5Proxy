@@ -4,6 +4,7 @@
 #include "defines.h"
 #include "../../shared/include/buffer.h"
 #include "greeting.h"
+#include "auth.h" 
 // #include "request.h"
 #include "../../shared/include/stm.h"
 #include <sys/socket.h>
@@ -17,6 +18,7 @@
 
 enum socks_v5state {
     GREETING,
+    AUTH,
     REQUEST,
     RESPONSE,
     DNS_RESOLUTION,
@@ -41,6 +43,7 @@ struct socks5 {
     socklen_t client_addr_len;
     union {
         struct greeting_st greeting;
+        struct auth_st auth;
         // struct request_st request;
         // struct copy_st copy;
     } client;

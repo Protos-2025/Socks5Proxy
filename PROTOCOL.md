@@ -75,22 +75,22 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur nibh mi, moll
 
 --- abstract
 
-El siguiente RFC describe el protocolo [[XXX]] y su correcta implementación para llevar a cabo un cliente-servidor de monitoreo y configuración remota de un proxy agnostico a los protocolos que el mismo acepte.
+El siguiente RFC describe el protocolo PAM y su correcta implementación para llevar a cabo un cliente-servidor de monitoreo y configuración remota de un proxy agnóstico a los protocolos que el mismo acepte.
 
 --- middle
 
-Introduccion
+Introducción
 ============
 
-El objetivo de este protocolo es permitir el monitoreo y configuracion de un servidor proxy sin interrumpir la operacion del mismo.
+El objetivo de este protocolo es permitir el monitoreo y configuración de un servidor proxy sin interrumpir la operación del mismo.
 
-La conexión entre el cliente y el servidor se realiza a través de TCP utilizando alguno de los metodos de autenticación aqui definidos.
+La conexión entre el cliente y el servidor se realiza a través de TCP utilizando alguno de los métodos de autenticación aquí definidos.
 
 ## Estructura de un pedido
 
-### Autenticacion
+### Autenticación
 
-El cliente de este protocolo debera comenzar la comunicacion con un pedido con la siguiente estructura:
+El cliente de este protocolo deberá comenzar la comunicación con un pedido con la siguiente estructura:
 
 ~~~~~~~~~~
 +-------+-------+------------+-------+------------+
@@ -100,9 +100,9 @@ El cliente de este protocolo debera comenzar la comunicacion con un pedido con l
 +-------+-------+------------+-------+------------+
 
 ~~~~~~~~~~
-{: #clientreq title="Pedido de autenticacion de un cliente" alt="Pedido de autenticacion de un cliente" }
+{: #clientreq title="Pedido de autenticación de un cliente" alt="Pedido de autenticación de un cliente" }
 
-Donde el servidor respondera al pedido con un mensaje de la siguiente estructura:
+Donde el servidor responderá al pedido con un mensaje de la siguiente estructura:
 
 ~~~~~~~~~~
 
@@ -113,26 +113,26 @@ Donde el servidor respondera al pedido con un mensaje de la siguiente estructura
 +-------+-----------+
 
 ~~~~~~~~~~
-{: #clientreq title="Respuesta del servidor a pedido de autenticacion" alt="Respuesta del servidor a pedido de autenticacion" }
+{: #clientreq title="Respuesta del servidor a pedido de autenticación" alt="Respuesta del servidor a pedido de autenticación" }
 
-Siendo VER la version del protocolo, y STATUS un byte que indica el estado de la autenticacion:
-- 0x00: Autenticacion exitosa
-- 0x01: Autenticacion fallida
+Siendo VER la versión del protocolo, y STATUS un byte que indica el estado de la autenticación:
+- 0x00: Autenticación exitosa
+- 0x01: Autenticación fallida
 # - 0x02: Error de protocolo        (devuelve 0x00 si es succses 0x01 si es failure, no dice nada mas, yo sacaria estos)
 # - 0x03: Error interno del servidor
 # - 0x04: Demasiados intentos fallidos de autenticacion
 
 Los estados 0x5 a 0x0F se reservan para futuras definiciones.
 
-Los estados 0x10 a 0xFF se reservan para definiciones especificas de cada implementacion del protocolo.
+Los estados 0x10 a 0xFF se reservan para definiciones específicas de cada implementación del protocolo.
 
-El servidor debe responder con un estado 0x00 o distinto de 0x00 segun corresponda, donde un STATUS distinto de cero indicara un error de autenticacion. El estado 0x01 podra ser enviado en lugar de otro estado distinto de cero si no desea revelar informacion sobre el motivo del fallo de autenticacion.
+El servidor debe responder con un estado 0x00 o distinto de 0x00 según corresponda, donde un STATUS distinto de cero indicará un error de autenticación. El estado 0x01 podrá ser enviado en lugar de otro estado distinto de cero si no desea revelar información sobre el motivo del fallo de autenticación.
 
-El usuario permanecera autenticado hasta que la conexion sea cerrada por el cliente o el servidor.
+El usuario permanecerá autenticado hasta que la conexión sea cerrada por el cliente o el servidor.
 
-### Pedidos de informacion
+### Pedidos de información
 
-Un cliente autenticado podra enviar pedidos de informacion o configuracion al servidor utilizando la siguiente estructura:
+Un cliente autenticado podrá enviar pedidos de información o configuración al servidor utilizando la siguiente estructura:
 
 ~~~~~~~~~~
 
@@ -158,7 +158,7 @@ Un cliente autenticado podra enviar pedidos de informacion o configuracion al se
 
 #### VER
 
-El campo VER indica la version del protocolo. Actualmente, solo se soporta la version 0x01.
+El campo VER indica la versión del protocolo. Actualmente, solo se soporta la versión 0x01.
 
 #### STATUS
 
@@ -170,17 +170,17 @@ El campo RESERVED es un byte reservado para uso futuro y debe ser seteado en 0x0
 
 #### METHOD
 
-El campo METHOD indica el tipo de pedido que se quiere realizar. Los metodos soportados son:
+El campo METHOD indica el tipo de pedido que se quiere realizar. Los métodos soportados son:
 - 0x00: RESERVADO
 - 0x01: Obtener cantidad de usuarios conectados actualmente
 - 0x02: Obtener lista de usuarios conectados actualmente
-- 0x03: Obtener la cantidad de conexiones historicas
-- 0x04: Obtener bytes transferidos historicamente
+- 0x03: Obtener la cantidad de conexiones históricas
+- 0x04: Obtener bytes transferidos históricamente
 - 0x05-0xF0: RESERVADO
-- 0xF3: Reiniciar la cantidad de conexiones historicas
-- 0xF4: Reiniciar la cantidad de bytes transferidos historicamente
+- 0xF3: Reiniciar la cantidad de conexiones históricas
+- 0xF4: Reiniciar la cantidad de bytes transferidos históricamente
 
-Los valores de METHOD 0x10 - 0x20 se reservan a definicion de cada implementacion del protocolo.
+Los valores de METHOD 0x10 - 0x20 se reservan a definición de cada implementación del protocolo.
 
 #### NBODY
 
@@ -188,9 +188,9 @@ El campo NBODY es un entero de 2 bytes que indica la longitud del campo BODY en 
 
 #### BODY
 
-El campo BODY contiene la informacion adicional necesaria para completar el pedido, dependiendo del metodo seleccionado. Si el metodo no requiere informacion adicional, este campo debera estar vacio y NBODY sera 0x0000.
+El campo BODY contiene la información adicional necesaria para completar el pedido, dependiendo del método seleccionado. Si el método no requiere información adicional, este campo deberá estar vacío y NBODY será 0x0000.
 
-Si BODY contiene mas bytes que los indicados en NBODY (o mas de 65.535), los bytes adicionales seran ignorados. Si BODY contiene menos bytes que los indicados en NBODY, el servidor debera responder con un error y cerrar la conexion.
+Si BODY contiene más bytes que los indicados en NBODY (o más de 65.535), los bytes adicionales serán ignorados. Si BODY contiene menos bytes que los indicados en NBODY, el servidor deberá responder con un error y cerrar la conexión.
 
 # Figures
 

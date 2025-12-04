@@ -6,6 +6,8 @@
 #define RSV 0x00
 
 void reply_arrival(const unsigned state, struct selector_key * key) {
+    LOG_DEBUG("Replying...");
+
     struct socks5 * connection = ATTACHMENT(key);
 
     buffer_reset(&connection->client_buffer);
@@ -40,14 +42,10 @@ unsigned reply_write(struct selector_key * key) {
         return REPLY;
     }
 
-    LOG_INFO("Reply sent successfully");
-    
-    if (connection->client.reply.rep != SUCCEDED) {
-        return ERROR; // TODO: ERROR or DONE?
-    }
+    LOG_INFO("Replied successfully");
     
     buffer_reset(&connection->client_buffer);
     selector_set_interest(key->s, connection->client_fd, OP_READ);
 
-    return DONE; // TODO: change to COPY
+    return connection->client.reply.rep == SUCCEDED ? DONE : REQUEST; // TODO: change DONE -> COPY
 }

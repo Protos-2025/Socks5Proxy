@@ -3,7 +3,7 @@
 
 #include "../../shared/include/selector.h"
 
-#define NO_RESOLUTION_FOUND 0
+#define GENERAL_FAILURE 0
 #define SELECTOR_REGISTER_FAILED 1
 #define CONNECTION_IN_PROGRESS 2
 #define CONNECTION_DONE 3

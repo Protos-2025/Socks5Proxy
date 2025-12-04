@@ -3,13 +3,19 @@
 #include <netdb.h>
 #include <errno.h>
 #include "../include/socks5nio.h"
+#include "logger.h"
 
 int try_connection(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
 
     int fd, ret = -1;
+    int i = 0;
 
-    for (; connection->origin_resolution != NULL; connection->origin_resolution = connection->origin_resolution->ai_next) {
+    if (connection->origin_fd != -1) {
+        connection->origin_resolution = connection->origin_resolution->ai_next;
+    }
+
+    for (; connection->origin_resolution != NULL; connection->origin_resolution = connection->origin_resolution->ai_next, i++) {
         fd = socket(connection->origin_resolution->ai_family, connection->origin_resolution->ai_socktype, connection->origin_resolution->ai_protocol);
         if (fd == -1) {
             continue;
@@ -29,25 +35,33 @@ int try_connection(struct selector_key * key) {
     }
 
     if (connection->origin_resolution == NULL) {
-        return NO_RESOLUTION_FOUND;
-    }
-
-    if (ret == -1) {
-        // TODO should i return or keep trying?
+        connection->origin_fd = -1;
         switch (errno) {
-            case EINPROGRESS:
-                if (SELECTOR_SUCCESS != selector_register(key->s, fd, &socks5_handler, OP_WRITE, connection)) {
-                    return SELECTOR_REGISTER_FAILED;
-                }
-                break;
-
             case ENETUNREACH:
                 return NETWORK_UNREACHABLE;
-            
+    
+            case EHOSTUNREACH:
+                return HOST_UNREACHABLE;
+    
+            case ECONNREFUSED:
+                return CONNECTION_REFUSED;
+    
+            case ETIMEDOUT:
+                return TTL_EXPIRED;
+    
             default:
-                break;
+                return GENERAL_FAILURE;
         }
+    }    
+
+    connection->origin_fd = fd;
+
+    if (ret == -1 && errno == EINPROGRESS) {
+        if (SELECTOR_SUCCESS != selector_register(key->s, fd, &socks5_handler, OP_WRITE, connection)) {
+            return SELECTOR_REGISTER_FAILED;
+        }
+        return CONNECTION_IN_PROGRESS;
     }
 
-    return ret == 0 ? CONNECTION_DONE : CONNECTION_IN_PROGRESS;
+    return CONNECTION_DONE;
 }

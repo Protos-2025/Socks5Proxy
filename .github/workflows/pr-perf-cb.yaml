@@ -17,6 +17,8 @@ on:
     branches:
       - main
 
+permissions: write-all
+
 jobs:
   benchmark:
     name: Performance regression check
@@ -25,7 +27,9 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Run benchmark
-        run: docker compose up --build --abort-on-container-exit benchmark
+        run: |
+          echo "DEBUG=0" > .env
+          docker compose up --build --abort-on-container-exit benchmark
       
       - name: Format benchmark output
         run: |
@@ -64,7 +68,7 @@ jobs:
           # Workflow will fail when an alert happens
           fail-on-alert: true
           # GitHub API token to make a commit comment
-          github-token: ${{ secrets.ACCESS_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           alert-threshold: '200%'
           auto-push: false
           skip-fetch-gh-pages: true

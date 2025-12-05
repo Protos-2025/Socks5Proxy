@@ -14,6 +14,8 @@ RUN apt-get update --yes \
 		netcat-openbsd \
 		auditd \
 		strace \
+		ncat \
 		bpftrace \
+		auditd \
 	&& rm --force --recursive /var/lib/apt/lists/*
 	

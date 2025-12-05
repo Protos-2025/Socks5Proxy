@@ -11,8 +11,6 @@ void reply_arrival(const unsigned state, struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
 
     buffer_reset(&connection->client_buffer);
-
-    buffer_reset(&connection->client_buffer);
     buffer_write(&connection->client_buffer, SOCKS5_VERSION);
     buffer_write(&connection->client_buffer, connection->client.reply.rep);
     buffer_write(&connection->client_buffer, RSV);
@@ -45,7 +43,11 @@ unsigned reply_write(struct selector_key * key) {
     LOG_INFO("Replied successfully");
     
     buffer_reset(&connection->client_buffer);
-    selector_set_interest(key->s, connection->client_fd, OP_READ);
 
-    return connection->client.reply.rep == SUCCEDED ? DONE : REQUEST; // TODO: change DONE -> COPY
+    if (connection->client.reply.rep == SUCCEDED) {
+        selector_set_interest(key->s, connection->client_fd, OP_READ);
+        return DONE; // TODO: change to COPY
+    }
+
+    return REQUEST;
 }

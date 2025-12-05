@@ -16,6 +16,7 @@ int main(int argc, char* argv[]) {
 
     struct ClientArgs args;
 
+<<<<<<< HEAD
     int r = parse_client_args(argc, argv, &args);
     if (r != 0) {
         // help already printed / or error printed by parse_args
@@ -75,7 +76,6 @@ int main(int argc, char* argv[]) {
     else if (strcmp(args.option, "metrics") == 0) {
         // no args
     }
-
 	// <----------------------------------------- FINISH ----------------------------------------->
     
 	close(sock);

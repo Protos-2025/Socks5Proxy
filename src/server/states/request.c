@@ -151,35 +151,39 @@ static unsigned resolve_dst_address(struct selector_key * key) {
                 return REPLY;
             }
             get_port(connection);
+            LOG_DEBUG("IPv4 address (%s:%s)", connection->origin_host, connection->origin_port);
             if (FAILURE == resolve_ipv4(connection)) {
                 connection->client.reply.rep = SERVER_FAILURE;
                 return REPLY;
             }
-            LOG_DEBUG("IPv4 address (%s:%s)", connection->origin_host, connection->origin_port);
             break;
         
         case FQDN:
             get_fqdn(connection, addr_bytes);
             get_port(connection);
+            LOG_DEBUG("FQDN address (%s:%s)", connection->origin_host, connection->origin_port);
+            LOG_INFO("Request processed successfully");
             if (FAILURE == resolve_fqdn(key)) {
                 connection->client.reply.rep = SERVER_FAILURE;
                 return REPLY;
             }
-            break;
+            return REQUEST;
             
-            default:
+        default:
             if (FAILURE == get_ipv6_address(connection)) {
                 connection->client.reply.rep = SERVER_FAILURE;
                 return REPLY;
             }
             get_port(connection);
+            LOG_DEBUG("IPv6 address (%s:%s)", connection->origin_host, connection->origin_port);
             if (FAILURE == resolve_ipv6(connection)) {
                 connection->client.reply.rep = SERVER_FAILURE;
                 return REPLY;
             }
-            LOG_DEBUG("IPv6 address (%s:%s)", connection->origin_host, connection->origin_port);
             break;
     }
+
+    LOG_INFO("Request processed successfully");
 
     return connect_to_dest(key);
 }
@@ -188,11 +192,14 @@ static void get_port(struct socks5 * connection) {
     uint8_t p1 = buffer_read(&connection->client_buffer);
     uint8_t p2 = buffer_read(&connection->client_buffer);
     uint16_t port = (p1 << 8) | p2;
-    snprintf((char *)connection->origin_port, 6, "%d", port);
+    snprintf((char *)connection->origin_port, PORT_MAX_LENGHT, "%u", port);
+    connection->origin_port[PORT_MAX_LENGHT - 1] = '\0';
 }
 
 static unsigned connect_to_dest(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
+
+    LOG_DEBUG("Connecting to origin...");
 
     if (connection->origin_resolutions_list == NULL) {
         connection->client.reply.rep = HOST_UNREACHABLE;
@@ -219,6 +226,7 @@ static unsigned connect_to_dest(struct selector_key * key) {
             return CONNECT; 
         
         default: {
+            LOG_INFO("Connected to origin");
             selector_set_interest(key->s, connection->origin_fd, OP_NOOP);
             connection->client.reply.rep = SUCCEDED;
         }
@@ -337,6 +345,8 @@ static void get_fqdn(struct socks5 * connection, uint8_t lenght) {
 }
 
 static uint8_t resolve_fqdn(struct selector_key * key) {
+    LOG_DEBUG("Resolving domain name...");
+
     pthread_t thread;
     if (0 != pthread_create(&thread, NULL, resolve_fqdn_blocking, key)) {
         return FAILURE;

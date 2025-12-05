@@ -88,14 +88,44 @@ int main() {
     printf("Handshake successful!\n");
 
 
-	// <----------------------------------------- REQUEST ----------------------------------------->
+	// <----------------------------------------- IPv4 REQUEST ----------------------------------------->
+	// uint8_t request[] = {
+	// 	0x05, 					// VER (5)
+	// 	0x01, 					// CMD (connect)
+	// 	0x00, 					// RSV
+	// 	0x01, 					// ATYP (ipv4)
+	// 	0x8E, 0xFA, 0x40, 0x6E, // DST. ADDR (142.250.64.110)
+	// 	0x00, 0x50				// DST. PORT (80)
+	// };
+
+	// if(0 > send(sock, request, sizeof(request), 0)) {
+	// 	perror("send request");
+	// 	close(sock);
+	// 	exit(1);
+	// }
+
+	// uint8_t reply[10];
+    // if (recv(sock, reply, 10, MSG_WAITALL) != 10) {
+    //     printf("reply recv failed\n");
+    //     return 1;
+    // }
+
+    // if (reply[1] == 0x00) {
+	// 	printf("Request successful!\n");
+	// } else {
+	// 	printf("Request failed (code=0x%02X)\n", reply[1]);
+	// }
+
+
+	// <----------------------------------------- FQDN REQUEST ----------------------------------------->
 	uint8_t request[] = {
-		0x05, 					// VER (5)
-		0x01, 					// CMD (connect)
-		0x00, 					// RSV
-		0x01, 					// ATYP (ipv4)
-		0x8E, 0xFA, 0x40, 0x6E, // DST. ADDR (142.250.64.110)
-		0x00, 0x50				// DST. PORT (80)
+		0x05, 											// VER (5)
+		0x01, 											// CMD (connect)
+		0x00, 											// RSV
+		0x03, 											// ATYP (fqdn)
+		0x0B,                   						// LEN (11)
+    	'e','x','a','m','p','l','e','.','c','o','m', 	// DOMAIN (example.com)
+		0x00, 0x50										// PORT (80)
 	};
 
 	if(0 > send(sock, request, sizeof(request), 0)) {
@@ -104,13 +134,18 @@ int main() {
 		exit(1);
 	}
 
-	uint8_t reply[10];
-    if (recv(sock, reply, 10, MSG_WAITALL) != 10) {
-        printf("reply recv failed\n");
-        return 1;
-    }
+	uint8_t reply[4];
+	if (recv(sock, reply, 4, MSG_WAITALL) != 4) {
+		perror("recv header");
+		return 1;
+	}
 
-    printf("Reply code = 0x%02X (%s)\n", reply[1], reply[1] == 0x00 ? "succeded" : "failed");
+	if (reply[1] == 0x00) {
+		printf("Request successful!\n");
+	} else {
+		printf("Request failed (code=0x%02X)\n", reply[1]);
+	}
+
 
 	// <----------------------------------------- FINISH ----------------------------------------->
     close(sock);

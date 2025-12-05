@@ -6,6 +6,7 @@ RUN apt-get update --yes \
 		gcc \
 		make \
         clang-format \
+		clang-tidy \
 		check \
 		pkg-config \
 		curl \

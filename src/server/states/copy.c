@@ -7,14 +7,18 @@
 
 #define IS_CLIENT_DATA(connection, key) (connection->client_fd == key->fd)
 
-static fd_interest update_target_interests(fd_selector s, copy_st * target) {
+static int update_target_interests(fd_selector s, copy_st * target) {
 	fd_interest ret = OP_NOOP;
 	if ((target->interests & OP_WRITE) && buffer_can_read(target->buffer)) {
-		ret |= OP_WRITE;
-	} else if ((target->interests & OP_READ) && buffer_can_write(target->otherCopySt->buffer)) {
-		ret |= target->interests |= OP_READ;
+		ret |= OP_READ;
+	} else if ((target->interests & OP_READ) && buffer_can_write(target->buffer)) {
+		ret |= target->interests |= OP_WRITE;
 	}
-	selector_set_interest(s, target->fd, ret);
+	if (SELECTOR_SUCCESS != selector_set_interest(s, target->fd, ret)) {
+        LOG_FATAL("Failed to update interests for fd=%d", target->fd);
+		return -1;
+	};
+    selector_set_interest(s, target->fd, ret);
 	return ret;
 }
 
@@ -33,9 +37,6 @@ void socksv5_copy_arrival(const unsigned int state, struct selector_key * key) {
     clientCopy->otherCopySt = originCopy;
 
     LOG_TRACE("Entering COPY state: client_fd=%d, origin_fd=%d", clientCopy->fd, originCopy->fd);
-
-    selector_set_interest(key->s, clientCopy->fd, OP_READ);
-    selector_set_interest(key->s, originCopy->fd, OP_READ);
 }
 
 unsigned socksv5_copy_read(struct selector_key * key) {
@@ -102,8 +103,10 @@ unsigned socksv5_copy_write(struct selector_key * key) {
         from->interests &= ~OP_READ;
     }
 
-    update_target_interests(key->s, from);
-    update_target_interests(key->s, from->otherCopySt);
+    if (update_target_interests(key->s, from) < 0 || update_target_interests(key->s, from->otherCopySt) < 0) {
+        return ERROR;
+    };
+
 	return (from->interests | from->otherCopySt->interests) ^ OP_NOOP ? COPY : DONE;
 }
 

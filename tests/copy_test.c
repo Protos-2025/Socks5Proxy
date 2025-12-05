@@ -101,7 +101,7 @@ static void mock_log(int level, const char* file, int line, time_t * now, const 
 
 #define loggerLogMessageDeferred mock_log
 
-#include "../src/server/copy.c"
+#include "../src/server/states/copy.c"
 
 // #undef recv
 // #undef send

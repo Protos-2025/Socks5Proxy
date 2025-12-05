@@ -70,3 +70,25 @@ jobs:
           skip-fetch-gh-pages: true
           comment-always: true
           summary-always: true
+
+  bpftrace:
+    name: bpftrace syscall check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        
+      - name: Build bpftrace container
+        run: docker compose build trace
+
+      - name: Run trace
+        run: |
+          set +e
+          timeout 10s docker compose up --abort-on-container-exit trace
+          exit_code=$?
+          if [ $exit_code -eq 0 ] || [ $exit_code -eq 124 ]; then
+            echo "Benchmark finished successfully or timed out (which is expected)."
+            exit 0
+          else
+            echo "Benchmark failed with exit code $exit_code"
+            exit $exit_code
+          fi

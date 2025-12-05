@@ -99,6 +99,11 @@ static void mock_log(int level, const char* file, int line, time_t * now, const 
 #define recv mocked_recv
 #define send mocked_send
 
+void socksv5_read(struct selector_key* key) { return; };
+void socksv5_write(struct selector_key* key) { return; };
+void socksv5_block(struct selector_key* key) { return; };
+void socksv5_close(struct selector_key* key) { return; };
+
 #define logger_log_message_deferred mock_log
 
 #include "../src/server/states/copy.c"

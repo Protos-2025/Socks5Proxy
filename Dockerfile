@@ -12,5 +12,8 @@ RUN apt-get update --yes \
 		curl \
 		iputils-ping \
 		netcat-openbsd \
+		auditd \
+		strace \
+		bpftrace \
 	&& rm --force --recursive /var/lib/apt/lists/*
 	

@@ -9,6 +9,19 @@
 | Tomas Pietravallo      | 64288      | tpietravallo@itba.edu.ar   |
 | Lorenzo Chiossone      | 64359      | lchiossone@itba.edu.ar     |
 
+## Variables
+
+You may modify some constants easily by defining environment variables. These will be picked up from a `.env` file in the project root. You can use the provided `.env.sample` as a starting point.
+
+Example `.env` file:
+
+```sh
+DEBUG=1
+BUFFER_SIZE=8192
+MAX_LOG_QUEUE_SIZE=1000
+LOGGER_MIN_LEVEL=LOGGER_TRACE
+```
+
 ## Development
 
 To compile the project, run: 

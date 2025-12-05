@@ -3,7 +3,7 @@ set -eou pipefail
 
 if [[ -z "${TRACE:-}" ]]; then
     echo "server.sh: TRACE env var not set; skipping bpftrace test."
-    LD_PRELOAD=/usr/lib/aarch64-linux-gnu/libasan.so.8 \
+    LD_PRELOAD=$(gcc -print-file-name=libasan.so) \
         stdbuf -o0 -e0 ./bin/server
     exit 0
 fi
@@ -17,7 +17,7 @@ select_id=$(ausyscall --exact pselect6 2>/dev/null || ausyscall --exact pselect 
 echo "Ignoring pselect6 syscall (id: $select_id)"
 
 # Start server in background
-LD_PRELOAD=/usr/lib/aarch64-linux-gnu/libasan.so.8 stdbuf -o0 -e0 ./bin/server &
+LD_PRELOAD=$(gcc -print-file-name=libasan.so) stdbuf -o0 -e0 ./bin/server &
 server_pid=$!
 
 # Run bpftrace and capture its output

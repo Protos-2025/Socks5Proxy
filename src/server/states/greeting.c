@@ -6,6 +6,7 @@
 
 #define NO_AUTH_METHOD 0x00
 #define AUTH_METHOD 0x02
+#define AUTH_METHOD_INVALID 0xFF
 
 void greeting_arrival(const unsigned state, struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
@@ -82,8 +83,7 @@ unsigned greeting_read(struct selector_key * key) {
         // If no valid method found, set to no acceptable methods
         if (connection->client.greeting.method == NO_AUTH_METHOD && !found_auth_method) {
             LOG_WARN("No supported auth methods found");
-            connection->client.greeting.method = 0xFF; // No acceptable methods
-            return ERROR;
+            connection->client.greeting.method = AUTH_METHOD_INVALID; // No acceptable methods
         }
         
         buffer_reset(&connection->client_buffer);

@@ -10,9 +10,6 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-#include "auth.h"
-#include "greeting.h"
-#include "copy.h"
 #include "logger.h"
 #include "include/socks5nio.h"
 #include "../shared/include/selector.h"

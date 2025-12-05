@@ -18,6 +18,6 @@ $(EXEC): $(OBJS) $(SHARED_OBJS)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -f $(EXEC) $(OBJS) http/*.o
+	rm -f $(EXEC) $(OBJS)  http/*.o
 
 .PHONY: clean all

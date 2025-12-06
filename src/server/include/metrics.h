@@ -13,15 +13,15 @@ struct metricSnapshot {
   size_t totalBytesReceived;
 };
 
-void metricsInit();
+void metrics_init();
 
-void registerNewConnection();
+void register_new_connection();
 
-void registerConnectionClosed();
+void register_connection_closed();
 
-void registerBytesTransferred(int bytesSent, int bytesReceived);
+void register_bytes_transferred(int bytes_sent, int bytes_received);
 
-void getMetricsSnapshot(struct metricSnapshot *snapshot);
+void get_metrics_snapshot(struct metricSnapshot *snapshot);
 
 
 #endif

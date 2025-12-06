@@ -11,14 +11,14 @@ static int update_target_interests(FdSelector s, CopySt * target) {
 	FdInterest ret = OP_NOOP;
 	if ((target->interests & OP_WRITE) && buffer_can_read(target->buffer)) {
 		ret |= OP_READ;
-	} else if ((target->interests & OP_READ) && buffer_can_write(target->buffer)) {
-		ret |= target->interests |= OP_WRITE;
+	}
+    if ((target->interests & OP_READ) && buffer_can_write(target->buffer)) {
+		ret |= OP_WRITE;
 	}
 	if (SELECTOR_SUCCESS != selector_set_interest(s, target->fd, ret)) {
         LOG_FATAL("Failed to update interests for fd=%d", target->fd);
 		return -1;
 	};
-    selector_set_interest(s, target->fd, ret);
 	return ret;
 }
 

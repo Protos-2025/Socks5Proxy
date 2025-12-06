@@ -11,12 +11,12 @@
 #include "selector.h"
 #include "defines.h"
 
-static const char* logLevelToString(int level);
-static void writeLogsDeferred(struct selector_key* key);
-static void freeLog(void * data);
-static void flushAndFree();
+static const char* log_level_to_string(int level);
+static void write_logs_deferred(struct selector_key* key);
+static void free_log(void * data);
+static void flush_and_free();
 
-static const char* logLevelToString(int level) {
+static const char* log_level_to_string(int level) {
 	switch (level) {
         #ifndef NO_COLOR_LOGS
             case LOGGER_TRACE: return "\x1b[0;90mTRACE\x1b[0m";
@@ -39,20 +39,20 @@ static const char* logLevelToString(int level) {
 }
 
 static Queue logQueue = NULL;
-static buffer logBuffer;
+static Buffer logBuffer;
 static char * currentLog = NULL;
 
-void loggerInit() {
-    logQueue = createQueue(freeLog, sizeof(char *), MAX_LOG_QUEUE_SIZE);
+void logger_init() {
+    logQueue = create_queue(free_log, sizeof(char *), MAX_LOG_QUEUE_SIZE);
     buffer_init(&logBuffer, MAX_LOG_SIZE, NULL);
 }
 
-static void flushAndFree() {
-    flushAllLogs();
-    freeLogger();
+static void flush_and_free() {
+    flush_all_logs();
+    free_logger();
 }
 
-int loggerRegisterSelector(fd_selector selector) {
+int logger_register_selector(FdSelector selector) {
     if (!selector) return 0;
 
 	if (selector_fd_set_nio(STDOUT_FILENO) < 0) {
@@ -60,14 +60,14 @@ int loggerRegisterSelector(fd_selector selector) {
         return -1;
     };
 
-    static const struct fd_handler loggerHandlers = {
+    static const struct fd_handler logger_handlers = {
         .handle_read = NULL,
-        .handle_write = writeLogsDeferred,
-        .handle_close = flushAndFree,
+        .handle_write = write_logs_deferred,
+        .handle_close = flush_and_free,
     };
 
-	selector_status ss = SELECTOR_SUCCESS;
-    ss = selector_register(selector, STDOUT_FILENO, &loggerHandlers, OP_WRITE, NULL);
+	SelectorStatus ss = SELECTOR_SUCCESS;
+    ss = selector_register(selector, STDOUT_FILENO, &logger_handlers, OP_WRITE, NULL);
     if (ss != SELECTOR_SUCCESS) {
         fprintf(stderr, "Failed to register logger flush handler: %s\n", selector_error(ss));
     }
@@ -75,15 +75,15 @@ int loggerRegisterSelector(fd_selector selector) {
     return ss == SELECTOR_SUCCESS ? 0 : -1;
 }
 
-static void freeLog(void * data) {
+static void free_log(void * data) {
     if (data) {
         char * msg = *(char **)data;
         free(msg);
     }
 }
 
-static char * formatLogMessage(const char* levelStr, const char * file, int line, const time_t * now_ptr, const char* fmt, va_list args) {
-    if (!levelStr) levelStr = "UNKNOWN";
+static char * format_log_message(const char* level_str, const char * file, int line, const time_t * now_ptr, const char* fmt, va_list args) {
+    if (!level_str) level_str = "UNKNOWN";
     if (!fmt) fmt = "";
 
     char body[MAX_LOG_SIZE];
@@ -96,8 +96,8 @@ static char * formatLogMessage(const char* levelStr, const char * file, int line
 	time_t now = now_ptr != NULL ? *now_ptr : time(NULL);
     struct tm *t = localtime(&now);
 
-    int prefix_size = snprintf(out, (size_t)MAX_LOG_SIZE , "[%s] [%s:%d @ %04d-%02d-%02d %02d:%02d:%02d] ", levelStr, file, line, (t->tm_year + 1900), t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
-	snprintf(out + prefix_size, MAX_LOG_SIZE - prefix_size, "%s\n", body);
+    int prefixSize = snprintf(out, (size_t)MAX_LOG_SIZE , "[%s] [%s:%d @ %04d-%02d-%02d %02d:%02d:%02d] ", level_str, file, line, (t->tm_year + 1900), t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+	snprintf(out + prefixSize, MAX_LOG_SIZE - prefixSize, "%s\n", body);
 	const char* ellipsis = "...\n";
 	if (strlen(out) >= MAX_LOG_SIZE - 1) {
 		strncpy(out + MAX_LOG_SIZE - 5, ellipsis, 5);
@@ -106,41 +106,41 @@ static char * formatLogMessage(const char* levelStr, const char * file, int line
 	return out;
 }
 
-void loggerLogMessageDeferred(int level, const char* file, int line, time_t * now, const char* msg, ...) {
+void logger_log_message_deferred(int level, const char* file, int line, time_t * now, const char* msg, ...) {
     va_list args;
     va_start(args, msg);
-    char *formattedMsg = formatLogMessage(logLevelToString(level), file, line, now, msg, args);
+    char *formattedMsg = format_log_message(log_level_to_string(level), file, line, now, msg, args);
     va_end(args);
 
     if (formattedMsg) enqueue(logQueue, &formattedMsg);
 }
 
-static void writeLogsDeferred(struct selector_key* key) {
-	uint8_t* r_ptr = 0;
-	size_t to_read = 0;
+static void write_logs_deferred(struct selector_key* key) {
+	uint8_t* rPtr = 0;
+	size_t toRead = 0;
 	int written = 0;
 
 	if (buffer_can_read(&logBuffer)) {
-		r_ptr = buffer_read_ptr(&logBuffer, (size_t *) &to_read);
-		written = write(STDOUT_FILENO, r_ptr, to_read);
+		rPtr = buffer_read_ptr(&logBuffer, (size_t *) &toRead);
+		written = write(STDOUT_FILENO, rPtr, toRead);
 		buffer_read_adv(&logBuffer, written);
-        if (written == to_read) {
+        if (written == toRead) {
             free(currentLog);
             currentLog = NULL;
         }
 	};
 
     char * peekPtr = NULL;
-	if (to_read == 0 && written == to_read && queuePeek(logQueue, &peekPtr) != NULL) {
+	if (toRead == 0 && written == toRead && queue_peek(logQueue, &peekPtr) != NULL) {
         dequeue(logQueue, &currentLog);
         buffer_init(&logBuffer, strlen(currentLog), (uint8_t *) currentLog);
         buffer_write_adv(&logBuffer, strlen(currentLog));
 	}
 }
 
-void flushAllLogs() {
+void flush_all_logs() {
     if (!logQueue) return;
-    while (queueSize(logQueue) > 0) {
+    while (queue_size(logQueue) > 0) {
         char * msg = NULL;
         dequeue(logQueue, &msg);
         if (msg) {
@@ -150,15 +150,15 @@ void flushAllLogs() {
     }
 }
 
-void freeLogger() {
+void free_logger() {
     if (!logQueue) return;
-	while (queueSize(logQueue) > 0) {
+	while (queue_size(logQueue) > 0) {
         char * msg = NULL;
         dequeue(logQueue, &msg);
         if (msg) {
             free(msg);
         }
     }
-	freeQueue(logQueue);
+	free_queue(logQueue);
 	logQueue = NULL;
 }

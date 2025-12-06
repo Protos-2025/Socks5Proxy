@@ -5,11 +5,11 @@
 #include "selector.h"
 
 typedef struct copy_st {
-    buffer* buffer;
+    Buffer* buffer;
     int fd;
     size_t interests;
     struct copy_st* otherCopySt;
-} copy_st;
+} CopySt;
 
 void socksv5_copy_arrival(const unsigned int state, struct selector_key * key);
 unsigned socksv5_copy_read(struct selector_key * key);

@@ -16,7 +16,7 @@
 
 #define N(x) (sizeof(x)/sizeof((x)[0]))
 
-static const struct state_definition socks5_states[] = {
+static const struct state_definition socks5States[] = {
     {
         .state = GREETING,
         .on_arrival = greeting_arrival,
@@ -66,7 +66,7 @@ static void socksv5_close(struct selector_key * key);
 static void socksv5_done(struct selector_key* key);
 static void socks5_destroy(struct socks5 * s);
 
-static const struct fd_handler socks5_handler = {
+static const struct fd_handler socks5Handler = {
     .handle_read   = socksv5_read,
     .handle_write  = socksv5_write,
     .handle_close  = socksv5_close,
@@ -74,24 +74,24 @@ static const struct fd_handler socks5_handler = {
 };
 
 void socksv5_passive_accept(struct selector_key * key) {
-    struct sockaddr_storage client_addr;
-    socklen_t client_addr_len = sizeof(client_addr);
+    struct sockaddr_storage clientAddr;
+    socklen_t clientAddrLen = sizeof(clientAddr);
     struct socks5 * connection = NULL;
 
-    const int client_fd = accept(key->fd, (struct sockaddr *) &client_addr, &client_addr_len);
-    if (client_fd == -1) {
+    const int clientFd = accept(key->fd, (struct sockaddr *) &clientAddr, &clientAddrLen);
+    if (clientFd == -1) {
         goto fail;
     }
-    if (selector_fd_set_nio(client_fd) == -1) {
+    if (selector_fd_set_nio(clientFd) == -1) {
         goto fail;
     }
 
-    struct sockaddr_in * s = (struct sockaddr_in *) &client_addr;
-    char client_ip[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &s->sin_addr, client_ip, INET_ADDRSTRLEN); // TODO manage IPv6
-    LOG_INFO("Accepted connection from %s:%d", client_ip, ntohs(s->sin_port));
+    struct sockaddr_in * s = (struct sockaddr_in *) &clientAddr;
+    char clientIp[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &s->sin_addr, clientIp, INET_ADDRSTRLEN); // TODO manage IPv6
+    LOG_INFO("Accepted connection from %s:%d", clientIp, ntohs(s->sin_port));
 
-    connection = socks5_new(client_fd);
+    connection = socks5_new(clientFd);
 
     if (connection == NULL) {
         // sin un estado, nos es imposible manejaro.
@@ -99,17 +99,17 @@ void socksv5_passive_accept(struct selector_key * key) {
         // que se liberó alguna conexión.
         goto fail;
     }
-    memcpy(&connection->client_addr, &client_addr, client_addr_len);
-    connection->client_addr_len = client_addr_len;
+    memcpy(&connection->client_addr, &clientAddr, clientAddrLen);
+    connection->client_addr_len = clientAddrLen;
 
-    if (SELECTOR_SUCCESS != selector_register(key->s, client_fd, &socks5_handler, OP_READ, connection)) {
+    if (SELECTOR_SUCCESS != selector_register(key->s, clientFd, &socks5Handler, OP_READ, connection)) {
         goto fail;
     }
     
     return ;
 fail:
-    if (client_fd != -1) {
-        close(client_fd);
+    if (clientFd != -1) {
+        close(clientFd);
     }
     socks5_destroy(connection);
 }
@@ -124,7 +124,7 @@ static struct socks5 * socks5_new(int client_fd) {
         new->origin_resolution = NULL;
         new->stm = (struct state_machine){
             .initial = GREETING,
-            .states = socks5_states,
+            .states = socks5States,
             .max_state = ERROR,
             .current = NULL,
         };

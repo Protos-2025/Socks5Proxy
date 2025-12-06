@@ -40,7 +40,7 @@ enum socks_v5state {
 struct socks5 {
     /* client */
     int client_fd;
-    buffer client_buffer;
+    Buffer client_buffer;
     uint8_t client_buffer_data[BUFFER_SIZE];
     struct sockaddr_storage client_addr;
     socklen_t client_addr_len;
@@ -58,7 +58,7 @@ struct socks5 {
     char origin_host[HOST_MAX_LENGHT];
     char origin_port[PORT_MAX_LENGHT];
     struct addrinfo * origin_resolution;
-    buffer origin_buffer;
+    Buffer origin_buffer;
     uint8_t origin_buffer_data[BUFFER_SIZE];
     union {
         // struct connecting conn;

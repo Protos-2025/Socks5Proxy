@@ -16,12 +16,12 @@ void greeting_arrival(const unsigned state, struct selector_key * key) {
 
 unsigned greeting_read(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
-    uint8_t * w_ptr;
-	size_t count, to_read;
+    uint8_t * wPtr;
+	size_t count, toRead;
 	ssize_t readn;
 
-	w_ptr = buffer_write_ptr(&connection->client_buffer, &count);
-    readn = recv(key->fd, w_ptr, count, 0);
+	wPtr = buffer_write_ptr(&connection->client_buffer, &count);
+    readn = recv(key->fd, wPtr, count, 0);
 
     if (readn < 0) {
         // TODO: handle error correctly
@@ -36,9 +36,9 @@ unsigned greeting_read(struct selector_key * key) {
     buffer_write_adv(&connection->client_buffer, readn);
 
     if (connection->client.greeting.state == VER_N_NMETHODS) {
-        buffer_read_ptr(&connection->client_buffer, &to_read);
+        buffer_read_ptr(&connection->client_buffer, &toRead);
 
-        if (to_read < 2) {
+        if (toRead < 2) {
             return GREETING;
         }
     
@@ -60,18 +60,18 @@ unsigned greeting_read(struct selector_key * key) {
     }
 
     if (connection->client.greeting.state == METHODS) {
-        buffer_read_ptr(&connection->client_buffer, &to_read);
+        buffer_read_ptr(&connection->client_buffer, &toRead);
 
-        if (to_read < connection->client.greeting.n_methods) {
+        if (toRead < connection->client.greeting.n_methods) {
             return GREETING;
         }
 
-        bool found_auth_method = false;
+        bool foundAuthMethod = false;
         for (int i = 0; i < connection->client.greeting.n_methods && buffer_can_read(&connection->client_buffer); i++) {
             uint8_t method = buffer_read(&connection->client_buffer);
             if (method == AUTH_METHOD) {
                 connection->client.greeting.method = AUTH_METHOD;
-                found_auth_method = true;
+                foundAuthMethod = true;
                 LOG_DEBUG("Auth method chosen: 0x02 (USERNAME/PASSWORD)");
                 break;
             } else if (method == NO_AUTH_METHOD && connection->client.greeting.method != AUTH_METHOD) {
@@ -81,7 +81,7 @@ unsigned greeting_read(struct selector_key * key) {
         }
 
         // If no valid method found, set to no acceptable methods
-        if (connection->client.greeting.method == NO_AUTH_METHOD && !found_auth_method) {
+        if (connection->client.greeting.method == NO_AUTH_METHOD && !foundAuthMethod) {
             LOG_WARN("No supported auth methods found");
             connection->client.greeting.method = AUTH_METHOD_INVALID; // No acceptable methods
         }
@@ -98,12 +98,12 @@ unsigned greeting_read(struct selector_key * key) {
 
 unsigned greeting_write(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
-    uint8_t * r_ptr;
-	size_t to_read;
+    uint8_t * rPtr;
+	size_t toRead;
 	int written;
 
-	r_ptr = buffer_read_ptr(&connection->client_buffer, &to_read);
-    written = send(connection->client_fd, r_ptr, to_read, 0);
+	rPtr = buffer_read_ptr(&connection->client_buffer, &toRead);
+    written = send(connection->client_fd, rPtr, toRead, 0);
     buffer_read_adv(&connection->client_buffer, written);
 
     if (written < 0) {

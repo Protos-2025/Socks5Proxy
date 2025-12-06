@@ -28,13 +28,13 @@ typedef struct custom_key {
     uint32_t idx_to_read;
     uint32_t idx_to_write;
     struct custom_key * other_party;
-} custom_key;
+} CustomKey;
 
 static int server;
 static bool done = false;
 
 int main(const int argc, const char **argv) {
-	loggerInit();
+	logger_init();
 	unsigned port;
 
 	if(argc == 1) {
@@ -57,9 +57,9 @@ int main(const int argc, const char **argv) {
 
     close(STDIN_FILENO);
 
-    const char * error_msg = NULL;
-    fd_selector selector = NULL;
-    selector_status ss = SELECTOR_SUCCESS;
+    const char * errorMsg = NULL;
+    FdSelector selector = NULL;
+    SelectorStatus ss = SELECTOR_SUCCESS;
 
 
     // <---------------------------- create proxy server socket ---------------------------->
@@ -71,19 +71,19 @@ int main(const int argc, const char **argv) {
     addr.sin_port        = htons(port);
 
     if ((server = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        error_msg = "unable to create socket";
+        errorMsg = "unable to create socket";
         goto finally;
     }
 
     setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int));
 
     if (bind(server, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        error_msg = "unable to bind socket";
+        errorMsg = "unable to bind socket";
         goto finally;
     }
 
     if (listen(server, MAX_PENDING_CONNECTIONS) < 0) {
-        error_msg = "unable to listen";
+        errorMsg = "unable to listen";
         goto finally;
     }
 
@@ -95,7 +95,7 @@ int main(const int argc, const char **argv) {
 
     // <--------------------------------- configure selector --------------------------------->
     if (selector_fd_set_nio(server) == -1) {
-        error_msg = "getting server socket flags";
+        errorMsg = "getting server socket flags";
         goto finally;
     }
 
@@ -108,19 +108,19 @@ int main(const int argc, const char **argv) {
     };
 
     if(0 != selector_init(&conf)) {
-        error_msg = "initializing selector";
+        errorMsg = "initializing selector";
         goto finally;
     }
 
     selector = selector_new(SELECTOR_CAPACITY);
 
     if (selector == NULL) {
-        error_msg = "unable to create selector";
+        errorMsg = "unable to create selector";
         goto finally;
     }
 
-    if (loggerRegisterSelector(selector) < 0) {
-		error_msg = "initializing logger";
+    if (logger_register_selector(selector) < 0) {
+		errorMsg = "initializing logger";
 		goto finally;
     };
 
@@ -133,16 +133,16 @@ int main(const int argc, const char **argv) {
     ss = selector_register(selector, server, &socksv5, OP_READ, NULL);
 
     if (ss != SELECTOR_SUCCESS) {
-        error_msg = "registering fd";
+        errorMsg = "registering fd";
         goto finally;
     }
 
     // <------------------------------------ execute server ------------------------------------>
     while (!done) {
-        error_msg = NULL;
+        errorMsg = NULL;
         ss = selector_select(selector);
         if(ss != SELECTOR_SUCCESS) {
-            error_msg = "serving";
+            errorMsg = "serving";
             goto finally;
         }
     }
@@ -150,12 +150,12 @@ int main(const int argc, const char **argv) {
     int ret = 0;
 
 finally:
-    freeLogger();
+    free_logger();
     if (ss != SELECTOR_SUCCESS) {
-        fprintf(stderr, "%s: %s\n", (error_msg == NULL) ? "": error_msg, ss == SELECTOR_IO ? strerror(errno) : selector_error(ss));
+        fprintf(stderr, "%s: %s\n", (errorMsg == NULL) ? "": errorMsg, ss == SELECTOR_IO ? strerror(errno) : selector_error(ss));
         ret = 2;
-    } else if (error_msg) {
-        perror(error_msg);
+    } else if (errorMsg) {
+        perror(errorMsg);
         ret = 1;
     }
 
@@ -174,6 +174,6 @@ finally:
 
 static void signal_handler(const int signal) {
     LOG_INFO("Signal %d, cleaning up and exiting\n", signal);
-    flushAllLogs();
+    flush_all_logs();
     done = true;
 }

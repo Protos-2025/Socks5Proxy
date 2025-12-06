@@ -7,8 +7,8 @@
 
 #define IS_CLIENT_DATA(connection, key) (connection->client_fd == key->fd)
 
-static int update_target_interests(fd_selector s, copy_st * target) {
-	fd_interest ret = OP_NOOP;
+static int update_target_interests(FdSelector s, CopySt * target) {
+	FdInterest ret = OP_NOOP;
 	if ((target->interests & OP_WRITE) && buffer_can_read(target->buffer)) {
 		ret |= OP_READ;
 	} else if ((target->interests & OP_READ) && buffer_can_write(target->buffer)) {
@@ -24,8 +24,8 @@ static int update_target_interests(fd_selector s, copy_st * target) {
 
 void socksv5_copy_arrival(const unsigned int state, struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
-	copy_st * clientCopy = &connection->client.copy;
-    copy_st * originCopy = &connection->origin_st.copy;
+	CopySt * clientCopy = &connection->client.copy;
+    CopySt * originCopy = &connection->origin_st.copy;
 
     clientCopy->buffer = &connection->client_buffer;
     clientCopy->fd = connection->client_fd;
@@ -41,8 +41,8 @@ void socksv5_copy_arrival(const unsigned int state, struct selector_key * key) {
 
 unsigned socksv5_copy_read(struct selector_key * key) {
 	struct socks5* connection = ATTACHMENT(key);
-    copy_st * from = IS_CLIENT_DATA(connection, key) ? &connection->client.copy : &connection->origin_st.copy;
-	copy_st * to = from->otherCopySt;
+    CopySt * from = IS_CLIENT_DATA(connection, key) ? &connection->client.copy : &connection->origin_st.copy;
+	CopySt * to = from->otherCopySt;
 
 	LOG_TRACE("Attemping READ data from fd=%d to fd=%d", from->fd, to->fd);
 
@@ -50,10 +50,10 @@ unsigned socksv5_copy_read(struct selector_key * key) {
         return COPY;
     }
 
-    size_t can_write = 0;
-	uint8_t* write_ptr = buffer_write_ptr(to->buffer, &can_write);
+    size_t canWrite = 0;
+	uint8_t* writePtr = buffer_write_ptr(to->buffer, &canWrite);
 
-	ssize_t readBytes = recv(from->fd, write_ptr, can_write, 0);
+	ssize_t readBytes = recv(from->fd, writePtr, canWrite, 0);
 
     if (readBytes > 0) {
         LOG_TRACE("Read %zd bytes from fd=%d into fd=%d's buffer", readBytes, from->fd, to->fd);
@@ -75,7 +75,7 @@ unsigned socksv5_copy_read(struct selector_key * key) {
 
 unsigned socksv5_copy_write(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
-	copy_st* from = IS_CLIENT_DATA(connection, key) ? &connection->client.copy : &connection->origin_st.copy;
+	CopySt* from = IS_CLIENT_DATA(connection, key) ? &connection->client.copy : &connection->origin_st.copy;
 	int toFd = from->fd;
 
 	LOG_TRACE("Attempting WRITE data to fd=%d\n", toFd);
@@ -84,10 +84,10 @@ unsigned socksv5_copy_write(struct selector_key * key) {
         return COPY;
 	}
 
-	size_t can_read = 0;
-    uint8_t* read_ptr = buffer_read_ptr(from->buffer, &can_read);
+	size_t canRead = 0;
+    uint8_t* readPtr = buffer_read_ptr(from->buffer, &canRead);
 
-    ssize_t writtenBytes = send(toFd, read_ptr, can_read, 0);
+    ssize_t writtenBytes = send(toFd, readPtr, canRead, 0);
 
 
     if (writtenBytes > 0) {

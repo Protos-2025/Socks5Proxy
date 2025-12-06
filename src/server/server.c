@@ -12,6 +12,7 @@
 #include "../shared/include/selector.h"
 #include "include/socks5nio.h"
 #include "include/defines.h"
+#include "include/metrics.h"
 #include "logger.h"
 
 #define PORT 1080
@@ -35,6 +36,7 @@ static bool done = false;
 
 int main(const int argc, const char **argv) {
 	logger_init();
+    metrics_init();
 	unsigned port;
 
 	if(argc == 1) {

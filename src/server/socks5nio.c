@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "logger.h"
+#include "include/metrics.h"
 #include "include/socks5nio.h"
 #include "../shared/include/selector.h"
 
@@ -80,6 +81,7 @@ void socksv5_passive_accept(struct selector_key * key) {
     char clientIp[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &s->sin_addr, clientIp, INET_ADDRSTRLEN); // TODO manage IPv6
     LOG_INFO("Accepted connection from %s:%d", clientIp, ntohs(s->sin_port));
+    register_new_connection();
 
     connection = socks5_new(clientFd);
 
@@ -160,6 +162,7 @@ void socksv5_close(struct selector_key * key) {
         socks5_destroy(connection);
         key->data = NULL;
     }
+    register_connection_closed();
 }
 
 static void socksv5_done(struct selector_key * key) {

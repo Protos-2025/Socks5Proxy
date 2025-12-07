@@ -28,7 +28,7 @@ typedef struct QueueCDT {
  * @param max_capacity Zero if unlimited. Drops if full.
  * @return Queue 
  */
-Queue createQueue(QueueElemFreeFn freeFn, size_t elemSize, size_t max_capacity) {
+Queue create_queue(QueueElemFreeFn free_fn, size_t elem_size, size_t max_capacity) {
     Queue queue = (Queue)malloc(sizeof(QueueCDT));
     if (!queue) {
         return NULL;
@@ -36,9 +36,9 @@ Queue createQueue(QueueElemFreeFn freeFn, size_t elemSize, size_t max_capacity) 
     queue->first = NULL;
     queue->last = NULL;
     queue->iterNode = NULL;
-    queue->elemSize = elemSize;
+    queue->elemSize = elem_size;
     queue->size = 0;
-    queue->freeFn = freeFn;
+    queue->freeFn = free_fn;
     queue->max_capacity = max_capacity;
     return queue;
 }
@@ -89,7 +89,7 @@ void * dequeue(Queue queue, void * buffer) {
     return buffer;
 }
 
-void * queuePeek(Queue queue, void * buffer) {
+void * queue_peek(Queue queue, void * buffer) {
     if (!queue || queue->size == 0) {
         return NULL;
     }
@@ -97,12 +97,12 @@ void * queuePeek(Queue queue, void * buffer) {
     return buffer;
 }
 
-size_t queueSize(Queue queue) {
+size_t queue_size(Queue queue) {
     if (!queue) return 0;
     return queue->size;
 }
 
-void freeQueue(Queue queue) {
+void free_queue(Queue queue) {
     if (!queue) return;
     struct Node *current = queue->first;
     while (current) {
@@ -114,18 +114,18 @@ void freeQueue(Queue queue) {
     free(queue);
 }
 
-void queueBeginIter(Queue queue) {
+void queue_begin_iter(Queue queue) {
     if (!queue) return;
     queue->iterNode = queue->first;
 }
 
-int queueHasNextIter(Queue queue) {
+int queue_has_next_iter(Queue queue) {
     if (!queue) return 0;
     return queue->iterNode != NULL;
 }
 
-void * queueIterNext(Queue queue, void * buffer) {
-    if (!queueHasNextIter(queue)) {
+void * queue_iter_next(Queue queue, void * buffer) {
+    if (!queue_has_next_iter(queue)) {
         return NULL;
     }
     memcpy(buffer, queue->iterNode->data, queue->elemSize);

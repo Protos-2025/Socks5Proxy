@@ -2,6 +2,7 @@ STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep "\.c$")
 
 if [ -n "$STAGED_FILES" ]; then
     DOCKER_FILES=$(echo "$STAGED_FILES" | sed 's|^|root/|')
-    echo "clang-format -i --style=file $DOCKER_FILES" | docker compose run --rm compiler bash
+    echo "clang-format -i --style=file $DOCKER_FILES" | docker compose run --entrypoint bash --rm compiler
+    echo "clang-tidy -config-file=.clang-tidy -fix -fix-notes -fix-errors src/server/*.c src/server/states/*.c src/shared/*.c tests/*.c src/client/*.c -- -Isrc/server/include -Isrc/shared/include   -Isrc/client/include" | docker compose run --entrypoint bash --rm compiler
     echo "$STAGED_FILES" | xargs git add
 fi

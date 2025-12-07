@@ -7,7 +7,7 @@
 #include "../src/shared/selector.c"
 
 START_TEST(test_selector_error) {
-	const selector_status data[] = {
+	const SelectorStatus data[] = {
 		SELECTOR_SUCCESS, SELECTOR_ENOMEM, SELECTOR_MAXFD, SELECTOR_IARGS, SELECTOR_IO,
 	};
 	// verifica que `selector_error' tiene mensajes especificos
@@ -51,7 +51,7 @@ START_TEST(test_next_capacity) {
 END_TEST
 
 START_TEST(test_ensure_capacity) {
-	fd_selector s = selector_new(0);
+	FdSelector s = selector_new(0);
 	for (size_t i = 0; i < s->fd_size; i++) {
 		ck_assert_int_eq(FD_UNUSED, s->fds[i].fd);
 	}
@@ -64,10 +64,10 @@ START_TEST(test_ensure_capacity) {
 	ck_assert_int_eq(SELECTOR_SUCCESS, ensure_capacity(s, n));
 	ck_assert_uint_ge(s->fd_size, n);
 
-	const size_t last_size = s->fd_size;
+	const size_t lastSize = s->fd_size;
 	n = ITEMS_MAX_SIZE + 1;
 	ck_assert_int_eq(SELECTOR_MAXFD, ensure_capacity(s, n));
-	ck_assert_uint_eq(last_size, s->fd_size);
+	ck_assert_uint_eq(lastSize, s->fd_size);
 
 	for (size_t i = 0; i < s->fd_size; i++) {
 		ck_assert_int_eq(FD_UNUSED, s->fds[i].fd);
@@ -80,23 +80,23 @@ START_TEST(test_ensure_capacity) {
 END_TEST
 
 // callbacks de prueba
-static void *data_mark = (void *)0x0FF1CE;
-static unsigned destroy_count = 0;
+static void *dataMark = (void *)0x0FF1CE;
+static unsigned destroyCount = 0;
 static void destroy_callback(struct selector_key *key) {
 	ck_assert_ptr_nonnull(key->s);
 	ck_assert_int_ge(key->fd, 0);
 	ck_assert_int_lt(key->fd, ITEMS_MAX_SIZE);
 
-	ck_assert_ptr_eq(data_mark, key->data);
-	destroy_count++;
+	ck_assert_ptr_eq(dataMark, key->data);
+	destroyCount++;
 }
 
 START_TEST(test_selector_register_fd) {
-	destroy_count = 0;
-	fd_selector s = selector_new(INITIAL_SIZE);
+	destroyCount = 0;
+	FdSelector s = selector_new(INITIAL_SIZE);
 	ck_assert_ptr_nonnull(s);
 
-	ck_assert_uint_eq(SELECTOR_IARGS, selector_register(0, -1, 0, 0, data_mark));
+	ck_assert_uint_eq(SELECTOR_IARGS, selector_register(0, -1, 0, 0, dataMark));
 
 	const struct fd_handler h = {
 		.handle_read = NULL,
@@ -104,23 +104,23 @@ START_TEST(test_selector_register_fd) {
 		.handle_close = destroy_callback,
 	};
 	int fd = ITEMS_MAX_SIZE - 1;
-	ck_assert_uint_eq(SELECTOR_SUCCESS, selector_register(s, fd, &h, 0, data_mark));
+	ck_assert_uint_eq(SELECTOR_SUCCESS, selector_register(s, fd, &h, 0, dataMark));
 	const struct item *item = s->fds + fd;
 	ck_assert_int_eq(fd, s->max_fd);
 	ck_assert_int_eq(fd, item->fd);
 	ck_assert_ptr_eq(&h, item->handler);
 	ck_assert_uint_eq(0, item->interest);
-	ck_assert_ptr_eq(data_mark, item->data);
+	ck_assert_ptr_eq(dataMark, item->data);
 
 	selector_destroy(s);
 	// destroy desregistró?
-	ck_assert_uint_eq(1, destroy_count);
+	ck_assert_uint_eq(1, destroyCount);
 }
 END_TEST
 
 START_TEST(test_selector_register_unregister_register) {
-	destroy_count = 0;
-	fd_selector s = selector_new(INITIAL_SIZE);
+	destroyCount = 0;
+	FdSelector s = selector_new(INITIAL_SIZE);
 	ck_assert_ptr_nonnull(s);
 
 	const struct fd_handler h = {
@@ -129,7 +129,7 @@ START_TEST(test_selector_register_unregister_register) {
 		.handle_close = destroy_callback,
 	};
 	int fd = ITEMS_MAX_SIZE - 1;
-	ck_assert_uint_eq(SELECTOR_SUCCESS, selector_register(s, fd, &h, 0, data_mark));
+	ck_assert_uint_eq(SELECTOR_SUCCESS, selector_register(s, fd, &h, 0, dataMark));
 	ck_assert_uint_eq(SELECTOR_SUCCESS, selector_unregister_fd(s, fd));
 
 	const struct item *item = s->fds + fd;
@@ -139,16 +139,16 @@ START_TEST(test_selector_register_unregister_register) {
 	ck_assert_uint_eq(0, item->interest);
 	ck_assert_ptr_eq(0x00, item->data);
 
-	ck_assert_uint_eq(SELECTOR_SUCCESS, selector_register(s, fd, &h, 0, data_mark));
+	ck_assert_uint_eq(SELECTOR_SUCCESS, selector_register(s, fd, &h, 0, dataMark));
 	item = s->fds + fd;
 	ck_assert_int_eq(fd, s->max_fd);
 	ck_assert_int_eq(fd, item->fd);
 	ck_assert_ptr_eq(&h, item->handler);
 	ck_assert_uint_eq(0, item->interest);
-	ck_assert_ptr_eq(data_mark, item->data);
+	ck_assert_ptr_eq(dataMark, item->data);
 
 	selector_destroy(s);
-	ck_assert_uint_eq(2, destroy_count);
+	ck_assert_uint_eq(2, destroyCount);
 }
 END_TEST
 
@@ -167,11 +167,11 @@ Suite *suite(void) {
 }
 
 int main(void) {
-	int number_failed;
+	int numberFailed;
 	SRunner *sr = srunner_create(suite());
 
 	srunner_run_all(sr, CK_NORMAL);
-	number_failed = srunner_ntests_failed(sr);
+	numberFailed = srunner_ntests_failed(sr);
 	srunner_free(sr);
-	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+	return (numberFailed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

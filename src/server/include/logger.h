@@ -4,18 +4,18 @@
 #include <time.h>
 #include "selector.h"
 
-void loggerInit();
+void logger_init();
 
-int loggerRegisterSelector(fd_selector selector);
+int logger_register_selector(FdSelector selector);
 
-void loggerLogMessageDeferred(int level, const char* file, int line, time_t * now, const char* msg, ...);
+void logger_log_message_deferred(int level, const char* file, int line, time_t * now, const char* msg, ...);
 
-void flushAllLogs();
+void flush_all_logs();
 
-void freeLogger();
+void free_logger();
 
 #define __LOG_LEVEL(level, msg, ...) \
-    loggerLogMessageDeferred(level, __FILE__, __LINE__, NULL, msg, ##__VA_ARGS__);
+    logger_log_message_deferred(level, __FILE__, __LINE__, NULL, msg, ##__VA_ARGS__);
 
 #define LOG_TRACE(...) __LOG_LEVEL(LOGGER_TRACE, __VA_ARGS__)
 #define LOG_DEBUG(...) __LOG_LEVEL(LOGGER_DEBUG, __VA_ARGS__)

@@ -87,12 +87,12 @@ parse_args(const int argc, char** argv, struct socks5args* args)
 
     while (true)
     {
-        int option_index = 0;
+        int optionIndex = 0;
         static struct option long_options[] = {
             {0, 0, 0, 0}
         };
 
-        c = getopt_long(argc, argv, "hl:L:Np:P:u:v", long_options, &option_index);
+        c = getopt_long(argc, argv, "hl:L:Np:P:u:v", long_options, &optionIndex);
         if (c == -1)
             break;
 

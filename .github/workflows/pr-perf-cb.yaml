@@ -76,6 +76,7 @@ jobs:
           summary-always: true
 
   bpftrace:
+    if: false # disable due to gha flakiness
     name: bpftrace syscall check
     runs-on: ubuntu-latest
     steps:

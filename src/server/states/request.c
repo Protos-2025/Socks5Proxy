@@ -45,11 +45,11 @@ unsigned request_read(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
 
     if (connection->client.request.state == VER_CMD_ATYP) {
-        uint8_t * w_ptr;
-        size_t readn, to_write, to_read;
+        uint8_t * wPtr;
+        size_t readn, toWrite, toRead;
 
-        w_ptr = buffer_write_ptr(&connection->client_buffer, &to_write);
-        readn = recv(key->fd, w_ptr, to_write, 0);
+        wPtr = buffer_write_ptr(&connection->client_buffer, &toWrite);
+        readn = recv(key->fd, wPtr, toWrite, 0);
     
         if (readn < 0) {
             connection->client.reply.rep = SERVER_FAILURE;
@@ -62,8 +62,8 @@ unsigned request_read(struct selector_key * key) {
     
         buffer_write_adv(&connection->client_buffer, readn);
 
-        buffer_read_ptr(&connection->client_buffer, &to_read);
-        if (to_read < 4) {
+        buffer_read_ptr(&connection->client_buffer, &toRead);
+        if (toRead < 4) {
             return REQUEST;
         }
     
@@ -103,12 +103,12 @@ unsigned request_block(struct selector_key * key) {
 
 static unsigned resolve_dst_address(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
-    uint8_t * w_ptr;
-    uint8_t addr_bytes;
-    size_t readn, to_write, to_read;
+    uint8_t * wPtr;
+    uint8_t addrBytes;
+    size_t readn, toWrite, toRead;
     
-    w_ptr = buffer_write_ptr(&connection->client_buffer, &to_write);
-    readn = recv(connection->client_fd, w_ptr, to_write, 0);
+    wPtr = buffer_write_ptr(&connection->client_buffer, &toWrite);
+    readn = recv(connection->client_fd, wPtr, toWrite, 0);
     
     if (connection->client.request.state == DST_LEN) {
         if (readn < 0) {
@@ -122,22 +122,22 @@ static unsigned resolve_dst_address(struct selector_key * key) {
         
         buffer_write_adv(&connection->client_buffer, readn);
         
-        buffer_read_ptr(&connection->client_buffer, &to_read);
+        buffer_read_ptr(&connection->client_buffer, &toRead);
         
         if (connection->client.request.atyp == FQDN) {
-            if (to_read < 1) {
+            if (toRead < 1) {
                 return REQUEST;
             }
-            addr_bytes = buffer_read(&connection->client_buffer);
-            if (addr_bytes == 0) {
+            addrBytes = buffer_read(&connection->client_buffer);
+            if (addrBytes == 0) {
                 connection->client.reply.rep = INVALID_FQDN_LENGHT;
                 return REPLY;
             }
         } else {
-            addr_bytes = ADDR_BYTES_BY_IP_VERSION(connection->client.request.atyp);
+            addrBytes = ADDR_BYTES_BY_IP_VERSION(connection->client.request.atyp);
         }
         
-        if (to_read < (addr_bytes + 2)) {
+        if (toRead < (addrBytes + 2)) {
             return REQUEST;
         }
         
@@ -159,7 +159,7 @@ static unsigned resolve_dst_address(struct selector_key * key) {
             break;
         
         case FQDN:
-            get_fqdn(connection, addr_bytes);
+            get_fqdn(connection, addrBytes);
             get_port(connection);
             LOG_DEBUG("FQDN address (%s:%s)", connection->origin_host, connection->origin_port);
             LOG_INFO("Request processed successfully");
@@ -244,9 +244,9 @@ static uint8_t get_ipv4_address(struct socks5 * connection) {
     struct in_addr addr;
     const char * ret;
 
-    uint8_t * s_addr_ptr = (uint8_t *)&addr.s_addr;
+    uint8_t * sAddrPtr = (uint8_t *)&addr.s_addr;
     for (int i = 0; i < IPv4_ADDR_LEN; i++) {
-        s_addr_ptr[i] = buffer_read(&connection->client_buffer);
+        sAddrPtr[i] = buffer_read(&connection->client_buffer);
     }
 
     ret = inet_ntop(AF_INET, &addr, (char *) connection->origin_host, HOST_MAX_LENGHT);
@@ -255,28 +255,28 @@ static uint8_t get_ipv4_address(struct socks5 * connection) {
 }
 
 static uint8_t resolve_ipv4(struct socks5 * connection) {
-    struct sockaddr_in * sock_addr = calloc(1, sizeof(struct sockaddr_in));
-    if (sock_addr == NULL) {
+    struct sockaddr_in * sockAddr = calloc(1, sizeof(struct sockaddr_in));
+    if (sockAddr == NULL) {
         return FAILURE;
     }
-    sock_addr->sin_family = AF_INET;
-    sock_addr->sin_port = htons(atoi((const char *) connection->origin_port));
+    sockAddr->sin_family = AF_INET;
+    sockAddr->sin_port = htons(atoi((const char *) connection->origin_port));
 
-    if (-1 == inet_pton(AF_INET, (const char *) connection->origin_host, &sock_addr->sin_addr)) {
-        free(sock_addr);
+    if (-1 == inet_pton(AF_INET, (const char *) connection->origin_host, &sockAddr->sin_addr)) {
+        free(sockAddr);
         return FAILURE;
     }
 
     struct addrinfo * resolution = calloc(1, sizeof(struct addrinfo));
     if (resolution == NULL) {
-        free(sock_addr);
+        free(sockAddr);
         return FAILURE;
     }
     resolution->ai_family = AF_INET;
     resolution->ai_socktype = SOCK_STREAM;
     resolution->ai_protocol = IPPROTO_TCP;
     resolution->ai_addrlen = sizeof(struct sockaddr_in);
-    resolution->ai_addr = (struct sockaddr *) sock_addr;
+    resolution->ai_addr = (struct sockaddr *) sockAddr;
 
     connection->origin_resolutions_list = resolution;
 
@@ -300,23 +300,23 @@ static uint8_t get_ipv6_address(struct socks5 * connection) {
 }
 
 static uint8_t resolve_ipv6(struct socks5 * connection) {
-    struct sockaddr_in6 * sock_addr = malloc(sizeof(struct sockaddr_in6));
-    if (sock_addr == NULL) {
+    struct sockaddr_in6 * sockAddr = malloc(sizeof(struct sockaddr_in6));
+    if (sockAddr == NULL) {
         return FAILURE;
     }
-    sock_addr->sin6_family = AF_INET6;
-    sock_addr->sin6_port = htons(atoi((const char *) connection->origin_port));
-    sock_addr->sin6_flowinfo = 0;
-    sock_addr->sin6_scope_id = 0;
+    sockAddr->sin6_family = AF_INET6;
+    sockAddr->sin6_port = htons(atoi((const char *) connection->origin_port));
+    sockAddr->sin6_flowinfo = 0;
+    sockAddr->sin6_scope_id = 0;
 
-    if (-1 == inet_pton(AF_INET6, (const char *) connection->origin_host, &sock_addr->sin6_addr)) {
-        free(sock_addr);
+    if (-1 == inet_pton(AF_INET6, (const char *) connection->origin_host, &sockAddr->sin6_addr)) {
+        free(sockAddr);
         return FAILURE;
     }
 
     struct addrinfo * resolution = malloc(sizeof(struct addrinfo));
     if (resolution == NULL) {
-        free(sock_addr);
+        free(sockAddr);
         return FAILURE;
     }
     resolution->ai_flags = 0;
@@ -324,7 +324,7 @@ static uint8_t resolve_ipv6(struct socks5 * connection) {
     resolution->ai_socktype = SOCK_STREAM;
     resolution->ai_protocol = IPPROTO_TCP;
     resolution->ai_addrlen = sizeof(struct sockaddr_in6);
-    resolution->ai_addr = (struct sockaddr *) sock_addr;
+    resolution->ai_addr = (struct sockaddr *) sockAddr;
     resolution->ai_canonname = NULL;
     resolution->ai_next = NULL;
 
@@ -348,10 +348,10 @@ static uint8_t resolve_fqdn(struct selector_key * key) {
     LOG_DEBUG("Resolving domain name...");
 
     pthread_t thread;
-    struct selector_key * key_copy = malloc(sizeof(struct selector_key));
-    memcpy(key_copy, key, sizeof(struct selector_key));
+    struct selector_key * keyCopy = malloc(sizeof(struct selector_key));
+    memcpy(keyCopy, key, sizeof(struct selector_key));
 
-    if (0 != pthread_create(&thread, NULL, resolve_fqdn_blocking, key_copy)) {
+    if (0 != pthread_create(&thread, NULL, resolve_fqdn_blocking, keyCopy)) {
         return FAILURE;
     }
 

@@ -10,5 +10,7 @@ RUN apt-get update --yes \
 		check \
 		pkg-config \
 		curl \
+		iputils-ping \
+		netcat-openbsd \
 	&& rm --force --recursive /var/lib/apt/lists/*
 	

@@ -21,8 +21,8 @@ int main() {
 	char *pass = "password";
 	uint8_t ulen = strlen(user);
 	uint8_t plen = strlen(pass);
-	uint8_t auth_msg[1 + 1 + 255 + 1 + 255];
-	inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+	uint8_t authMsg[1 + 1 + 255 + 1 + 255];
+	inet_pton(AF_INET, "10.0.0.9", &addr.sin_addr);
 
 	if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
 		perror("connect");
@@ -44,34 +44,34 @@ int main() {
 		exit(1);
 	}
 
-	uint8_t greeting_response[2];
-    recv(sock, greeting_response, 2, 0);
-	if (greeting_response[1] != 0x02) { 
+	uint8_t greetingResponse[2];
+    recv(sock, greetingResponse, 2, 0);
+	if (greetingResponse[1] != 0x02) { 
 		printf("Server does not accept USERNAME/PASSWORD, closing.\n");
 		close(sock);
 		return 1;
 	}
-	printf("Server reply: VER=%d METHOD=0x%02x\n", greeting_response[0], greeting_response[1]);
+	printf("Server reply: VER=%d METHOD=0x%02x\n", greetingResponse[0], greetingResponse[1]);
 	printf("Handshake: server requires USERNAME/PASSWORD\n");
 
 
 	// <----------------------------------------- AUTH ----------------------------------------->
 	int idx = 0;
-	auth_msg[idx++] = 0x01;    
-	auth_msg[idx++] = ulen;    
-	memcpy(&auth_msg[idx], user, ulen);
+	authMsg[idx++] = 0x01;    
+	authMsg[idx++] = ulen;    
+	memcpy(&authMsg[idx], user, ulen);
 	idx += ulen;
-	auth_msg[idx++] = plen;    
-	memcpy(&auth_msg[idx], pass, plen);
+	authMsg[idx++] = plen;    
+	memcpy(&authMsg[idx], pass, plen);
 	idx += plen;
 
 	// Send auth
-	send(sock, auth_msg, idx, 0);
+	send(sock, authMsg, idx, 0);
 
-	uint8_t auth_resp[2];
-	recv(sock, auth_resp, 2, 0);
+	uint8_t authResp[2];
+	recv(sock, authResp, 2, 0);
 
-	if (auth_resp[1] == 0x00) {
+	if (authResp[1] == 0x00) {
 		printf("Authentication successful!\n");
 	} else {
 		printf("Authentication failed!\n");

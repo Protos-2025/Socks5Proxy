@@ -87,6 +87,7 @@ jobs:
       - name: Run trace
         run: |
           set +e
+          docker compose down || true
           timeout 10s docker compose up --abort-on-container-exit trace
           exit_code=$?
           if [ $exit_code -eq 0 ] || [ $exit_code -eq 124 ]; then

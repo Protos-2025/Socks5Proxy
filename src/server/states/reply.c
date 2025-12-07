@@ -24,11 +24,11 @@ void reply_arrival(const unsigned state, struct selector_key * key) {
 
 unsigned reply_write(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
-    uint8_t * r_ptr;
-    size_t to_read, written;
+    uint8_t * rPtr;
+    size_t toRead, written;
     
-    r_ptr = buffer_read_ptr(&connection->client_buffer, &to_read);
-    written = send(connection->client_fd, r_ptr, to_read, 0);
+    rPtr = buffer_read_ptr(&connection->client_buffer, &toRead);
+    written = send(connection->client_fd, rPtr, toRead, 0);
     buffer_read_adv(&connection->client_buffer, written);
 
     if (written < 0) {

@@ -23,9 +23,37 @@ services:
     entrypoint: ["scripts/server.sh"]
     ports:
       - "1080:1080"
+    healthcheck:
+      test: ["CMD-SHELL", "printf '\\005\\001\\002' | nc 127.0.0.1 1080 | head -c1 | grep -q \"$(printf '\\005')\""]
+      start_period: 1s
+      interval: 60s
+      retries: 3
+    networks:
+      test-server-network:
+        ipv4_address: 10.0.0.9
+        ipv6_address: "2620:00fe:0000:0000:0000:0000:0000:00fb"
     depends_on:
       compiler:
         condition: service_completed_successfully
+
+  client:
+    container_name: client
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/root
+    working_dir: /root
+    entrypoint: ["scripts/client.sh"]
+    networks:
+      test-server-network:
+        ipv4_address: "10.0.0.5"
+        ipv6_address: "2620:00fe:0000:0000:0000:0000:0000:c1e0"
+    depends_on:
+      server:
+        condition: service_healthy
+      nginx-test-server:
+        condition: service_healthy
 
   test:
     container_name: test
@@ -35,12 +63,14 @@ services:
     volumes:
       - .:/root
     working_dir: /root
-    entrypoint: ["scripts/tests.sh"]
+    entrypoint: ["/scripts/tests.sh"]
 
   nginx-test-server:
     container_name: nginx-test-server
     networks:
-      - test-server-network
+      test-server-network:
+        ipv4_address: "10.0.0.111"
+        ipv6_address: "2620:00fe:0000:0000:0000:0000:0000:00fe"
     image: nginx:latest
     volumes:
       - ./bench/data:/usr/share/nginx/html:ro
@@ -86,5 +116,12 @@ networks:
   test-server-network:
     # driver: bridge
     internal: true
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 2620:00fe:0000::/64
+          gateway: 2620:00fe:0000::1
+        - subnet: 10.0.0.0/24
+          gateway: 10.0.0.1
   host-network:
     driver: bridge

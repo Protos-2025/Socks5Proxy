@@ -348,7 +348,10 @@ static uint8_t resolve_fqdn(struct selector_key * key) {
     LOG_DEBUG("Resolving domain name...");
 
     pthread_t thread;
-    if (0 != pthread_create(&thread, NULL, resolve_fqdn_blocking, key)) {
+    struct selector_key * key_copy = malloc(sizeof(struct selector_key));
+    memcpy(key_copy, key, sizeof(struct selector_key));
+
+    if (0 != pthread_create(&thread, NULL, resolve_fqdn_blocking, key_copy)) {
         return FAILURE;
     }
 
@@ -363,11 +366,8 @@ static void * resolve_fqdn_blocking(void * data) {
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = 0;
-    hints.ai_protocol = 0;
-    hints.ai_canonname = NULL;
-    hints.ai_addr = NULL;
-    hints.ai_next = NULL;
+    hints.ai_flags = AI_PASSIVE;
+    hints.ai_protocol = IPPROTO_TCP;
 
     if (0 != getaddrinfo((const char *) connection->origin_host, (const char *) connection->origin_port, &hints, &connection->origin_resolutions_list)) {
         // connection->client.reply.rep = SERVER_FAILURE;
@@ -375,6 +375,7 @@ static void * resolve_fqdn_blocking(void * data) {
     }
 
     selector_notify_block(key->s, key->fd);
+    free(key);
     return NULL;
 }
 // <============================================================================================================================>

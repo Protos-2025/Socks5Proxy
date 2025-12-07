@@ -14,7 +14,7 @@ int main() {
 
 	struct sockaddr_in addr = {
 		.sin_family = AF_INET,
-		.sin_port = htons(1080),    
+		.sin_port = htons(4242),    
 	};
 
 	char *user = "admin";
@@ -28,33 +28,7 @@ int main() {
 		perror("connect");
 		exit(1);
 	}
-	printf("Connected to SOCKS5 server!\n");
-
-
-	// <----------------------------------------- GREETING ----------------------------------------->
-	uint8_t greeting[] = {
-		0x05, // SOCKS version
-		0x01, // Number of authentication methods supported
-		0x02  // username/password auth
-	};
-
-	if(send(sock, greeting, sizeof(greeting), 0) < 0) {
-		printf("Error send greeting\n");
-		close(sock);
-		exit(1);
-	}
-
-
-	uint8_t greeting_response[2];
-    recv(sock, greeting_response, 2, 0);
-	if (greeting_response[1] != 0x02) { 
-		printf("Server does not accept USERNAME/PASSWORD, closing.\n");
-		close(sock);
-		return 1;
-	}
-	printf("Server reply: VER=%d METHOD=0x%02x\n", greeting_response[0], greeting_response[1]);
-	printf("Handshake: server requires USERNAME/PASSWORD\n");
-
+	printf("Connected to PAM server!\n");
 
 	// <----------------------------------------- AUTH ----------------------------------------->
 	int idx = 0;
@@ -69,10 +43,10 @@ int main() {
 	// Send auth
 	send(sock, auth_msg, idx, 0);
 
-	uint8_t auth_resp[2];
+	uint8_t auth_resp[2]; 
 	recv(sock, auth_resp, 2, 0);
 
-	if (auth_resp[1] == 0x00) {
+	if (auth_resp[2] == 0x00) {
 		printf("Authentication successful!\n");
 	} else {
 		printf("Authentication failed!\n");
@@ -80,15 +54,10 @@ int main() {
 		return 1;
 	}
 
-	// if (response[1] != 0x00) {
-    //     printf("Server does not accept NO AUTH, closing.\n");
-    //     close(sock);
-    //     return 1;
-    // }
-
     printf("Handshake successful!\n");
 
-
+	// Por lo que entiendo PAM solo esta implementado hasta la autenticacion, asi que la aprte de request no se estaria usando. 
+	
 	// <----------------------------------------- REQUEST ----------------------------------------->
 	uint8_t request[] = {
 		0x05, 					// VER (5)

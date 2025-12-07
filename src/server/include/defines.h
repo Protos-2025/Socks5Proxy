@@ -23,6 +23,14 @@
 #define BUFFER_SIZE 1024
 #endif
 
+#ifndef SUCCESS
+#define SUCCESS 0
+#endif
+
+#ifndef FAILURE
+#define FAILURE 1
+#endif
+
 #ifndef SOCKS5_VERSION
 #define SOCKS5_VERSION 0x05
 #endif

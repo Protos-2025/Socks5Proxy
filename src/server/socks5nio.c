@@ -92,7 +92,7 @@ void socksv5_passive_accept(struct selector_key * key) {
     memcpy(&connection->client_addr, &clientAddr, clientAddrLen);
     connection->client_addr_len = clientAddrLen;
 
-    if (SELECTOR_SUCCESS != selector_register(key->s, clientFd, &socks5Handler, OP_READ, connection)) {
+    if (SELECTOR_SUCCESS != selector_register(key->s, clientFd, &socks5_handler, OP_READ, connection)) {
         goto fail;
     }
     

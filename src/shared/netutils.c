@@ -56,7 +56,7 @@ extern const char *sockaddr_to_human(char *buff, const size_t buffsize, const st
 	return buff;
 }
 
-int sock_blocking_write(const int fd, buffer *b) {
+int sock_blocking_write(const int fd, struct buffer *b) {
 	int ret = 0;
 	ssize_t nwritten;
 	size_t n;
@@ -81,13 +81,13 @@ int sock_blocking_copy(const int source, const int dest) {
 	char buf[4096];
 	ssize_t nread;
 	while ((nread = recv(source, buf, N(buf), 0)) > 0) {
-		char *out_ptr = buf;
+		char *outPtr = buf;
 		ssize_t nwritten;
 		do {
-			nwritten = send(dest, out_ptr, nread, MSG_NOSIGNAL);
+			nwritten = send(dest, outPtr, nread, MSG_NOSIGNAL);
 			if (nwritten > 0) {
 				nread -= nwritten;
-				out_ptr += nwritten;
+				outPtr += nwritten;
 			} else /* if (errno != EINTR) */ {
 				ret = errno;
 				goto error;

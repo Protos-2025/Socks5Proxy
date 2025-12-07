@@ -8,9 +8,9 @@
 
 START_TEST(test_buffer_misc) {
 	struct buffer buf;
-	buffer *b = &buf;
-	uint8_t direct_buff[6];
-	buffer_init(&buf, N(direct_buff), direct_buff);
+	Buffer *b = &buf;
+	uint8_t directBuff[6];
+	buffer_init(&buf, N(directBuff), directBuff);
 	ck_assert_ptr_eq(&buf, b);
 
 	ck_assert_int_eq(true, buffer_can_write(b));
@@ -20,14 +20,14 @@ START_TEST(test_buffer_misc) {
 	uint8_t *ptr = buffer_write_ptr(b, &wbytes);
 	ck_assert_uint_eq(6, wbytes);
 	// escribo 4 bytes
-	uint8_t first_write[] = {
+	uint8_t firstWrite[] = {
 		'H',
 		'O',
 		'L',
 		'A',
 	};
-	memcpy(ptr, first_write, sizeof(first_write));
-	buffer_write_adv(b, sizeof(first_write));
+	memcpy(ptr, firstWrite, sizeof(firstWrite));
+	buffer_write_adv(b, sizeof(firstWrite));
 
 	// quedan 2 libres para escribir
 	buffer_write_ptr(b, &wbytes);
@@ -50,12 +50,12 @@ START_TEST(test_buffer_misc) {
 	ptr = buffer_write_ptr(b, &wbytes);
 	ck_assert_uint_eq(2, wbytes);
 
-	uint8_t second_write[] = {
+	uint8_t secondWrite[] = {
 		' ',
 		'M',
 	};
-	memcpy(ptr, second_write, sizeof(second_write));
-	buffer_write_adv(b, sizeof(second_write));
+	memcpy(ptr, secondWrite, sizeof(secondWrite));
+	buffer_write_adv(b, sizeof(secondWrite));
 
 	ck_assert_int_eq(false, buffer_can_write(b));
 	buffer_write_ptr(b, &wbytes);
@@ -72,13 +72,13 @@ START_TEST(test_buffer_misc) {
 	ck_assert_ptr_eq(b->data + 3, buffer_write_ptr(b, &wbytes));
 	ck_assert_uint_eq(3, wbytes);
 
-	uint8_t third_write[] = {
+	uint8_t thirdWrite[] = {
 		'U',
 		'N',
 		'D',
 	};
-	memcpy(ptr, third_write, sizeof(third_write));
-	buffer_write_adv(b, sizeof(third_write));
+	memcpy(ptr, thirdWrite, sizeof(thirdWrite));
+	buffer_write_adv(b, sizeof(thirdWrite));
 
 	buffer_write_ptr(b, &wbytes);
 	ck_assert_uint_eq(0, wbytes);
@@ -93,7 +93,7 @@ START_TEST(test_buffer_misc) {
 	buffer_read_ptr(b, &rbytes);
 	ck_assert_uint_eq(0, rbytes);
 	buffer_write_ptr(b, &wbytes);
-	ck_assert_uint_eq(N(direct_buff), wbytes);
+	ck_assert_uint_eq(N(directBuff), wbytes);
 }
 END_TEST
 
@@ -109,10 +109,10 @@ Suite *suite(void) {
 
 int main(void) {
 	SRunner *sr = srunner_create(suite());
-	int number_failed;
+	int numberFailed;
 
 	srunner_run_all(sr, CK_NORMAL);
-	number_failed = srunner_ntests_failed(sr);
+	numberFailed = srunner_ntests_failed(sr);
 	srunner_free(sr);
-	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+	return (numberFailed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -22,12 +22,12 @@ void auth_arrival(const unsigned state, struct selector_key * key) {
 
 unsigned auth_read(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
-    uint8_t * w_ptr;
-    size_t count, to_read;
+    uint8_t * wPtr;
+    size_t count, toRead;
     ssize_t readn; 
 
-    w_ptr = buffer_write_ptr(&connection->client_buffer, &count);
-    readn = recv(key->fd, w_ptr, count, 0);
+    wPtr = buffer_write_ptr(&connection->client_buffer, &count);
+    readn = recv(key->fd, wPtr, count, 0);
 
     if (readn < 0) {
         LOG_FATAL("failed (AUTH)");
@@ -42,9 +42,9 @@ unsigned auth_read(struct selector_key * key) {
 
     // Read auth version
     if (connection->client.auth.state == AUTH_VER) {
-        buffer_read_ptr(&connection->client_buffer, &to_read);
+        buffer_read_ptr(&connection->client_buffer, &toRead);
 
-        if (to_read < 1) {
+        if (toRead < 1) {
             return AUTH;
         }
 
@@ -58,9 +58,9 @@ unsigned auth_read(struct selector_key * key) {
     }
 
     if (connection->client.auth.state == AUTH_ULEN) {
-        buffer_read_ptr(&connection->client_buffer, &to_read);
+        buffer_read_ptr(&connection->client_buffer, &toRead);
 
-        if (to_read < 1) {
+        if (toRead < 1) {
             return AUTH;
         }
 
@@ -75,9 +75,9 @@ unsigned auth_read(struct selector_key * key) {
 
     // Read username
     if (connection->client.auth.state == AUTH_UNAME) {
-        buffer_read_ptr(&connection->client_buffer, &to_read);
+        buffer_read_ptr(&connection->client_buffer, &toRead);
 
-        if (to_read < connection->client.auth.ulen) {
+        if (toRead < connection->client.auth.ulen) {
             return AUTH;
         }
 
@@ -91,9 +91,9 @@ unsigned auth_read(struct selector_key * key) {
     }
 
     if (connection->client.auth.state == AUTH_PLEN) {
-        buffer_read_ptr(&connection->client_buffer, &to_read);
+        buffer_read_ptr(&connection->client_buffer, &toRead);
 
-        if (to_read < 1) {
+        if (toRead < 1) {
             return AUTH;
         }
 
@@ -108,9 +108,9 @@ unsigned auth_read(struct selector_key * key) {
 
     // Read password
     if (connection->client.auth.state == AUTH_PASSWD) {
-        buffer_read_ptr(&connection->client_buffer, &to_read);
+        buffer_read_ptr(&connection->client_buffer, &toRead);
 
-        if (to_read < connection->client.auth.plen) {
+        if (toRead < connection->client.auth.plen) {
             return AUTH;
         }
 
@@ -122,10 +122,10 @@ unsigned auth_read(struct selector_key * key) {
         LOG_DEBUG("Password received (length: %d)", connection->client.auth.plen);
 
         // Check credentials
-        bool auth_success = false;
+        bool authSuccess = false;
         if (strcmp(connection->client.auth.username, VALID_USERNAME) == 0 &&
             strcmp(connection->client.auth.password, VALID_PASSWORD) == 0) {
-            auth_success = true;
+            authSuccess = true;
             LOG_INFO("Authentication successful for user: %s", connection->client.auth.username);
         } else {
             LOG_WARN("Authentication failed for user: %s", connection->client.auth.username);
@@ -134,9 +134,9 @@ unsigned auth_read(struct selector_key * key) {
         // Prepare response
         buffer_reset(&connection->client_buffer);
         buffer_write(&connection->client_buffer, AUTH_VERSION);
-        buffer_write(&connection->client_buffer, auth_success ? AUTH_SUCCESS : AUTH_FAILURE);
+        buffer_write(&connection->client_buffer, authSuccess ? AUTH_SUCCESS : AUTH_FAILURE);
 
-        connection->client.auth.authenticated = auth_success;
+        connection->client.auth.authenticated = authSuccess;
         selector_set_interest_key(key, OP_WRITE);
     }
 
@@ -145,12 +145,12 @@ unsigned auth_read(struct selector_key * key) {
 
 unsigned auth_write(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
-    uint8_t * r_ptr;
-    size_t to_read;
+    uint8_t * rPtr;
+    size_t toRead;
     ssize_t written; 
     
-    r_ptr = buffer_read_ptr(&connection->client_buffer, &to_read);
-    written = send(connection->client_fd, r_ptr, to_read, 0);
+    rPtr = buffer_read_ptr(&connection->client_buffer, &toRead);
+    written = send(connection->client_fd, rPtr, toRead, 0);
     buffer_read_adv(&connection->client_buffer, written);
 
     if (written < 0) {

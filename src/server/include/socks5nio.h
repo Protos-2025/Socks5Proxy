@@ -41,7 +41,7 @@ enum socks_v5state {
 struct socks5 {
     /* client */
     int client_fd;
-    buffer client_buffer;
+    Buffer client_buffer;
     uint8_t client_buffer_data[BUFFER_SIZE];
     struct sockaddr_storage client_addr;
     socklen_t client_addr_len;
@@ -61,7 +61,7 @@ struct socks5 {
     uint8_t origin_port[PORT_MAX_LENGHT];
     struct addrinfo * origin_resolution;
     struct addrinfo * origin_resolutions_list;
-    buffer origin_buffer;
+    Buffer origin_buffer;
     uint8_t origin_buffer_data[BUFFER_SIZE];
     // union {
     //     struct connecting conn;
@@ -81,7 +81,7 @@ void socksv5_write(struct selector_key * key);
 void socksv5_block(struct selector_key * key);
 void socksv5_close(struct selector_key * key);
 
-static const struct fd_handler socks5_handler = {
+static const struct fd_handler socks5Handler = {
     .handle_read   = socksv5_read,
     .handle_write  = socksv5_write,
     .handle_close  = socksv5_close,

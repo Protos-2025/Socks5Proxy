@@ -25,7 +25,7 @@ static void bar(struct parser_event *ret, const uint8_t c) {
 	ret->data[0] = c;
 }
 
-static const struct parser_state_transition ST_S0[] = {
+static const struct parser_state_transition stS0[] = {
 	{
 		.when = 'F',
 		.dest = S0,
@@ -42,7 +42,7 @@ static const struct parser_state_transition ST_S0[] = {
 		.act1 = bar,
 	},
 };
-static const struct parser_state_transition ST_S1[] = {
+static const struct parser_state_transition stS1[] = {
 	{
 		.when = 'F',
 		.dest = S0,
@@ -61,21 +61,21 @@ static const struct parser_state_transition ST_S1[] = {
 };
 
 static const struct parser_state_transition *states[] = {
-	ST_S0,
-	ST_S1,
+	stS0,
+	stS1,
 };
 
 #define N(x) (sizeof(x) / sizeof((x)[0]))
 
-static const size_t states_n[] = {
-	N(ST_S0),
-	N(ST_S1),
+static const size_t statesN[] = {
+	N(stS0),
+	N(stS1),
 };
 
 static struct parser_definition definition = {
 	.states_count = N(states),
 	.states = states,
-	.states_n = states_n,
+	.states_n = statesN,
 	.start_state = S0,
 };
 
@@ -115,7 +115,7 @@ Suite *suite(void) {
 }
 
 int main(void) {
-	int number_failed;
+	int numberFailed;
 	Suite *s;
 	SRunner *sr;
 
@@ -123,7 +123,7 @@ int main(void) {
 	sr = srunner_create(s);
 
 	srunner_run_all(sr, CK_NORMAL);
-	number_failed = srunner_ntests_failed(sr);
+	numberFailed = srunner_ntests_failed(sr);
 	srunner_free(sr);
-	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+	return (numberFailed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -88,11 +88,11 @@ struct parser_definition parser_utils_strcmpi(const char *s) {
 	}
 
 	// estados fijos
-	const size_t st_eq = n;
-	const size_t st_neq = n + 1;
+	const size_t stEq = n;
+	const size_t stNeq = n + 1;
 
 	for (size_t i = 0; i < n; i++) {
-		const size_t dest = (i + 1 == n) ? st_eq : i + 1;
+		const size_t dest = (i + 1 == n) ? stEq : i + 1;
 
 		transitions[i * 3 + 0].when = tolower(s[i]);
 		transitions[i * 3 + 0].dest = dest;
@@ -101,20 +101,20 @@ struct parser_definition parser_utils_strcmpi(const char *s) {
 		transitions[i * 3 + 1].dest = dest;
 		transitions[i * 3 + 1].act1 = i + 1 == n ? eq : may_eq;
 		transitions[i * 3 + 2].when = ANY;
-		transitions[i * 3 + 2].dest = st_neq;
+		transitions[i * 3 + 2].dest = stNeq;
 		transitions[i * 3 + 2].act1 = neq;
 		states[i] = transitions + (i * 3 + 0);
 		nstates[i] = 3;
 	}
 	// EQ
 	transitions[(n + 0) * 3].when = ANY;
-	transitions[(n + 0) * 3].dest = st_neq;
+	transitions[(n + 0) * 3].dest = stNeq;
 	transitions[(n + 0) * 3].act1 = neq;
 	states[(n + 0)] = transitions + ((n + 0) * 3 + 0);
 	nstates[(n + 0)] = 1;
 	// NEQ
 	transitions[(n + 1) * 3].when = ANY;
-	transitions[(n + 1) * 3].dest = st_neq;
+	transitions[(n + 1) * 3].dest = stNeq;
 	transitions[(n + 1) * 3].act1 = neq;
 	states[(n + 1)] = transitions + ((n + 1) * 3 + 0);
 	nstates[(n + 1)] = 1;

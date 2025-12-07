@@ -29,7 +29,7 @@ sockaddr_to_human(char *buff, const size_t buffsize,
  * Retorna 0 si se realizó sin problema y errno si hubo problemas
  */
 int
-sock_blocking_write(const int fd, buffer *b);
+sock_blocking_write(const int fd, struct struct buffer *b);
 
 
 /**

@@ -8,15 +8,15 @@ typedef struct QueueCDT * Queue;
 typedef int (*QueueElemCmpFn)(void *, void *);
 typedef void (*QueueElemFreeFn)(void *);
 
-Queue createQueue(QueueElemFreeFn freeFn, size_t elemSize, size_t max_capacity);
+Queue create_queue(QueueElemFreeFn free_fn, size_t elem_size, size_t max_capacity);
 Queue enqueue(Queue queue, void * data);
 void * dequeue(Queue queue, void * buffer);
-void * queuePeek(Queue queue, void * buffer);
-size_t queueSize(Queue queue);
-void freeQueue(Queue queue);
+void * queue_peek(Queue queue, void * buffer);
+size_t queue_size(Queue queue);
+void free_queue(Queue queue);
 
-void queueBeginIter(Queue queue);
-void * queueIterNext(Queue queue, void * buffer);
-int queueHasNextIter(Queue queue);
+void queue_begin_iter(Queue queue);
+void * queue_iter_next(Queue queue, void * buffer);
+int queue_has_next_iter(Queue queue);
 
 #endif

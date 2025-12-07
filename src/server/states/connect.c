@@ -13,14 +13,14 @@ unsigned connect_write(struct selector_key * key) {
     
     struct socks5 * connection = ATTACHMENT(key);
 
-    int opt_val, ret;
-    socklen_t opt_len = sizeof(opt_val);
-    ret = getsockopt(connection->origin_fd, SOL_SOCKET, SO_ERROR, &opt_val, &opt_len);
+    int optVal, ret;
+    socklen_t optLen = sizeof(optVal);
+    ret = getsockopt(connection->origin_fd, SOL_SOCKET, SO_ERROR, &optVal, &optLen);
     
     if (ret == -1) {
         connection->client.reply.rep = SERVER_FAILURE;
         // LOG_DEBUG("CONNECT: getsockopt failed... (errno = %d, fd = %d)", errno, connection->origin_fd);
-    } else if (opt_val != 0) {
+    } else if (optVal != 0) {
         // LOG_DEBUG("CONNECT: couldnt connect, trying again...");
         
         int ret = try_connection(key);

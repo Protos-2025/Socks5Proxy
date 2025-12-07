@@ -14,14 +14,14 @@
 #define TOO_MANY_AUTH_TRIES 0x04
 
 
-enum pamAuth_state {
+enum pam_auth_state {
   VER_N_NUSER_N_NPASS,
   USERNAME,
   PASS
 };
 
 struct pamAuth_st {
-    enum pamAuth_state state;
+    enum pam_auth_state state;
     uint8_t status;
     uint8_t ver;
     uint8_t n_user;

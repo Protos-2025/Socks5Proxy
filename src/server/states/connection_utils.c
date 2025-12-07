@@ -57,7 +57,7 @@ int try_connection(struct selector_key * key) {
     connection->origin_fd = fd;
 
     if (ret == -1 && errno == EINPROGRESS) {
-        if (SELECTOR_SUCCESS != selector_register(key->s, fd, &socks5_handler, OP_WRITE, connection)) {
+        if (SELECTOR_SUCCESS != selector_register(key->s, fd, &socks5Handler, OP_WRITE, connection)) {
             return SELECTOR_REGISTER_FAILED;
         }
         return CONNECTION_IN_PROGRESS;

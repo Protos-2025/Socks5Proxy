@@ -18,8 +18,9 @@ unsigned connect_write(struct selector_key * key) {
     ret = getsockopt(connection->origin_fd, SOL_SOCKET, SO_ERROR, &opt_val, &opt_len);
     
     if (ret == -1) {
+        LOG_DEBUG("FAILED HERE 9");
         connection->client.reply.rep = SERVER_FAILURE;
-        // LOG_DEBUG("CONNECT: getsockopt failed... (errno = %d, fd = %d)", errno, connection->origin_fd);
+        LOG_DEBUG("CONNECT: getsockopt failed... (errno = %d, fd = %d)", errno, connection->origin_fd);
     } else if (opt_val != 0) {
         // LOG_DEBUG("CONNECT: couldnt connect, trying again...");
         
@@ -27,6 +28,7 @@ unsigned connect_write(struct selector_key * key) {
         switch (ret) {
             case GENERAL_FAILURE:
             case SELECTOR_REGISTER_FAILED:
+                LOG_DEBUG("FAILED HERE 10 (%d) (connect.c)", ret);
                 connection->client.reply.rep = SERVER_FAILURE;
                 break;
     
@@ -44,7 +46,7 @@ unsigned connect_write(struct selector_key * key) {
                 // LOG_DEBUG("CONNECT: connection succeded after trying again");
                 struct addrinfo * copy = malloc(sizeof(struct addrinfo));
                 if (copy == NULL) {
-                    LOG_DEBUG("REQUEST: setting SERVER_FAILURE (12)");
+                    LOG_DEBUG("FAILED HERE 11");
                     connection->client.reply.rep = SERVER_FAILURE;
                     break;
                 }

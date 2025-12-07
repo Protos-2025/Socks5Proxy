@@ -223,6 +223,7 @@ static unsigned connect_to_dest(struct selector_key * key) {
             break;
 
         case CONNECTION_IN_PROGRESS:
+            LOG_DEBUG("Connection in progress...");
             return CONNECT; 
         
         default: {

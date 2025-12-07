@@ -23,6 +23,8 @@ services:
     entrypoint: ["scripts/server.sh"]
     ports:
       - "1080:1080"
+    networks:
+      - default
     depends_on:
       compiler:
         condition: service_completed_successfully
@@ -83,6 +85,8 @@ services:
         condition: service_completed_successfully
 
 networks:
+  default:
+    enable_ipv6: true
   test-server-network:
     # driver: bridge
     internal: true

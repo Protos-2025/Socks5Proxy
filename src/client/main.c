@@ -118,15 +118,48 @@ int main() {
 
 
 	// <----------------------------------------- FQDN REQUEST ----------------------------------------->
+	// uint8_t request[] = {
+	// 	0x05, 											// VER (5)
+	// 	0x01, 											// CMD (connect)
+	// 	0x00, 											// RSV
+	// 	0x03, 											// ATYP (fqdn)
+	// 	0x0B,                   						// LEN (11)
+    // 	'e','x','a','m','p','l','e','.','c','o','m', 	// DOMAIN (example.com)
+	// 	0x00, 0x50										// PORT (80)
+	// };
+
+	// if(0 > send(sock, request, sizeof(request), 0)) {
+	// 	perror("send request");
+	// 	close(sock);
+	// 	exit(1);
+	// }
+
+	// uint8_t reply[4];
+	// if (recv(sock, reply, 4, MSG_WAITALL) != 4) {
+	// 	perror("recv header");
+	// 	return 1;
+	// }
+
+	// if (reply[1] == 0x00) {
+	// 	printf("Request successful!\n");
+	// } else {
+	// 	printf("Request failed (code=0x%02X)\n", reply[1]);
+	// }
+	
+	
+	// <----------------------------------------- IPv6 REQUEST ----------------------------------------->
 	uint8_t request[] = {
-		0x05, 											// VER (5)
-		0x01, 											// CMD (connect)
-		0x00, 											// RSV
-		0x03, 											// ATYP (fqdn)
-		0x0B,                   						// LEN (11)
-    	'e','x','a','m','p','l','e','.','c','o','m', 	// DOMAIN (example.com)
-		0x00, 0x50										// PORT (80)
+		0x05,                               // VER (5)
+		0x01,                               // CMD (connect)
+		0x00,                               // RSV
+		0x04,                               // ATYP (ipv6)
+		0x26, 0x20, 0x00, 0xFE,				// DST. ADDR (2620:00fe:0000:0000:0000:0000:0000:00fe)
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0xFE,
+		0x00, 0x35                			// DST.PORT = 53
 	};
+	
 
 	if(0 > send(sock, request, sizeof(request), 0)) {
 		perror("send request");
@@ -134,9 +167,9 @@ int main() {
 		exit(1);
 	}
 
-	uint8_t reply[4];
-	if (recv(sock, reply, 4, MSG_WAITALL) != 4) {
-		perror("recv header");
+	uint8_t reply[10];
+	if (recv(sock, reply, 10, MSG_WAITALL) != 10) {
+		printf("reply recv failed\n");
 		return 1;
 	}
 

@@ -10,7 +10,9 @@ services:
       - .:/root
     working_dir: /root
     entrypoint: ["scripts/compile.sh"]
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
 
   server:
     container_name: server
@@ -19,6 +21,9 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/root
+      - /sys/kernel/debug:/sys/kernel/debug
+      - /sys/kernel/tracing:/sys/kernel/tracing
+    privileged: "${TRACE:-false}"
     working_dir: /root
     entrypoint: ["scripts/server.sh"]
     ports:
@@ -37,6 +42,9 @@ services:
     depends_on:
       compiler:
         condition: service_completed_successfully
+    env_file:
+      - path: .env
+        required: false
 
   client:
     container_name: client
@@ -65,7 +73,7 @@ services:
     volumes:
       - .:/root
     working_dir: /root
-    entrypoint: ["/scripts/tests.sh"]
+    entrypoint: ["scripts/tests.sh"]
 
   nginx-test-server:
     container_name: nginx-test-server

@@ -16,12 +16,12 @@ void pam_auth_arrival(const unsigned state, struct selector_key * key) {
 unsigned pam_auth_read(struct selector_key * key) {
 
   struct pam * connection = PAM_ATTACHMENT(key);
-  uint8_t * w_ptr;
-  size_t count, to_read;
+  uint8_t * wPtr;
+  size_t count, toRead;
   ssize_t readn;
 
-  w_ptr = buffer_write_ptr(&connection->client_buffer, &count);
-  readn = recv(key->fd, w_ptr, count, 0);
+  wPtr = buffer_write_ptr(&connection->client_buffer, &count);
+  readn = recv(key->fd, wPtr, count, 0);
 
     if (readn < 0) {
         // TODO: handle error correctly
@@ -37,10 +37,10 @@ unsigned pam_auth_read(struct selector_key * key) {
   
     //parse first inner state
   if(connection->client.auth.state == VER_N_NUSER_N_NPASS) {
-    buffer_write_ptr(&connection->client_buffer, &to_read);
+    buffer_write_ptr(&connection->client_buffer, &toRead);
      
     // wait until we receive first three bytes 
-    if(to_read < 3) {
+    if(toRead < 3) {
       return PAM_AUTH;
     }
     
@@ -69,10 +69,10 @@ unsigned pam_auth_read(struct selector_key * key) {
     }
 
     if(connection->client.auth.state == USERNAME) {
-      buffer_read_ptr(&connection->client_buffer, &to_read);
+      buffer_read_ptr(&connection->client_buffer, &toRead);
 
       // wait until we receive the whole username
-      if(to_read < connection->client.auth.n_user) {
+      if(toRead < connection->client.auth.n_user) {
         return PAM_AUTH;
       }
 
@@ -86,10 +86,10 @@ unsigned pam_auth_read(struct selector_key * key) {
 
 
     if(connection->client.auth.state == PASS) {
-      buffer_read_ptr(&connection->client_buffer, &to_read);
+      buffer_read_ptr(&connection->client_buffer, &toRead);
 
       // wait until we receive the whole pass
-      if(to_read < connection->client.auth.n_pass) {
+      if(toRead < connection->client.auth.n_pass) {
         return PAM_AUTH;
       }
 
@@ -116,12 +116,12 @@ unsigned pam_auth_read(struct selector_key * key) {
 
 unsigned pam_auth_write(struct selector_key * key) {
     struct pam * connection = PAM_ATTACHMENT(key);
-    uint8_t * r_ptr;
-	size_t to_read;
+    uint8_t * rPtr;
+	size_t toRead;
 	int written;
 
-	r_ptr = buffer_read_ptr(&connection->client_buffer, &to_read);
-    written = send(connection->client_fd, r_ptr, to_read, 0);
+	rPtr = buffer_read_ptr(&connection->client_buffer, &toRead);
+    written = send(connection->client_fd, rPtr, toRead, 0);
     buffer_read_adv(&connection->client_buffer, written);
 
     if (written < 0) {

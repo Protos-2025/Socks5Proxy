@@ -144,7 +144,7 @@ void flush_all_logs() {
         char * msg = NULL;
         dequeue(logQueue, &msg);
         if (msg) {
-            fprintf(stdout, "%s\n", msg);
+            fprintf(stdout, "%s", msg);
             free(msg);
         }
     }

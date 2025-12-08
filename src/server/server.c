@@ -93,6 +93,7 @@ int main(const int argc, const char **argv) {
 
     signal(SIGTERM, signal_handler);
     signal(SIGINT,  signal_handler);
+    signal(SIGABRT, signal_handler);
 
 
     // <--------------------------------- configure selector --------------------------------->

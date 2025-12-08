@@ -89,43 +89,13 @@ int main() {
 
 
 	// <----------------------------------------- IPv4 REQUEST ----------------------------------------->
-	// uint8_t request[] = {
-	// 	0x05, 					// VER (5)
-	// 	0x01, 					// CMD (connect)
-	// 	0x00, 					// RSV
-	// 	0x01, 					// ATYP (ipv4)
-	// 	0x0A, 0x00, 0x00, 0x6F, // DST. ADDR (10.0.0.111)
-	// 	0x00, 0x50				// DST. PORT (80)
-	// };
-
-	// if(0 > send(sock, request, sizeof(request), 0)) {
-	// 	perror("send request");
-	// 	close(sock);
-	// 	exit(1);
-	// }
-
-	// uint8_t reply[10];
-    // if (recv(sock, reply, 10, MSG_WAITALL) != 10) {
-    //     printf("reply recv failed\n");
-    //     return 1;
-    // }
-
-    // if (reply[1] == 0x00) {
-	// 	printf("Request successful!\n");
-	// } else {
-	// 	printf("Request failed (code=0x%02X)\n", reply[1]);
-	// }
-
-
-	// <----------------------------------------- FQDN REQUEST ----------------------------------------->
 	uint8_t request[] = {
-		0x05, 											// VER (5)
-		0x01, 											// CMD (connect)
-		0x00, 											// RSV
-		0x03, 											// ATYP (fqdn)
-		0x0B,                   						// LEN (11)
-    	'e','x','a','m','p','l','e','.','c','o','m', 	// DOMAIN (example.com)
-		0x00, 0x50										// PORT (80)
+		0x05, 					// VER (5)
+		0x01, 					// CMD (connect)
+		0x00, 					// RSV
+		0x01, 					// ATYP (ipv4)
+		0x0A, 0x00, 0x00, 0x6F, // DST. ADDR (10.0.0.111)
+		0x00, 0x50				// DST. PORT (80)
 	};
 
 	if(0 > send(sock, request, sizeof(request), 0)) {
@@ -134,18 +104,85 @@ int main() {
 		exit(1);
 	}
 
-	uint8_t reply[4];
-	if (recv(sock, reply, 4, MSG_WAITALL) != 4) {
-		perror("recv header");
-		return 1;
-	}
+	uint8_t reply[10];
+    if (recv(sock, reply, 10, MSG_WAITALL) != 10) {
+        printf("reply recv failed\n");
+        return 1;
+    }
 
-	if (reply[1] == 0x00) {
+    if (reply[1] == 0x00) {
 		printf("Request successful!\n");
 	} else {
 		printf("Request failed (code=0x%02X)\n", reply[1]);
 	}
 
+
+	// <----------------------------------------- FQDN REQUEST ----------------------------------------->
+	// uint8_t request[] = {
+	// 	0x05, 											// VER (5)
+	// 	0x01, 											// CMD (connect)
+	// 	0x00, 											// RSV
+	// 	0x03, 											// ATYP (fqdn)
+	// 	0x0B,                   						// LEN (11)
+    // 	'e','x','a','m','p','l','e','.','c','o','m', 	// DOMAIN (example.com)
+	// 	0x00, 0x50										// PORT (80)
+	// };
+
+	// if(0 > send(sock, request, sizeof(request), 0)) {
+	// 	perror("send request");
+	// 	close(sock);
+	// 	exit(1);
+	// }
+
+	// uint8_t reply[4];
+	// if (recv(sock, reply, 4, MSG_WAITALL) != 4) {
+	// 	perror("recv header");
+	// 	return 1;
+	// }
+
+	// if (reply[1] == 0x00) {
+	// 	printf("Request successful!\n");
+	// } else {
+	// 	printf("Request failed (code=0x%02X)\n", reply[1]);
+	// }
+
+
+	// <----------------------------------------- REQUEST DATA ----------------------------------------->
+
+	// Build HTTP request
+	const char *httpReq =
+		"GET /test_file_01.txt HTTP/1.1\r\n"
+		"Host: 10.0.0.111\r\n"
+		"\r\n";
+
+	// Send HTTP request through SOCKS5 tunnel
+	if (send(sock, httpReq, strlen(httpReq), 0) < 0) {
+		perror("send HTTP");
+		close(sock);
+		exit(1);
+	}
+
+	// Receive response
+	char buffer[4096] = {0};
+	int n;
+
+	printf("----- BEGIN RESPONSE -----\n");
+
+	while ((n = recv(sock, buffer, sizeof(buffer)-1, 0)) > 0) {
+		buffer[n] = '\0';
+		printf("%s", buffer);
+		if (strstr(buffer, "\r\n\r\n") != NULL) {
+			break;
+		}
+	}
+
+	printf("\n----- END RESPONSE -----\n");
+
+	if (n < 0) perror("recv HTTP");
+
+	printf("Connection closed by server.\n");
+
+	printf("DATA: %s\n", buffer);
 
 	// <----------------------------------------- FINISH ----------------------------------------->
     close(sock);

@@ -20,21 +20,24 @@ echo "Ignoring pselect6 syscall (id: $select_id)"
 LD_PRELOAD=$(gcc -print-file-name=libasan.so) stdbuf -o0 -e0 ./bin/server &
 server_pid=$!
 
+MAIN_TID=$(ps -o tid= -p "$server_pid" | head -1 | tr -d ' ')
+echo "Main thread tid: $MAIN_TID"
+
 # Run bpftrace and capture its output
 bpftrace --unsafe -e '
-tracepoint:raw_syscalls:sys_enter {
+tracepoint:raw_syscalls:sys_enter / tid == '$MAIN_TID' / {
     @id[tid] = args->id;
 }
 
-tracepoint:raw_syscalls:sys_exit {
+tracepoint:raw_syscalls:sys_exit / tid == '$MAIN_TID' / {
     delete(@id[tid]);
 }
 
 tracepoint:sched:sched_switch
-/@id[args->prev_pid] && args->prev_state != 0 && args->prev_comm == "server" && @id[args->prev_pid] != '$select_id' /
+/ args->prev_pid == '$MAIN_TID' && @id['$MAIN_TID'] && args->prev_state != 0 && args->prev_comm == "server" && @id['$MAIN_TID'] != '$select_id' /
 {
     printf("BLOCK in syscall=%d comm=%s tid=%d pid=%d\n",
-        @id[args->prev_pid],
+        @id['$MAIN_TID'],
         args->prev_comm,
         args->prev_pid,
         pid);
@@ -45,7 +48,7 @@ tracepoint:sched:sched_switch
     printf("KERNEL STACK:\n");
     print(kstack(20));
 
-    exit();                // stop after first block
+    exit();
 }
 ' > "$tmpfile" 2>&1 &
 

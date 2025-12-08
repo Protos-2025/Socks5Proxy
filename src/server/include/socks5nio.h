@@ -66,7 +66,6 @@ struct socks5 {
     Buffer origin_buffer;
     uint8_t origin_buffer_data[BUFFER_SIZE];
     union {
-        // struct connecting conn;
         struct copy_st copy;
     } origin_st;
 

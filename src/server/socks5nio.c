@@ -183,9 +183,13 @@ static void socksv5_done(struct selector_key * key) {
 
 static void socks5_destroy(struct socks5 * connection) {
     if (connection != NULL) {
-        if (connection->origin_resolution != NULL) {
+        if (connection->origin_resolutions_list != NULL) {
             freeaddrinfo(connection->origin_resolutions_list);
             connection->origin_resolutions_list = NULL;
+        }
+        if (connection->origin_resolution != NULL) {
+            freeaddrinfo(connection->origin_resolution);
+            connection->origin_resolution = NULL;
         }
         free(connection);
     }

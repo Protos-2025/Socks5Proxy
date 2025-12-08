@@ -4,6 +4,7 @@
 #include "logger.h"
 
 #define RSV 0x00
+// #define FQDN 0x03
 
 void reply_arrival(const unsigned state, struct selector_key * key) {
     LOG_DEBUG("Replying...");
@@ -15,6 +16,9 @@ void reply_arrival(const unsigned state, struct selector_key * key) {
     buffer_write(&connection->client_buffer, connection->client.reply.rep);
     buffer_write(&connection->client_buffer, RSV);
     buffer_write(&connection->client_buffer, connection->client.request.atyp);
+    // if (connection->client.request.atyp == FQDN) {
+    //     buffer_write(&connection->client_buffer, strlen((char *)connection->origin_host));
+    // }
     for (int i = 0; connection->origin_host[i] != '\0' && i < HOST_MAX_LENGHT; i++) {
         buffer_write(&connection->client_buffer, connection->origin_host[i]);
     }
@@ -45,9 +49,9 @@ unsigned reply_write(struct selector_key * key) {
     buffer_reset(&connection->client_buffer);
 
     if (connection->client.reply.rep == SUCCEDED) {
-        selector_set_interest(key->s, connection->client_fd, OP_READ);
         return DONE; // TODO: change to COPY
     }
 
+    selector_set_interest(key->s, connection->client_fd, OP_READ);
     return REQUEST;
 }

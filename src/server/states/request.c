@@ -25,6 +25,7 @@
 #define IS_VALID_ATYP(c) ((c) == IPv4_ADDR || (c) == FQDN || (c) == IPv6_ADDR)
 #define ADDR_BYTES_BY_IP_VERSION(v) ((v) == IPv4_ADDR ? IPv4_ADDR_LEN : IPv6_ADDR_LEN)
 
+static unsigned to_reply_state(struct selector_key * key);
 static unsigned resolve_dst_address(struct selector_key * key);
 static void get_port(struct socks5 * connection);
 static unsigned connect_to_dest(struct selector_key * key);
@@ -53,7 +54,7 @@ unsigned request_read(struct selector_key * key) {
     
         if (readn < 0) {
             connection->client.reply.rep = SERVER_FAILURE;
-            return REPLY;
+            return to_reply_state(key);
         }
         if (readn == 0) {
             LOG_INFO("Client closed connection (REQUEST)");
@@ -69,7 +70,7 @@ unsigned request_read(struct selector_key * key) {
     
         if (SOCKS5_VERSION != buffer_read(&connection->client_buffer)) {
             connection->client.reply.rep = INVALID_SOCKS5_VERSION;
-            return REPLY;
+            return to_reply_state(key);
         }
     
         connection->client.request.cmd = buffer_read(&connection->client_buffer);
@@ -77,18 +78,18 @@ unsigned request_read(struct selector_key * key) {
         // only connect is supported (for now)
         if (connection->client.request.cmd != CONNECT_CMD) {
             connection->client.reply.rep = COMMAND_NOT_SUPPORTED;
-            return REPLY;
+            return to_reply_state(key);
         }
     
         if (RSV != buffer_read(&connection->client_buffer)) {
             connection->client.reply.rep = INVALID_RSV;
-            return REPLY;
+            return to_reply_state(key);
         }
     
         connection->client.request.atyp = buffer_read(&connection->client_buffer);
         if (!IS_VALID_ATYP(connection->client.request.atyp)) {
             connection->client.reply.rep = ADDRESS_TYPE_NOT_SUPPORTED;
-            return REPLY;
+            return to_reply_state(key);
         }
     
         connection->client.request.state = DST_LEN;
@@ -99,6 +100,11 @@ unsigned request_read(struct selector_key * key) {
 
 unsigned request_block(struct selector_key * key) {
     return connect_to_dest(key);
+}
+
+static unsigned to_reply_state(struct selector_key * key) {
+    selector_set_interest(key->s, ATTACHMENT(key)->client_fd, OP_WRITE);
+    return REPLY;
 }
 
 static unsigned resolve_dst_address(struct selector_key * key) {
@@ -113,7 +119,7 @@ static unsigned resolve_dst_address(struct selector_key * key) {
     if (connection->client.request.state == DST_LEN) {
         if (readn < 0) {
             connection->client.reply.rep = SERVER_FAILURE;
-            return REPLY;
+            return to_reply_state(key);
         }
         if (readn == 0) {
             LOG_INFO("Client closed connection (REQUEST)");
@@ -131,7 +137,7 @@ static unsigned resolve_dst_address(struct selector_key * key) {
             addrBytes = buffer_read(&connection->client_buffer);
             if (addrBytes == 0) {
                 connection->client.reply.rep = INVALID_FQDN_LENGHT;
-                return REPLY;
+                return to_reply_state(key);
             }
         } else {
             addrBytes = ADDR_BYTES_BY_IP_VERSION(connection->client.request.atyp);
@@ -148,13 +154,13 @@ static unsigned resolve_dst_address(struct selector_key * key) {
         case IPv4_ADDR:
             if (FAILURE == get_ipv4_address(connection)) {
                 connection->client.reply.rep = SERVER_FAILURE;
-                return REPLY;
+                return to_reply_state(key);
             }
             get_port(connection);
             LOG_DEBUG("IPv4 address (%s:%s)", connection->origin_host, connection->origin_port);
             if (FAILURE == resolve_ipv4(connection)) {
                 connection->client.reply.rep = SERVER_FAILURE;
-                return REPLY;
+                return to_reply_state(key);
             }
             break;
         
@@ -165,20 +171,20 @@ static unsigned resolve_dst_address(struct selector_key * key) {
             LOG_INFO("Request processed successfully");
             if (FAILURE == resolve_fqdn(key)) {
                 connection->client.reply.rep = SERVER_FAILURE;
-                return REPLY;
+                return to_reply_state(key);
             }
             return REQUEST;
             
         default:
             if (FAILURE == get_ipv6_address(connection)) {
                 connection->client.reply.rep = SERVER_FAILURE;
-                return REPLY;
+                return to_reply_state(key);
             }
             get_port(connection);
             LOG_DEBUG("IPv6 address (%s:%s)", connection->origin_host, connection->origin_port);
             if (FAILURE == resolve_ipv6(connection)) {
                 connection->client.reply.rep = SERVER_FAILURE;
-                return REPLY;
+                return to_reply_state(key);
             }
             break;
     }
@@ -203,7 +209,7 @@ static unsigned connect_to_dest(struct selector_key * key) {
 
     if (connection->origin_resolutions_list == NULL) {
         connection->client.reply.rep = HOST_UNREACHABLE;
-        return REPLY;
+        return to_reply_state(key);
     }
 
     connection->origin_resolution = connection->origin_resolutions_list;
@@ -234,9 +240,7 @@ static unsigned connect_to_dest(struct selector_key * key) {
 
     connection->origin_resolutions_list = NULL;
 
-    selector_set_interest(key->s, connection->client_fd, OP_WRITE);
-
-    return REPLY;
+    return to_reply_state(key);
 }
 
 // <=========================================================== IPv4 ===========================================================>

@@ -23,6 +23,8 @@ services:
     entrypoint: ["scripts/server.sh"]
     ports:
       - "1080:1080"
+    dns:
+      - 8.8.8.8
     healthcheck:
       test: ["CMD-SHELL", "printf '\\005\\001\\002' | nc 127.0.0.1 1080 | head -c1 | grep -q \"$(printf '\\005')\""]
       start_period: 1s
@@ -115,7 +117,6 @@ services:
 networks:
   test-server-network:
     driver: bridge
-    # internal: true
     enable_ipv6: true
     ipam:
       config:

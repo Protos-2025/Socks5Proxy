@@ -304,33 +304,28 @@ static uint8_t get_ipv6_address(struct socks5 * connection) {
 }
 
 static uint8_t resolve_ipv6(struct socks5 * connection) {
-    struct sockaddr_in6 * sockAddr = malloc(sizeof(struct sockaddr_in6));
+    struct sockaddr_in6 * sockAddr = calloc(1, sizeof(struct sockaddr_in6));
     if (sockAddr == NULL) {
         return FAILURE;
     }
     sockAddr->sin6_family = AF_INET6;
     sockAddr->sin6_port = htons(atoi((const char *) connection->origin_port));
-    sockAddr->sin6_flowinfo = 0;
-    sockAddr->sin6_scope_id = 0;
 
     if (-1 == inet_pton(AF_INET6, (const char *) connection->origin_host, &sockAddr->sin6_addr)) {
         free(sockAddr);
         return FAILURE;
     }
 
-    struct addrinfo * resolution = malloc(sizeof(struct addrinfo));
+    struct addrinfo * resolution = calloc(1, sizeof(struct addrinfo));
     if (resolution == NULL) {
         free(sockAddr);
         return FAILURE;
     }
-    resolution->ai_flags = 0;
     resolution->ai_family = AF_INET6;
     resolution->ai_socktype = SOCK_STREAM;
     resolution->ai_protocol = IPPROTO_TCP;
     resolution->ai_addrlen = sizeof(struct sockaddr_in6);
     resolution->ai_addr = (struct sockaddr *) sockAddr;
-    resolution->ai_canonname = NULL;
-    resolution->ai_next = NULL;
 
     connection->origin_resolutions_list = resolution;
 
@@ -353,9 +348,13 @@ static uint8_t resolve_fqdn(struct selector_key * key) {
 
     pthread_t thread;
     struct selector_key * keyCopy = malloc(sizeof(struct selector_key));
+    if (keyCopy == NULL) {
+        return FAILURE;
+    }
     memcpy(keyCopy, key, sizeof(struct selector_key));
 
     if (0 != pthread_create(&thread, NULL, resolve_fqdn_blocking, keyCopy)) {
+        free(keyCopy);
         return FAILURE;
     }
 

@@ -1,10 +1,11 @@
 #include "list.h"
-#include "../src/server/include/users.h"
 
+#include "users.h"
 #include <check.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
+
+#include "../src/server/users.c"
 
 START_TEST(users_test_list) {
     users_init();

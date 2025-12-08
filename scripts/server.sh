@@ -20,24 +20,23 @@ echo "Ignoring pselect6 syscall (id: $select_id)"
 LD_PRELOAD=$(gcc -print-file-name=libasan.so) stdbuf -o0 -e0 ./bin/server &
 server_pid=$!
 
-MAIN_TID=$(ps -o tid= -p "$server_pid" | head -1 | tr -d ' ')
-echo "Main thread tid: $MAIN_TID"
+echo "Server started with PID $server_pid, monitoring with bfptrace..."
 
 # Run bpftrace and capture its output
 bpftrace --unsafe -e '
-tracepoint:raw_syscalls:sys_enter / tid == '$MAIN_TID' / {
+tracepoint:raw_syscalls:sys_enter {
     @id[tid] = args->id;
 }
 
-tracepoint:raw_syscalls:sys_exit / tid == '$MAIN_TID' / {
+tracepoint:raw_syscalls:sys_exit {
     delete(@id[tid]);
 }
 
 tracepoint:sched:sched_switch
-/ args->prev_pid == '$MAIN_TID' && @id['$MAIN_TID'] && args->prev_state != 0 && args->prev_comm == "server" && @id['$MAIN_TID'] != '$select_id' /
+/ pid == tid && @id[args->prev_pid] && args->prev_state != 0 && args->prev_comm == "server" && @id[args->prev_pid] != '$select_id' /
 {
     printf("BLOCK in syscall=%d comm=%s tid=%d pid=%d\n",
-        @id['$MAIN_TID'],
+        @id[args->prev_pid],
         args->prev_comm,
         args->prev_pid,
         pid);

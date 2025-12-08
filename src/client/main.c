@@ -8,82 +8,77 @@
 #include <unistd.h> 
 #include "logs.h"
 #include "protocol.h"
+#include "clientArgs.h"
 
-int main() {
-	int sock = socket(AF_INET, SOCK_STREAM, 0);
+int main(int argc, char* argv[]) {
 
-	struct sockaddr_in addr = {
-		.sin_family = AF_INET,
-		.sin_port = htons(4242),    
-	};
+    // ----------------------------------------------- PARSE ARGS ------------------------------------------------
 
-	char *user = "admin";
-	char *pass = "password";
-	uint8_t ulen = strlen(user);
-	uint8_t plen = strlen(pass);
-	uint8_t auth_msg[64]; // Sufficient size for auth message (might whant to check bounds in the future)
-	inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+    struct ClientArgs args;
 
-	if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-		perror("connect");
-		exit(1);
-	}
-	printf("Connected to PAM server!\n");
-
-	// <----------------------------------------- AUTH ----------------------------------------->
-	int idx = 0;
-	auth_msg[idx++] = 0x01;    
-	auth_msg[idx++] = ulen;    
-	memcpy(&auth_msg[idx], user, ulen);
-	idx += ulen;
-	auth_msg[idx++] = plen;    
-	memcpy(&auth_msg[idx], pass, plen);
-	idx += plen;
-
-	// Send auth
-	send(sock, auth_msg, idx, 0);
-
-	uint8_t auth_resp[2]; 
-	recv(sock, auth_resp, 2, 0);
-
-	if (auth_resp[2] == 0x00) {
-		printf("Authentication successful!\n");
-	} else {
-		printf("Authentication failed!\n");
-		close(sock);
-		return 1;
-	}
-
-    printf("Handshake successful!\n");
-
-	// Por lo que entiendo PAM solo esta implementado hasta la autenticacion, asi que la aprte de request no se estaria usando. 
-	
-	// <----------------------------------------- REQUEST ----------------------------------------->
-	uint8_t request[] = {
-		0x05, 					// VER (5)
-		0x01, 					// CMD (connect)
-		0x00, 					// RSV
-		0x01, 					// ATYP (ipv4)
-		0x8E, 0xFA, 0x40, 0x6E, // DST. ADDR (142.250.64.110)
-		0x00, 0x50				// DST. PORT (80)
-	};
-
-	if(0 > send(sock, request, sizeof(request), 0)) {
-		perror("send request");
-		close(sock);
-		exit(1);
-	}
-
-	uint8_t reply[10];
-    if (recv(sock, reply, 10, MSG_WAITALL) != 10) {
-        printf("reply recv failed\n");
-        return 1;
+    int r = parse_client_args(argc, argv, &args);
+    if (r != 0) {
+        // help already printed / or error printed by parse_args
+        return (r == 1 ? 0 : -1);
     }
 
-    printf("Reply code = 0x%02X (%s)\n", reply[1], reply[1] == 0x00 ? "succeded" : "failed");
+    // ------------------------------------------- CONNECTION ----------------------------------------------------->
+
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+        perror("socket");
+        return -1;
+    }
+
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(args.port);
+
+    if (inet_pton(AF_INET, args.host, &addr.sin_addr) <= 0) {
+        fprintf(stderr, "Invalid host: %s\n", args.host);
+        close(sock);
+        return -1;
+    }
+	printf("Connecting to host %s and port %d...\n", args.host, args.port);
+    if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        perror("connect");
+        close(sock);
+        return -1;
+    }
+
+    printf("Connected to server at %s:%d\n", args.host, args.port);
+
+    // --------------------------------------------- REQUEST ------------------------------------------------------>
+
+    printf("Option '%s' selected.\n", args.option);
+
+    if (strcmp(args.option, "users") == 0) {
+        // TODO: implement
+    }
+    else if (strcmp(args.option, "add-user") == 0) {
+        // args.arg1 = username
+        // args.arg2 = password
+        // args.arg3 = role
+    }
+    else if (strcmp(args.option, "remove-user") == 0) {
+        // args.arg1 = username
+    }
+    else if (strcmp(args.option, "change-password") == 0) {
+        // args.arg1 = username
+        // args.arg2 = password
+    }
+    else if (strcmp(args.option, "change-rol") == 0) {
+        // args.arg1 = username
+        // args.arg2 = role
+    }
+    else if (strcmp(args.option, "metrics") == 0) {
+        // no args
+    }
 
 	// <----------------------------------------- FINISH ----------------------------------------->
-    close(sock);
+    
+	close(sock);
 
 	return 0;
 }

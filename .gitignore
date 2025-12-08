@@ -20,5 +20,8 @@ compile_commands.json
 # VSC
 .vscode
 
+# InteliJ
+.idea
+
 # MacOS
 .DS_Store

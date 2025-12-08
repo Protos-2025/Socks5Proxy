@@ -217,20 +217,32 @@ static unsigned connect_to_dest(struct selector_key * key) {
     int ret = try_connection(key);
     switch (ret) {
         case GENERAL_FAILURE:
-        case SELECTOR_REGISTER_FAILED:
-            connection->client.reply.rep = SERVER_FAILURE;
-            break;
-
-        case NETWORK_UNREACHABLE:
-        case HOST_UNREACHABLE:
-        case CONNECTION_REFUSED:
-        case TTL_EXPIRED:
+            LOG_WARN("General failure connecting to origin");
             connection->client.reply.rep = ret;
             break;
-
+        case SELECTOR_REGISTER_FAILED:
+            LOG_WARN("Selector register failed");
+            connection->client.reply.rep = SERVER_FAILURE;
+            break;
+        case NETWORK_UNREACHABLE:
+            LOG_WARN("Network unreachable");
+            connection->client.reply.rep = ret;
+            break;
+        case HOST_UNREACHABLE:
+            LOG_WARN("Host unreachable");
+            connection->client.reply.rep = ret;
+            break;
+        case CONNECTION_REFUSED:
+            LOG_WARN("Connection refused");
+            connection->client.reply.rep = ret;
+            break;
+        case TTL_EXPIRED:
+            LOG_WARN("TTL expired");
+            connection->client.reply.rep = ret;
+            break;
         case CONNECTION_IN_PROGRESS:
+            LOG_TRACE("Connection in progress");
             return CONNECT; 
-        
         default: {
             LOG_INFO("Connected to origin");
             selector_set_interest(key->s, connection->origin_fd, OP_NOOP);
@@ -344,7 +356,7 @@ static void get_fqdn(struct socks5 * connection, uint8_t lenght) {
 }
 
 static uint8_t resolve_fqdn(struct selector_key * key) {
-    LOG_DEBUG("Resolving domain name...");
+    LOG_DEBUG("Resolving domain name: %s...", ((struct socks5 *)ATTACHMENT(key))->origin_host);
 
     pthread_t thread;
     struct selector_key * keyCopy = malloc(sizeof(struct selector_key));

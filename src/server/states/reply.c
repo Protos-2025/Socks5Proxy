@@ -43,13 +43,12 @@ unsigned reply_write(struct selector_key * key) {
     if (buffer_can_read(&connection->client_buffer)) {
         return REPLY;
     }
-
-    LOG_INFO("Replied successfully");
     
     buffer_reset(&connection->client_buffer);
-
+    
     if (connection->client.reply.rep == SUCCEDED) {
-        return DONE; // TODO: change to COPY
+        LOG_INFO("Replied successfully");
+        return COPY;
     }
 
     selector_set_interest(key->s, connection->client_fd, OP_READ);

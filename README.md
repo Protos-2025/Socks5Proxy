@@ -22,12 +22,42 @@ MAX_LOG_QUEUE_SIZE=1000
 LOGGER_MIN_LEVEL=LOGGER_TRACE
 ```
 
+Some of the available variables include:
+
+| Variable              | Description                                                                                                                                   | Default Value   |
+|-----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
+| DEBUG                 | Enables debug compiler flags (-g, -fsanitize=address, etc)                                                                                    | `true`          |
+| TRACE                 | Enables `bpftrace` monitoring for blocking syscalls when running server.sh (the `server` service entrypoint in docker)                        | `false`         |
+| BUFFER_SIZE           | Size of the buffer used for reading/writing data between sockets                                                                              | `1024`          |
+| MAX_LOG_QUEUE_SIZE    | Maximum number of log messages that can be queued before dropping logs                                                                        | `100`           |
+| MAX_LOG_SIZE        | Maximum size (in bytes) of a single log message. Longer messages will be truncated with an ellipsis.                                            | `1024`          |
+| LOGGER_MIN_LEVEL      | Minimum log level to be logged. Possible values: `LOGGER_TRACE`, `LOGGER_DEBUG`, `LOGGER_INFO`, `LOGGER_WARN`, `LOGGER_ERROR`, `LOGGER_FATAL` | `LOGGER_TRACE`  |
+
+All server variables and their default values can be found in [defines.h](./src/server/include/defines.h).
+
 ## Development
 
-To compile the project, run: 
+### Make
+
+You may compile this project by running:
 
 ```sh
-docker compose up --build compiler
+make clean all
+```
+
+Then run the binaries found in the `bin/` folder.
+
+```sh
+# Run the Socks5 proxy server
+./bin/server
+```
+
+### Docker
+
+To run the client together with all of it's dependencies (server, nginx test container), run:
+
+```sh
+docker compose up --build --attach-dependencies --abort-on-container-exit client
 ```
 
 To run tests, run:

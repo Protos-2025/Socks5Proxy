@@ -5,7 +5,7 @@ LDFLAGS = -lcheck -lm -lpthread -lrt -lsubunit
 BIN_PATH = ../../bin
 SHARED_PATH = ../../src/shared
 
-ifneq ($(DEBUG), 0)
+ifneq ($(DEBUG), false)
   CFLAGS += -g -DDEBUG -fsanitize=address
   LDFLAGS += -fsanitize=address
 else

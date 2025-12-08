@@ -218,9 +218,9 @@ static unsigned connect_to_dest(struct selector_key * key) {
     switch (ret) {
         case GENERAL_FAILURE:
             LOG_WARN("General failure connecting to origin");
-            connection->client.reply.rep = ret;
-            break;
-        case SELECTOR_REGISTER_FAILED:
+			connection->client.reply.rep = SERVER_FAILURE;
+			break;
+		case SELECTOR_REGISTER_FAILED:
             LOG_WARN("Selector register failed");
             connection->client.reply.rep = SERVER_FAILURE;
             break;

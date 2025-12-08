@@ -158,10 +158,10 @@ void socksv5_block(struct selector_key * key) {
 
 void socksv5_close(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
-    // if (connection != NULL && key->fd == connection->client_fd) {
-    //     socks5_destroy(connection);
-    //     key->data = NULL;
-    // }
+    if (connection != NULL && key->fd == connection->client_fd) {
+        socks5_destroy(connection);
+        key->data = NULL;
+    }
     register_connection_closed();
 }
 

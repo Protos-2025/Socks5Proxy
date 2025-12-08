@@ -24,7 +24,7 @@ struct pam {
   int client_fd;
   struct sockaddr_storage client_addr;
   socklen_t client_addr_len;
-  buffer client_buffer;
+  Buffer client_buffer;
   uint8_t client_buffer_data[BUFFER_SIZE];
   union {
     struct pamAuth_st auth;

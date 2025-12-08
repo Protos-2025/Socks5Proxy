@@ -114,8 +114,8 @@ services:
 
 networks:
   test-server-network:
-    # driver: bridge
-    internal: true
+    driver: bridge
+    # internal: true
     enable_ipv6: true
     ipam:
       config:

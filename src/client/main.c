@@ -94,7 +94,7 @@ int main() {
 	// 	0x01, 					// CMD (connect)
 	// 	0x00, 					// RSV
 	// 	0x01, 					// ATYP (ipv4)
-	// 	0x8E, 0xFA, 0x40, 0x6E, // DST. ADDR (142.250.64.110)
+	// 	0x0A, 0x00, 0x00, 0x6F, // DST. ADDR (10.0.0.111)
 	// 	0x00, 0x50				// DST. PORT (80)
 	// };
 

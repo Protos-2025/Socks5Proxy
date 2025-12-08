@@ -54,12 +54,12 @@ unsigned connect_write(struct selector_key * key) {
     
                 selector_set_interest(key->s, connection->origin_fd, OP_NOOP);
     
-                LOG_INFO("Connected to origin");
+                LOG_INFO("Connected to origin: %s:%s", connection->origin_host, connection->origin_port);
                 connection->client.reply.rep = SUCCEDED;
             }
         };
     } else {
-        LOG_INFO("Connected to origin");
+        LOG_INFO("Connected to origin: %s:%s", connection->origin_host, connection->origin_port);
         connection->client.reply.rep = SUCCEDED;
     }
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eou pipefail
 
-if [[ -z "${TRACE:-}" ]]; then
+if [[ -z "${TRACE:-}" || "${TRACE}" == "false" ]]; then
     echo "server.sh: TRACE env var not set; skipping bpftrace test."
     LD_PRELOAD=$(gcc -print-file-name=libasan.so) \
         stdbuf -o0 -e0 ./bin/server

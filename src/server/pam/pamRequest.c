@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include "logger.h"
+#include "selector.h"
 #include <arpa/inet.h>
 #include <stdlib.h>
 
@@ -108,27 +109,17 @@ unsigned pam_request_read(struct selector_key * key){
         
         // writes on client.request.write_body
         handle_pam_request_method(connection);
- 
-        LOG_DEBUG("pam write_body: %s", connection->client.request.write_body);
 
         if (connection->client.request.status != PAM_REQUEST_SUCCESS) {
             LOG_DEBUG("PAM request handling failed with status: 0x%02X", connection->client.request.status);
             return PAM_ERROR;
         } 
 
-        // TODO: add handling of the request
-        // TODO: handle method
         buffer_reset(&connection->client_buffer);
-        LOG_DEBUG("Preparing PAM response");
-        LOG_DEBUG("setting pam version", PAM_VERSION_1);
         buffer_write(&connection->client_buffer, PAM_VERSION_1);
-
-        LOG_DEBUG("setting status byte with value: 0x%02X", connection->client.request.status);
         buffer_write(&connection->client_buffer, connection->client.request.status);
-
-        LOG_DEBUG("setting body length: %u", connection->client.request.write_nbody);
         buffer_write(&connection->client_buffer, connection->client.request.write_nbody);
-  
+
         selector_set_interest_key(key, OP_WRITE);
     }
 
@@ -146,7 +137,7 @@ unsigned pam_request_write(struct selector_key * key) {
     buffer_read_adv(&connection->client_buffer, written);
 
     if (written < 0) {
-        LOG_FATAL("send failed (PAM_AUTH)");
+        LOG_FATAL("send failed (PAM_REQUEST)");
         return PAM_ERROR;
     }
 
@@ -158,6 +149,6 @@ unsigned pam_request_write(struct selector_key * key) {
 
     buffer_reset(&connection->client_buffer);
 
-    selector_set_interest_key(key, OP_READ); 
-    return PAM_REQUEST;
+    selector_set_interest_key(key, OP_NOOP); 
+    return PAM_DONE;
 }

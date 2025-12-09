@@ -1,6 +1,5 @@
 #include "../include/pam.h"
 #include "buffer.h"
-#include "defines.h"
 #include "../include/pamAuth.h"
 #include <stdint.h>
 #include <stdio.h>

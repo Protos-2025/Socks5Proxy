@@ -16,7 +16,7 @@
 #endif
 
 #ifndef LOGGER_MIN_LEVEL
-#define LOGGER_MIN_LEVEL LOGGER_TRACE
+#define LOGGER_MIN_LEVEL LOGGER_INFO
 #endif
 
 #ifndef BUFFER_SIZE

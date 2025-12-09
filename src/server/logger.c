@@ -68,7 +68,7 @@ int logger_register_selector(FdSelector selector) {
 
 	SelectorStatus ss = SELECTOR_SUCCESS;
     ss = selector_register(selector, STDOUT_FILENO, &loggerHandlers, OP_WRITE, NULL);
-    if (ss != SELECTOR_SUCCESS) {
+    if (ss != SELECTOR_SUCCESS && ss != SELECTOR_FDINUSE) {
         fprintf(stderr, "Failed to register logger flush handler: %s\n", selector_error(ss));
     }
 
@@ -79,12 +79,10 @@ int logger_unregister_selector(FdSelector selector) {
     if (!selector) return 0;
 
     SelectorStatus ss = SELECTOR_SUCCESS;
-    ss = selector_unregister_fd(selector, STDOUT_FILENO);
-    if (ss != SELECTOR_SUCCESS) {
-        fprintf(stderr, "Failed to unregister logger flush handler: %s\n", selector_error(ss));
-    }
+	// avoid checking, since it's either successfull or was already unregistered
+	ss = selector_unregister_fd(selector, STDOUT_FILENO);
 
-    return ss == SELECTOR_SUCCESS ? 0 : -1;
+	return ss == SELECTOR_SUCCESS ? 0 : -1;
 }
 
 static void free_log(void * data) {

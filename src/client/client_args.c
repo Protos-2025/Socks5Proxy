@@ -89,25 +89,25 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
 
     out->option = argv[i++];
 
-    int n_args = need_args(out->option);
-    if (n_args < 0) {
+    int nArgs = need_args(out->option);
+    if (nArgs < 0) {
         fprintf(stderr, "ERROR: Unknown option '%s'.\n\n", out->option);
         print_help(argv[0]);
         return -1;
     }
 
-    if (argc - i < n_args) {
+    if (argc - i < nArgs) {
         fprintf(stderr,
             "ERROR: Option '%s' needs %d argument(s), but only %d provided.\n\n",
-            out->option, n_args, argc - i);
+            out->option, nArgs, argc - i);
         print_help(argv[0]);
         return -1;
     }
 
     // store extra arguments
-    out->arg1 = (n_args >= 1 ? argv[i] : NULL);
-    out->arg2 = (n_args >= 2 ? argv[i+1] : NULL);
-    out->arg3 = (n_args >= 3 ? argv[i+2] : NULL);
+    out->arg1 = (nArgs >= 1 ? argv[i] : NULL);
+    out->arg2 = (nArgs >= 2 ? argv[i+1] : NULL);
+    out->arg3 = (nArgs >= 3 ? argv[i+2] : NULL);
 
     return 0;
 }

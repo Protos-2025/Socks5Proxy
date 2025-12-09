@@ -178,5 +178,6 @@ finally:
 static void signal_handler(const int signal) {
     LOG_FATAL("Signal %d, cleaning up and exiting\n", signal);
     flush_all_logs();
+    free_logger();
     done = true;
 }

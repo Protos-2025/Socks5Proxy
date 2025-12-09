@@ -78,10 +78,18 @@ void socksv5_passive_accept(struct selector_key * key) {
         goto fail;
     }
 
-    struct sockaddr_in * s = (struct sockaddr_in *) &clientAddr;
-    char clientIp[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &s->sin_addr, clientIp, INET_ADDRSTRLEN); // TODO manage IPv6
-    LOG_INFO("Accepted connection from %s:%d", clientIp, ntohs(s->sin_port));
+    char clientIp[INET6_ADDRSTRLEN] = {0};
+    uint16_t port;
+    if (clientAddr.ss_family == AF_INET) {
+        struct sockaddr_in * s = (struct sockaddr_in *) &clientAddr;
+        inet_ntop(AF_INET, &s->sin_addr, clientIp, INET6_ADDRSTRLEN);
+        port = s->sin_port;
+    } else if (clientAddr.ss_family == AF_INET6) {
+        struct sockaddr_in6 * s = (struct sockaddr_in6 *) &clientAddr;
+        inet_ntop(AF_INET6, &s->sin6_addr, clientIp, INET6_ADDRSTRLEN);
+        port = s->sin6_port;
+    }
+    LOG_INFO("Accepted connection from %s:%hu", clientIp, ntohs(port));
     register_new_connection();
 
     connection = socks5_new(clientFd);
@@ -164,16 +172,6 @@ void socksv5_block(struct selector_key * key) {
 
 void socksv5_close(struct selector_key * key) {
     struct state_machine *stm   = &ATTACHMENT(key)->stm;
-    char * origin = (char *) ATTACHMENT(key)->origin_host;
-    char clientIp[INET6_ADDRSTRLEN] = {0};
-    if (ATTACHMENT(key)->client_addr.ss_family == AF_INET) {
-        struct sockaddr_in * s = (struct sockaddr_in *) &ATTACHMENT(key)->client_addr;
-        inet_ntop(AF_INET, &s->sin_addr, clientIp, INET6_ADDRSTRLEN);
-    } else if (ATTACHMENT(key)->client_addr.ss_family == AF_INET6) {
-        struct sockaddr_in6 * s = (struct sockaddr_in6 *) &ATTACHMENT(key)->client_addr;
-        inet_ntop(AF_INET6, &s->sin6_addr, clientIp, INET6_ADDRSTRLEN);
-    }
-    LOG_INFO("Closing connection from %s %s%s", clientIp, origin != NULL && *origin ? " to " : "", origin != NULL ? origin : "");
     stm_handler_close(stm, key);
     register_connection_closed();
     socksv5_done(key);
@@ -185,6 +183,17 @@ static void socksv5_done(struct selector_key * key) {
     if (connection->closed) {
         return;
     }
+
+    char * origin = (char *) ATTACHMENT(key)->origin_host;
+    char clientIp[INET6_ADDRSTRLEN] = {0};
+    if (ATTACHMENT(key)->client_addr.ss_family == AF_INET) {
+        struct sockaddr_in * s = (struct sockaddr_in *) &ATTACHMENT(key)->client_addr;
+        inet_ntop(AF_INET, &s->sin_addr, clientIp, INET6_ADDRSTRLEN);
+    } else if (ATTACHMENT(key)->client_addr.ss_family == AF_INET6) {
+        struct sockaddr_in6 * s = (struct sockaddr_in6 *) &ATTACHMENT(key)->client_addr;
+        inet_ntop(AF_INET6, &s->sin6_addr, clientIp, INET6_ADDRSTRLEN);
+    }
+    LOG_INFO("Closing connection from %s %s%s", clientIp, origin != NULL && *origin ? " to " : "", origin != NULL ? origin : "");
     
     connection->closed = true;
 

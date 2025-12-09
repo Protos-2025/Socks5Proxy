@@ -5,7 +5,7 @@ if [[ -z "${TRACE:-}" || "${TRACE}" == "false" ]]; then
     echo "server.sh: TRACE env var not set; skipping bpftrace test."
     if [[ "${DEBUG:-}" == "true" ]]; then
         echo "server.sh: DEBUG env var set true; running server with ASAN."
-        LD_PRELOAD=$(gcc -print-file-name=libasan.so) \
+        exec LD_PRELOAD=$(gcc -print-file-name=libasan.so) \
             stdbuf -o0 -e0 ./bin/server
     else
         echo "server.sh: DEBUG env var not set; running server without ASAN."
@@ -15,6 +15,15 @@ if [[ -z "${TRACE:-}" || "${TRACE}" == "false" ]]; then
     
     exit 0
 fi
+
+# Signal forwarding function
+forward_signal() {
+    local sig=$1
+    echo "Received SIG${sig}, forwarding to server (PID $server_pid)..."
+    kill -${sig} "$server_pid" 2>/dev/null || true
+    wait "$server_pid"
+    exit 0
+}
 
 echo "server.sh: Running bpftrace test to detect blocking syscalls."
 
@@ -27,6 +36,10 @@ echo "Ignoring pselect6 syscall (id: $select_id)"
 # Start server in background
 LD_PRELOAD=$(gcc -print-file-name=libasan.so) stdbuf -o0 -e0 ./bin/server &
 server_pid=$!
+trap 'forward_signal TERM' SIGTERM
+trap 'forward_signal INT' SIGINT
+trap 'forward_signal QUIT' SIGQUIT
+trap 'forward_signal ABRT' SIGABRT
 
 echo "Server started with PID $server_pid, monitoring with bfptrace..."
 

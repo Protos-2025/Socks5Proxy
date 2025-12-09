@@ -3,6 +3,7 @@
 
 #include <time.h>
 #include "selector.h"
+#include "defines.h"
 
 void logger_init();
 

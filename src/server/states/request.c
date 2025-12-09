@@ -15,10 +15,6 @@
 #define CONNECT_CMD 0x01
 // #define BIND_CMD 0x02
 // #define UDP_ASSOCIATE_CDM 0x03
-#define RSV 0x00
-#define IPv4_ADDR 0x01
-#define FQDN 0x03
-#define IPv6_ADDR 0x04
 #define IPv4_ADDR_LEN 4
 #define IPv6_ADDR_LEN 16
 
@@ -57,7 +53,7 @@ unsigned request_read(struct selector_key * key) {
             return to_reply_state(key);
         }
         if (readn == 0) {
-            LOG_INFO("Client closed connection (REQUEST)");
+            LOG_DEBUG("Client closed connection (REQUEST)");
             return DONE;
         }
     
@@ -91,6 +87,7 @@ unsigned request_read(struct selector_key * key) {
             connection->client.reply.rep = ADDRESS_TYPE_NOT_SUPPORTED;
             return to_reply_state(key);
         }
+        connection->atyp = connection->client.request.atyp;
     
         connection->client.request.state = DST_LEN;
     }
@@ -122,7 +119,7 @@ static unsigned resolve_dst_address(struct selector_key * key) {
             return to_reply_state(key);
         }
         if (readn == 0) {
-            LOG_INFO("Client closed connection (REQUEST)");
+            LOG_DEBUG("Client closed connection (REQUEST)");
             return DONE;
         }
         
@@ -167,8 +164,8 @@ static unsigned resolve_dst_address(struct selector_key * key) {
         case FQDN:
             get_fqdn(connection, addrBytes);
             get_port(connection);
-            LOG_DEBUG("FQDN address (%s:%s)", connection->origin_host, connection->origin_port);
-            LOG_INFO("Request processed successfully");
+            LOG_TRACE("FQDN address (%s:%s)", connection->origin_host, connection->origin_port);
+            LOG_DEBUG("Request processed successfully");
             if (FAILURE == resolve_fqdn(key)) {
                 connection->client.reply.rep = SERVER_FAILURE;
                 return to_reply_state(key);
@@ -189,7 +186,7 @@ static unsigned resolve_dst_address(struct selector_key * key) {
             break;
     }
 
-    LOG_INFO("Request processed successfully");
+    LOG_DEBUG("Request processed successfully");
 
     return connect_to_dest(key);
 }
@@ -242,7 +239,7 @@ static unsigned connect_to_dest(struct selector_key * key) {
             LOG_TRACE("Connection in progress");
             return CONNECT; 
         default: {
-            LOG_INFO("Connected to origin");
+            LOG_DEBUG("Connected to origin");
             selector_set_interest(key->s, connection->origin_fd, OP_NOOP);
             connection->client.reply.rep = SUCCEDED;
         }
@@ -366,6 +363,8 @@ static uint8_t resolve_fqdn(struct selector_key * key) {
         return FAILURE;
     }
 
+    pthread_detach(thread);
+
     return SUCCESS;
 }
 
@@ -381,6 +380,9 @@ static void * resolve_fqdn_blocking(void * data) {
     hints.ai_protocol = IPPROTO_TCP;
 
     if (0 != getaddrinfo((const char *) connection->origin_host, (const char *) connection->origin_port, &hints, &connection->origin_resolution)) {
+        if (connection->origin_resolution != NULL) {
+            freeaddrinfo(connection->origin_resolution);
+        }
         // connection->client.reply.rep = SERVER_FAILURE;
         connection->origin_resolution = NULL; // in case it was modify (this is the flag i use to define wheter it was resolved or not)
     }

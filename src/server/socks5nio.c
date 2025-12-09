@@ -69,6 +69,7 @@ void socksv5_passive_accept(struct selector_key * key) {
     struct sockaddr_storage clientAddr;
     socklen_t clientAddrLen = sizeof(clientAddr);
     struct socks5 * connection = NULL;
+    key->data = NULL;
 
     const int clientFd = accept(key->fd, (struct sockaddr *) &clientAddr, &clientAddrLen);
     if (clientFd == -1) {
@@ -78,10 +79,18 @@ void socksv5_passive_accept(struct selector_key * key) {
         goto fail;
     }
 
-    struct sockaddr_in * s = (struct sockaddr_in *) &clientAddr;
-    char clientIp[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &s->sin_addr, clientIp, INET_ADDRSTRLEN); // TODO manage IPv6
-    LOG_INFO("Accepted connection from %s:%d", clientIp, ntohs(s->sin_port));
+    char clientIp[INET6_ADDRSTRLEN] = {0};
+    uint16_t port;
+    if (clientAddr.ss_family == AF_INET) {
+        struct sockaddr_in * s = (struct sockaddr_in *) &clientAddr;
+        inet_ntop(AF_INET, &s->sin_addr, clientIp, INET6_ADDRSTRLEN);
+        port = s->sin_port;
+    } else if (clientAddr.ss_family == AF_INET6) {
+        struct sockaddr_in6 * s = (struct sockaddr_in6 *) &clientAddr;
+        inet_ntop(AF_INET6, &s->sin6_addr, clientIp, INET6_ADDRSTRLEN);
+        port = s->sin6_port;
+    }
+    LOG_INFO("Accepted connection from %s:%hu", clientIp, ntohs(port));
     register_new_connection();
 
     connection = socks5_new(clientFd);
@@ -112,9 +121,13 @@ static struct socks5 * socks5_new(int client_fd) {
     if (new != NULL) {
         new->client_fd = client_fd;
         buffer_init(&new->client_buffer, BUFFER_SIZE, new->client_buffer_data);
-        buffer_init(&new->origin_buffer, BUFFER_SIZE, new->origin_buffer_data);
+        
         new->origin_fd = -1;
+        buffer_init(&new->origin_buffer, BUFFER_SIZE, new->origin_buffer_data);
         new->origin_resolution = NULL;
+
+        new->atyp = 0;
+
         new->stm = (struct state_machine){
             .initial = GREETING,
             .states = socks5States,
@@ -122,6 +135,8 @@ static struct socks5 * socks5_new(int client_fd) {
             .current = NULL,
         };
         stm_init(&new->stm);
+
+        new->closed = false;
 
         new->references = 1;
         new->closed = false;
@@ -170,6 +185,17 @@ static void socksv5_done(struct selector_key * key) {
     if (connection->closed) {
         return;
     }
+
+    char * origin = (char *) ATTACHMENT(key)->origin_host;
+    char clientIp[INET6_ADDRSTRLEN] = {0};
+    if (ATTACHMENT(key)->client_addr.ss_family == AF_INET) {
+        struct sockaddr_in * s = (struct sockaddr_in *) &ATTACHMENT(key)->client_addr;
+        inet_ntop(AF_INET, &s->sin_addr, clientIp, INET6_ADDRSTRLEN);
+    } else if (ATTACHMENT(key)->client_addr.ss_family == AF_INET6) {
+        struct sockaddr_in6 * s = (struct sockaddr_in6 *) &ATTACHMENT(key)->client_addr;
+        inet_ntop(AF_INET6, &s->sin6_addr, clientIp, INET6_ADDRSTRLEN);
+    }
+    LOG_INFO("Closing connection from %s %s%s", clientIp, origin != NULL && *origin ? " to " : "", origin != NULL ? origin : "");
     
     connection->closed = true;
 
@@ -182,24 +208,19 @@ static void socksv5_done(struct selector_key * key) {
         close(connection->client_fd);
     }
 
-    if (connection->origin_resolution != NULL) {
-        if (connection->client.request.atyp != FQDN) {
-            free(connection->origin_resolution->ai_addr);
-            free(connection->origin_resolution);
-        } else {
-            freeaddrinfo(connection->origin_resolution);
-        }
-    }
-
-    free(connection);
+    socks5_destroy(key);
 }
 
 static void socks5_destroy(struct selector_key * key) {
-    struct socks5 * connection = ATTACHMENT(key);
-    if (connection != NULL) {
+    if (key->data != NULL) {
+        struct socks5 * connection = ATTACHMENT(key);
         if (connection->origin_resolution != NULL) {
-            free(connection->origin_resolution->ai_addr);
-            free(connection->origin_resolution);
+            if (connection->atyp == IPv4_ADDR || connection->atyp == IPv6_ADDR) {
+                free(connection->origin_resolution->ai_addr);
+                free(connection->origin_resolution);
+            } else if (connection->atyp == FQDN) {
+                freeaddrinfo(connection->origin_resolution);
+            }
             connection->origin_resolution = NULL;
         }
         free(connection);

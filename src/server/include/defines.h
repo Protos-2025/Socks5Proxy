@@ -23,6 +23,14 @@
 #define BUFFER_SIZE 1024
 #endif
 
+#ifndef MAX_PENDING_CONNECTIONS
+#define MAX_PENDING_CONNECTIONS 20
+#endif
+
+#ifndef SELECTOR_CAPACITY
+#define SELECTOR_CAPACITY 1024
+#endif
+
 #ifndef SUCCESS
 #define SUCCESS 0
 #endif
@@ -33,6 +41,22 @@
 
 #ifndef SOCKS5_VERSION
 #define SOCKS5_VERSION 0x05
+#endif
+
+#ifndef RSV
+#define RSV 0x00
+#endif
+
+#ifndef IPv4_ADDR
+#define IPv4_ADDR 0x01
+#endif
+
+#ifndef FQDN
+#define FQDN 0x03
+#endif
+
+#ifndef IPv6_ADDR
+#define IPv6_ADDR 0x04
 #endif
 
 #endif

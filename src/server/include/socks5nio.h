@@ -68,6 +68,8 @@ struct socks5 {
         struct copy_st copy;
     } origin_st;
 
+    uint8_t atyp;
+
     struct state_machine stm;
 
     bool closed;

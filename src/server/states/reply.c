@@ -1,3 +1,5 @@
+#include <netdb.h>
+#include <arpa/inet.h>
 #include "../include/reply.h"
 #include "../include/socks5nio.h"
 #include "../../shared/include/buffer.h"
@@ -19,11 +21,27 @@ void reply_arrival(const unsigned state, struct selector_key * key) {
     // if (connection->client.request.atyp == FQDN) {
     //     buffer_write(&connection->client_buffer, strlen((char *)connection->origin_host));
     // }
-    for (int i = 0; connection->origin_host[i] != '\0' && i < HOST_MAX_LENGHT; i++) {
-        buffer_write(&connection->client_buffer, connection->origin_host[i]);
+
+    if (connection->client_addr.ss_family == AF_INET) {
+        struct sockaddr_in * s = (struct sockaddr_in *) &connection->client_addr;
+        for (int i = 0; i < 4; i++) {
+            buffer_write(&connection->client_buffer, ((uint8_t *)&s->sin_addr.s_addr)[i]);
+        }
+    } else if (connection->client_addr.ss_family == AF_INET6) {
+        struct sockaddr_in6 * s = (struct sockaddr_in6 *) &connection->client_addr;
+        for (int i = 0; i < 16; i++) {
+            buffer_write(&connection->client_buffer, s->sin6_addr.s6_addr[i]);
+        }
     }
-    buffer_write(&connection->client_buffer, connection->origin_port[0]);
-    buffer_write(&connection->client_buffer, connection->origin_port[1]);
+    // else if (connection->client.request.atyp == FQDN) {
+    //     buffer_write(&connection->client_buffer, strlen((char *)connection->origin_host));
+    //     for (size_t i = 0; i < strlen((const char *) connection->origin_host); i++) {
+    //         buffer_write(&connection->client_buffer, connection->origin_host[i]);
+    //     }
+    // }
+
+    buffer_write(&connection->client_buffer, htons(atoi((const char *) connection->origin_port)) >> 8);
+    buffer_write(&connection->client_buffer, htons(atoi((const char *) connection->origin_port)) & 0xFF);
 }
 
 unsigned reply_write(struct selector_key * key) {

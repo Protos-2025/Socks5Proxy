@@ -11,6 +11,12 @@ int try_connection(struct selector_key * key) {
     int fd, ret = -1;
 
     if (connection->origin_fd != -1) {
+        if (SELECTOR_SUCCESS != selector_unregister_fd(key->s, connection->origin_fd)) {
+            close(connection->origin_fd);
+            connection->origin_fd = -1;
+            connection->origin_resolution = connection->origin_resolution->ai_next;
+            return GENERAL_FAILURE;
+        }
         close(connection->origin_fd);
         connection->origin_fd = -1;
         connection->origin_resolution = connection->origin_resolution->ai_next;

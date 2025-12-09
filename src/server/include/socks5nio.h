@@ -71,6 +71,8 @@ struct socks5 {
 
     struct state_machine stm;
 
+    bool closed;
+
     int references;
 
     // TODO: use this?

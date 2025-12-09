@@ -40,6 +40,7 @@ static const char* log_level_to_string(int level) {
 static Queue logQueue = NULL;
 static Buffer logBuffer;
 static char * currentLog = NULL;
+static int minLogLevel = LOGGER_MIN_LEVEL;
 
 void logger_init() {
     logQueue = create_queue(free_log, sizeof(char *), MAX_LOG_QUEUE_SIZE);
@@ -101,7 +102,7 @@ static char * format_log_message(const char* level_str, const char * file, int l
 }
 
 void logger_log_message_deferred(int level, const char* file, int line, time_t * now, const char* msg, ...) {
-    if (!logQueue) return;
+    if (!logQueue || level < minLogLevel) return;
     va_list args;
     va_start(args, msg);
     char *formattedMsg = format_log_message(log_level_to_string(level), file, line, now, msg, args);

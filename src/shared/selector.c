@@ -389,6 +389,31 @@ finally:
 	return ret;
 }
 
+SelectorStatus selector_unregister_fd_without_closing(FdSelector s, const int fd) {
+	SelectorStatus ret = SELECTOR_SUCCESS;
+
+	if (NULL == s || INVALID_FD(fd)) {
+		ret = SELECTOR_IARGS;
+		goto finally;
+	}
+
+	struct item *item = s->fds + fd;
+	if (!ITEM_USED(item)) {
+		ret = SELECTOR_IARGS;
+		goto finally;
+	}
+
+	item->interest = OP_NOOP;
+	items_update_fdset_for_fd(s, item);
+
+	memset(item, 0x00, sizeof(*item));
+	item_init(item);
+	s->max_fd = items_max_fd(s);
+
+finally:
+	return ret;
+}
+
 SelectorStatus selector_set_interest(FdSelector s, int fd, FdInterest i) {
 	SelectorStatus ret = SELECTOR_SUCCESS;
 

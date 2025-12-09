@@ -14,7 +14,6 @@
 static const char* log_level_to_string(int level);
 static void write_logs_deferred(struct selector_key* key);
 static void free_log(void * data);
-static void flush_and_free();
 
 static const char* log_level_to_string(int level) {
 	switch (level) {
@@ -47,11 +46,6 @@ void logger_init() {
     buffer_init(&logBuffer, MAX_LOG_SIZE, NULL);
 }
 
-static void flush_and_free() {
-    flush_all_logs();
-    free_logger();
-}
-
 int logger_register_selector(FdSelector selector) {
     if (!selector) return 0;
 
@@ -63,7 +57,7 @@ int logger_register_selector(FdSelector selector) {
     static const struct fd_handler logger_handlers = {
         .handle_read = NULL,
         .handle_write = write_logs_deferred,
-        .handle_close = flush_and_free,
+        .handle_close = free_logger,
     };
 
 	SelectorStatus ss = SELECTOR_SUCCESS;
@@ -152,13 +146,7 @@ void flush_all_logs() {
 
 void free_logger() {
     if (!logQueue) return;
-	while (queue_size(logQueue) > 0) {
-        char * msg = NULL;
-        dequeue(logQueue, &msg);
-        if (msg) {
-            free(msg);
-        }
-    }
+	flush_all_logs();
 	free_queue(logQueue);
 	logQueue = NULL;
 }

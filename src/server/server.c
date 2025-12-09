@@ -93,9 +93,9 @@ int main(const int argc, const char **argv) {
 
     signal(SIGTERM, signal_handler);
     signal(SIGINT,  signal_handler);
+    signal(SIGQUIT, signal_handler);
     signal(SIGABRT, signal_handler);
-
-
+    
     // <--------------------------------- configure selector --------------------------------->
     if (selector_fd_set_nio(server) == -1) {
         errorMsg = "getting server socket flags";
@@ -176,7 +176,7 @@ finally:
 }
 
 static void signal_handler(const int signal) {
-    LOG_INFO("Signal %d, cleaning up and exiting\n", signal);
+    LOG_FATAL("Signal %d, cleaning up and exiting\n", signal);
     flush_all_logs();
     done = true;
 }

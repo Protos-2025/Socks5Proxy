@@ -5,8 +5,8 @@ if [[ -z "${TRACE:-}" || "${TRACE}" == "false" ]]; then
     echo "server.sh: TRACE env var not set; skipping bpftrace test."
     if [[ "${DEBUG:-}" == "true" ]]; then
         echo "server.sh: DEBUG env var set true; running server with ASAN."
-        exec LD_PRELOAD=$(gcc -print-file-name=libasan.so) \
-            stdbuf -o0 -e0 ./bin/server
+        LD_PRELOAD=$(gcc -print-file-name=libasan.so) \
+            exec stdbuf -o0 -e0 ./bin/server
     else
         echo "server.sh: DEBUG env var not set; running server without ASAN."
         stdbuf -o0 -e0 ./bin/server

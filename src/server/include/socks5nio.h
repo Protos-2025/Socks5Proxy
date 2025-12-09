@@ -62,7 +62,6 @@ struct socks5 {
     uint8_t origin_host[HOST_MAX_LENGHT];
     uint8_t origin_port[PORT_MAX_LENGHT];
     struct addrinfo * origin_resolution;
-    struct addrinfo * origin_resolutions_list;
     Buffer origin_buffer;
     uint8_t origin_buffer_data[BUFFER_SIZE];
     union {

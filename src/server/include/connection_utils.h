@@ -10,4 +10,6 @@
 
 int try_connection(struct selector_key * key);
 
+void get_next_resolution(struct selector_key * key);
+
 #endif

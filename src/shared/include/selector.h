@@ -163,6 +163,13 @@ SelectorStatus
 selector_unregister_fd(FdSelector   s,
                        const int     fd);
 
+/**
+ * desregistra un file descriptor del selector sin ejecutar el handle_close
+ */
+SelectorStatus
+selector_unregister_fd_without_closing( FdSelector  s,
+                                        const int   fd);
+
 /** permite cambiar los intereses para un file descriptor */
 SelectorStatus
 selector_set_interest(FdSelector s, int fd, FdInterest i);

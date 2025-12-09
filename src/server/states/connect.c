@@ -21,7 +21,39 @@ unsigned connect_write(struct selector_key * key) {
         connection->client.reply.rep = SERVER_FAILURE;
         // LOG_DEBUG("CONNECT: getsockopt failed... (errno = %d, fd = %d)", errno, connection->origin_fd);
     } else if (optVal != 0) {
+        selector_unregister_fd_without_closing(key->s, connection->origin_fd);
+        close(connection->origin_fd);
+        connection->origin_fd = -1;
+
+        if (connection->origin_resolution->ai_next == NULL) {
+            switch (optVal) {
+                case NETWORK_UNREACHABLE:
+                    LOG_WARN("Network unreachable");
+                    connection->client.reply.rep = ret;
+                    break;
+                case HOST_UNREACHABLE:
+                    LOG_WARN("Host unreachable");
+                    connection->client.reply.rep = ret;
+                    break;
+                case CONNECTION_REFUSED:
+                    LOG_WARN("Connection refused");
+                    connection->client.reply.rep = ret;
+                    break;
+                case TTL_EXPIRED:
+                    LOG_WARN("TTL expired");
+                    connection->client.reply.rep = ret;
+                    break;
+                default:
+                    LOG_WARN("General failure connecting to origin");
+                    connection->client.reply.rep = SERVER_FAILURE;
+                    break;
+            }
+            selector_set_interest(key->s, connection->client_fd, OP_WRITE);
+            return REPLY;
+        }
+        
         // LOG_DEBUG("CONNECT: couldnt connect, trying again...");
+        get_next_resolution(key);
         
         int ret = try_connection(key);
         switch (ret) {
@@ -48,35 +80,22 @@ unsigned connect_write(struct selector_key * key) {
                 LOG_WARN("TTL expired");
                 connection->client.reply.rep = ret;
                 break;
-    
             case CONNECTION_IN_PROGRESS:
                 LOG_TRACE("Connection in progress");
                 return CONNECT; 
             
             default: {
-                // LOG_DEBUG("CONNECT: connection succeded after trying again");
-                struct addrinfo * copy = malloc(sizeof(struct addrinfo));
-                if (copy == NULL) {
-                    LOG_DEBUG("REQUEST: setting SERVER_FAILURE (12)");
-                    connection->client.reply.rep = SERVER_FAILURE;
-                    break;
-                }
-                memcpy(copy, connection->origin_resolution, sizeof(struct addrinfo));
-                copy->ai_next = NULL;
-                connection->origin_resolution = copy;
-    
-                selector_set_interest(key->s, connection->origin_fd, OP_NOOP);
-    
                 LOG_INFO("Connected to origin: %s:%s", connection->origin_host, connection->origin_port);
+                selector_set_interest(key->s, connection->origin_fd, OP_NOOP);
                 connection->client.reply.rep = SUCCEDED;
             }
         };
     } else {
         LOG_INFO("Connected to origin: %s:%s", connection->origin_host, connection->origin_port);
+        selector_set_interest(key->s, connection->origin_fd, OP_NOOP);
         connection->client.reply.rep = SUCCEDED;
     }
 
-    connection->origin_resolutions_list = NULL;
-
+    selector_set_interest(key->s, connection->client_fd, OP_WRITE);
     return REPLY;
 }

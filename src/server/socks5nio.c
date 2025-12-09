@@ -16,6 +16,7 @@
 #include "../shared/include/selector.h"
 
 #define N(x) (sizeof(x)/sizeof((x)[0]))
+#define FQDN 0x03
 
 static const struct state_definition socks5States[] = {
     {
@@ -61,8 +62,8 @@ static const struct state_definition socks5States[] = {
 };
 
 static struct socks5 * socks5_new(int client_fd);
-static void socksv5_done(struct selector_key* key);
-static void socks5_destroy(struct socks5 * s);
+static void socksv5_done(struct selector_key * key);
+static void socks5_destroy(struct selector_key * key);
 
 void socksv5_passive_accept(struct selector_key * key) {
     struct sockaddr_storage clientAddr;
@@ -103,7 +104,7 @@ fail:
     if (clientFd != -1) {
         close(clientFd);
     }
-    socks5_destroy(connection);
+    socks5_destroy(key);
 }
 
 static struct socks5 * socks5_new(int client_fd) {
@@ -124,6 +125,7 @@ static struct socks5 * socks5_new(int client_fd) {
         stm_init(&new->stm);
 
         new->references = 1;
+        new->closed = false;
     }
 
     return new;
@@ -157,42 +159,56 @@ void socksv5_block(struct selector_key * key) {
 }
 
 void socksv5_close(struct selector_key * key) {
-    struct socks5 * connection = ATTACHMENT(key);
-    if (connection != NULL && key->fd == connection->client_fd) {
-        socks5_destroy(connection);
-        key->data = NULL;
-    }
+    struct state_machine *stm   = &ATTACHMENT(key)->stm;
+    stm_handler_close(stm, key);
     register_connection_closed();
+    socksv5_done(key);
 }
 
 static void socksv5_done(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
-    const int fds[] = {
-        connection->origin_fd,
-        connection->client_fd
-    };
-    for (unsigned i = 0; i < N(fds); i++) {
-        if (fds[i] != -1) {
-            if (SELECTOR_SUCCESS != selector_unregister_fd(key->s, fds[i])) {
-                LOG_FATAL("Failed to unregister fd=%d", fds[i]);
-                abort();
-            }
-            close(fds[i]);
+
+    if (connection->closed) {
+        return;
+    }
+    
+    connection->closed = true;
+
+    if (connection->origin_fd != -1) {
+        selector_unregister_fd(key->s, connection->origin_fd);
+        close(connection->origin_fd);
+    }
+    if (connection->client_fd != -1) {
+        selector_unregister_fd(key->s, connection->client_fd);
+        close(connection->client_fd);
+    }
+
+    if (connection->origin_resolution != NULL) {
+        if (connection->client.request.atyp != FQDN) {
+            free(connection->origin_resolution->ai_addr);
+            free(connection->origin_resolution);
+        } else {
+            freeaddrinfo(connection->origin_resolution);
         }
     }
+
+    free(connection);
 }
 
-static void socks5_destroy(struct socks5 * connection) {
+static void socks5_destroy(struct selector_key * key) {
+    struct socks5 * connection = ATTACHMENT(key);
     if (connection != NULL) {
         if (connection->origin_resolutions_list != NULL) {
             freeaddrinfo(connection->origin_resolutions_list);
             connection->origin_resolutions_list = NULL;
         }
         if (connection->origin_resolution != NULL) {
-            freeaddrinfo(connection->origin_resolution);
+            free(connection->origin_resolution->ai_addr);
+            free(connection->origin_resolution);
             connection->origin_resolution = NULL;
         }
         free(connection);
+        key->data = NULL;
     }
 }
 

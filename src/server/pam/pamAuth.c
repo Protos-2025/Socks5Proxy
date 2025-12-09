@@ -25,7 +25,7 @@ unsigned pam_auth_read(struct selector_key * key) {
 
     if (readn < 0) {
         // TODO: handle error correctly
-        perror("recv failed (PAM)");
+        LOG_FATAL("recv failed (PAM)");
         return PAM_ERROR;
     }
     if (readn == 0) {

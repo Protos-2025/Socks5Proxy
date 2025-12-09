@@ -18,7 +18,7 @@ void reply_arrival(const unsigned state, struct selector_key * key) {
     buffer_write(&connection->client_buffer, SOCKS5_VERSION);
     buffer_write(&connection->client_buffer, connection->client.reply.rep);
     buffer_write(&connection->client_buffer, RSV);
-    buffer_write(&connection->client_buffer, connection->client.request.atyp);
+    buffer_write(&connection->client_buffer, connection->atyp);
     // if (connection->client.request.atyp == FQDN) {
     //     buffer_write(&connection->client_buffer, strlen((char *)connection->origin_host));
     // }

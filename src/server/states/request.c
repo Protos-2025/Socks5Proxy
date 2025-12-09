@@ -91,6 +91,7 @@ unsigned request_read(struct selector_key * key) {
             connection->client.reply.rep = ADDRESS_TYPE_NOT_SUPPORTED;
             return to_reply_state(key);
         }
+        connection->atyp = connection->client.request.atyp;
     
         connection->client.request.state = DST_LEN;
     }
@@ -366,6 +367,8 @@ static uint8_t resolve_fqdn(struct selector_key * key) {
         return FAILURE;
     }
 
+    pthread_detach(thread);
+
     return SUCCESS;
 }
 
@@ -381,6 +384,9 @@ static void * resolve_fqdn_blocking(void * data) {
     hints.ai_protocol = IPPROTO_TCP;
 
     if (0 != getaddrinfo((const char *) connection->origin_host, (const char *) connection->origin_port, &hints, &connection->origin_resolution)) {
+        if (connection->origin_resolution != NULL) {
+            freeaddrinfo(connection->origin_resolution);
+        }
         // connection->client.reply.rep = SERVER_FAILURE;
         connection->origin_resolution = NULL; // in case it was modify (this is the flag i use to define wheter it was resolved or not)
     }

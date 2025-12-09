@@ -16,7 +16,9 @@
 #include "../shared/include/selector.h"
 
 #define N(x) (sizeof(x)/sizeof((x)[0]))
+#define IPv4_ADDR 0x01
 #define FQDN 0x03
+#define IPv6_ADDR 0x04
 
 static const struct state_definition socks5States[] = {
     {
@@ -69,6 +71,7 @@ void socksv5_passive_accept(struct selector_key * key) {
     struct sockaddr_storage clientAddr;
     socklen_t clientAddrLen = sizeof(clientAddr);
     struct socks5 * connection = NULL;
+    key->data = NULL;
 
     const int clientFd = accept(key->fd, (struct sockaddr *) &clientAddr, &clientAddrLen);
     if (clientFd == -1) {
@@ -112,9 +115,13 @@ static struct socks5 * socks5_new(int client_fd) {
     if (new != NULL) {
         new->client_fd = client_fd;
         buffer_init(&new->client_buffer, BUFFER_SIZE, new->client_buffer_data);
-        buffer_init(&new->origin_buffer, BUFFER_SIZE, new->origin_buffer_data);
+        
         new->origin_fd = -1;
+        buffer_init(&new->origin_buffer, BUFFER_SIZE, new->origin_buffer_data);
         new->origin_resolution = NULL;
+
+        new->atyp = 0;
+
         new->stm = (struct state_machine){
             .initial = GREETING,
             .states = socks5States,
@@ -123,8 +130,9 @@ static struct socks5 * socks5_new(int client_fd) {
         };
         stm_init(&new->stm);
 
-        new->references = 1;
         new->closed = false;
+
+        new->references = 1;
     }
 
     return new;
@@ -182,24 +190,19 @@ static void socksv5_done(struct selector_key * key) {
         close(connection->client_fd);
     }
 
-    if (connection->origin_resolution != NULL) {
-        if (connection->client.request.atyp != FQDN) {
-            free(connection->origin_resolution->ai_addr);
-            free(connection->origin_resolution);
-        } else {
-            freeaddrinfo(connection->origin_resolution);
-        }
-    }
-
-    free(connection);
+    socks5_destroy(key);
 }
 
 static void socks5_destroy(struct selector_key * key) {
-    struct socks5 * connection = ATTACHMENT(key);
-    if (connection != NULL) {
+    if (key->data != NULL) {
+        struct socks5 * connection = ATTACHMENT(key);
         if (connection->origin_resolution != NULL) {
-            free(connection->origin_resolution->ai_addr);
-            free(connection->origin_resolution);
+            if (connection->atyp == IPv4_ADDR || connection->atyp == IPv6_ADDR) {
+                free(connection->origin_resolution->ai_addr);
+                free(connection->origin_resolution);
+            } else if (connection->atyp == FQDN) {
+                freeaddrinfo(connection->origin_resolution);
+            }
             connection->origin_resolution = NULL;
         }
         free(connection);

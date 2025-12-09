@@ -108,7 +108,7 @@ static struct pam * pam_new(int client_fd) {
 
   if(new != NULL) {
     new->client_fd = client_fd;
-    buffer_init(&new->client_buffer, BUFFER_SIZE, new->client_buffer_data);
+    buffer_init(&new->client_buffer, PAM_BUFFER_SIZE, new->client_buffer_data);
     new->stm = (struct state_machine){
       .initial = PAM_AUTH,
       .states = pamStates,

@@ -1,9 +1,8 @@
 #include "../include/pamMethods.h"
-#include "../include/buffer.h"
 #include <string.h>
 #include "logger.h"
-#include "defines.h"
 #include "../include/users.h"
+#include "../include/pam.h"
 
 void handle_get_connected_users_list(struct pam * connection);
 void handle_add_user(struct pam * connection);

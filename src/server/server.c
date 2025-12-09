@@ -14,8 +14,8 @@
 #include "include/defines.h"
 #include "include/metrics.h"
 #include "logger.h"
+#include "args.h"
 
-#define PORT 1080
 #define MAX_PENDING_CONNECTIONS 20
 #define SELECTOR_CAPACITY 1024
 
@@ -37,25 +37,9 @@ static bool done = false;
 int main(const int argc, const char **argv) {
 	logger_init();
     metrics_init();
-	unsigned port;
 
-	if(argc == 1) {
-        port = PORT;
-    } else if(argc == 2) {
-        char * end = 0;
-        const long sl = strtol(argv[1], &end, 10);
-
-        if (end == argv[1]|| '\0' != *end 
-           || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno)
-           || sl < 0 || sl > USHRT_MAX) {
-            fprintf(stderr, "port should be an integer: %s\n", argv[1]);
-            return 1;
-        }
-        port = sl;
-    } else {
-        fprintf(stderr, "Usage: %s <port>\n", argv[0]);
-        return 1;
-    }
+    struct socks5args args;
+    parse_args(argc, argv, &args);
 
     close(STDIN_FILENO);
 
@@ -65,12 +49,23 @@ int main(const int argc, const char **argv) {
 
 
     // <---------------------------- create proxy server socket ---------------------------->
-    LOG_DEBUG("Starting server...", port);
+    LOG_DEBUG("Starting server...");
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family      = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port        = htons(port);
+
+    if (inet_addr(args.socks_addr) != INADDR_NONE) {
+        addr.sin_addr.s_addr = inet_addr(args.socks_addr);
+    } else {
+        LOG_FATAL("Invalid address provided: %s", args.socks_addr);
+        return 1;
+    }
+
+    addr.sin_port        = htons(args.socks_port);
+    if (inet_pton(AF_INET, args.socks_addr, &addr.sin_addr) != 1) {
+        LOG_FATAL("Failed IP conversion for IPv4");
+        return 1;
+    }
 
     if ((server = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         errorMsg = "unable to create socket";
@@ -89,7 +84,7 @@ int main(const int argc, const char **argv) {
         goto finally;
     }
 
-    LOG_INFO("Proxy server listening on TCP port %d", port);
+    LOG_INFO("Proxy server listening on TCP port %d", args.socks_port);
 
     signal(SIGTERM, signal_handler);
     signal(SIGINT,  signal_handler);

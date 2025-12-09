@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include "logger.h"
+#include "../include/users.h"
 
 
 void pam_auth_arrival(const unsigned state, struct selector_key * key) {
@@ -101,7 +102,22 @@ unsigned pam_auth_read(struct selector_key * key) {
 
       LOG_DEBUG("Received username: %s", connection->client.auth.username);
       LOG_DEBUG("Received password: %s", connection->client.auth.pass);
-      connection->client.auth.status = PAM_AUTH_SUCCESS; // TODO: validate credentials
+
+      UserStatus userStatus = user_authenticate(connection->client.auth.username, connection->client.auth.pass); 
+
+      if (userStatus == USER_OK) {
+          LOG_INFO("User '%s' authenticated successfully.", connection->client.auth.username);
+          connection->client.auth.status = PAM_AUTH_SUCCESS;
+      } else if (userStatus == USER_BADUSERNAME) {
+          LOG_INFO("User tried to identify with username %s but there is no such username", connection->client.auth.username);
+          connection->client.auth.status = PAM_AUTH_FAILURE;
+      } else if (userStatus == USER_WRONGPASSWORD) {
+          LOG_INFO("User '%s' provided a wrong password.", connection->client.auth.username);
+          connection->client.auth.status = PAM_AUTH_FAILURE;
+      } else {
+          LOG_ERROR("An error occurred during authentication for user '%s'.", connection->client.auth.username);
+          return PAM_ERROR;
+      }
 
       buffer_reset(&connection->client_buffer);
       buffer_write(&connection->client_buffer, PAM_VERSION_1);

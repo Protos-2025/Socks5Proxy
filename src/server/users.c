@@ -13,6 +13,14 @@ static int user_cmp(void * a, void * b) {
 void users_init() {
     if (usersList == NULL) {
         usersList = list_create(&user_cmp, sizeof(User));
+
+        // Create a default admin user
+        User adminUser = {
+            .username = "admin",
+            .password = "admin",
+            .privilege_level = USER_PRIVILEGE_ADMIN
+        };
+        list_add(usersList, &adminUser);
     }
 }
 

@@ -14,6 +14,7 @@
 #include "include/pam.h"
 #include "include/defines.h"
 #include "include/metrics.h"
+#include "include/users.h"
 #include "logger.h"
 #include "args.h"
 

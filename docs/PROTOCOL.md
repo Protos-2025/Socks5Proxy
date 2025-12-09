@@ -116,11 +116,9 @@ Donde el servidor responderá al pedido con un mensaje de la siguiente estructur
 {: #clientreq title="Respuesta del servidor a pedido de autenticación" alt="Respuesta del servidor a pedido de autenticación" }
 
 Siendo VER la versión del protocolo, y STATUS un byte que indica el estado de la autenticación:
+
 - 0x00: Autenticación exitosa
 - 0x01: Autenticación fallida
-# - 0x02: Error de protocolo        (devuelve 0x00 si es succses 0x01 si es failure, no dice nada mas, yo sacaria estos)
-# - 0x03: Error interno del servidor
-# - 0x04: Demasiados intentos fallidos de autenticacion
 
 Los estados 0x5 a 0x0F se reservan para futuras definiciones.
 
@@ -145,16 +143,7 @@ Un cliente autenticado podrá enviar pedidos de información o configuración al
 ~~~~~~~~~~
 {: #clientreq title="Pedido de un cliente" alt="Pedido de un cliente" }
 
-~~~~~~~~~~
 
-+-------+-----------+-------------+------------+
-|  VER  |   STATUS  |    NBODY    |    BODY    |
-+-------+-----------+-------------+------------+
-|   1   |     1     |      2      |    NBODY   |
-+-------+-----------+-------------+------------+
-
-~~~~~~~~~~
-{: #clientreq title="Respuesta del servidor a un pedido" alt="Respuesta del servidor a un pedido" }
 
 #### VER
 
@@ -255,6 +244,39 @@ Vacío.
 - **0xF7: Reiniciar la cantidad de bytes transferidos históricamente**
 
 Vacío.
+
+### Respuesta del servidor
+
+El servidor responde al pedido con un mensaje de la siguiente estructura
+
+
+~~~~~~~~~~
+
++-------+-----------+-------------+------------+
+|  VER  |   STATUS  |    NBODY    |    BODY    |
++-------+-----------+-------------+------------+
+|   1   |     1     |      2      |    NBODY   |
++-------+-----------+-------------+------------+
+
+~~~~~~~~~~
+{: #clientreq title="Respuesta del servidor a un pedido" alt="Respuesta del servidor a un pedido" }
+
+#### VER
+
+El campo VER indica la versión del protocolo. Actualmente, solo se soporta la versión 0x01.
+
+#### STATUS
+
+El campo STATUS indica el estado de la respuesta del servidor al pedido realizado. Los estados posibles son:
+- 0x00: Pedido exitoso
+- 0x01: Pedido fallido
+
+#### NBODY
+
+El campo NBODY es un entero de 2 bytes que indica la longitud del campo BODY en bytes.
+
+#### BODY
+El campo BODY contiene la información que se desea enviarle a el usuario. 
 
 
 # Figures

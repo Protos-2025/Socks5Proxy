@@ -1,5 +1,6 @@
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <stdlib.h>
 #include "../include/reply.h"
 #include "../include/socks5nio.h"
 #include "../../shared/include/buffer.h"

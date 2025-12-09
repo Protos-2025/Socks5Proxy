@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 void pam_request_arrival(const unsigned state, struct selector_key * key) {
-
+    LOG_DEBUG("PAM REQUEST state arrival");
     struct pam * connection = PAM_ATTACHMENT(key);
     connection->client.request.state = VER_N_RESERVED;
     connection->client.request.reserved = RESERVED_BYTE; 
@@ -106,25 +106,59 @@ unsigned pam_request_read(struct selector_key * key){
 
         LOG_DEBUG("PAM request body received");
 
+        
+        // writes on client.request.write_body
+        handle_pam_request_method(connection);
+ 
+        LOG_DEBUG("pam write_body: %s", connection->client.request.write_body);
+
+        if (connection->client.request.status != PAM_REQUEST_SUCCESS) {
+            LOG_DEBUG("PAM request handling failed with status: 0x%02X", connection->client.request.status);
+            return PAM_ERROR;
+        } 
+
         // TODO: add handling of the request
         // TODO: handle method
         buffer_reset(&connection->client_buffer);
+        LOG_DEBUG("Preparing PAM response");
+        LOG_DEBUG("setting pam version", PAM_VERSION_1);
         buffer_write(&connection->client_buffer, PAM_VERSION_1);
-        buffer_write(&connection->client_buffer, connection->client.request.status);
-        buffer_write(&connection->client_buffer, connection->client.request.write_nbody);
- 
-        // writes on client.request.write_body
-        handle_pam_request_method(connection);
-        buffer_write_adv(&connection->client_buffer, connection->client.request.write_nbody); 
-      
-      selector_set_interest_key(key, OP_WRITE);
-    }
 
+        LOG_DEBUG("setting status byte with value: 0x%02X", connection->client.request.status);
+        buffer_write(&connection->client_buffer, connection->client.request.status);
+
+        LOG_DEBUG("setting body length: %u", connection->client.request.write_nbody);
+        buffer_write(&connection->client_buffer, connection->client.request.write_nbody);
+  
+        selector_set_interest_key(key, OP_WRITE);
+    }
 
     return PAM_REQUEST;
 }
-unsigned pam_request_write(struct selector_key * key){
 
+unsigned pam_request_write(struct selector_key * key) {
+    struct pam * connection = PAM_ATTACHMENT(key);
+    uint8_t * rPtr;
+	size_t toRead;
+	int written;
 
+	rPtr = buffer_read_ptr(&connection->client_buffer, &toRead);
+    written = send(connection->client_fd, rPtr, toRead, 0);
+    buffer_read_adv(&connection->client_buffer, written);
+
+    if (written < 0) {
+        LOG_FATAL("send failed (PAM_AUTH)");
+        return PAM_ERROR;
+    }
+
+    if (buffer_can_read(&connection->client_buffer)) {
+        return PAM_REQUEST;
+    }
+
+    LOG_INFO("Pam request completed");
+
+    buffer_reset(&connection->client_buffer);
+
+    selector_set_interest_key(key, OP_READ); 
     return PAM_REQUEST;
 }

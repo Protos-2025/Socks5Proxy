@@ -153,7 +153,6 @@ unsigned pam_auth_write(struct selector_key * key) {
 
     buffer_reset(&connection->client_buffer);
 
-    // TODO: replace both lines once the next state is implemented!
-    selector_set_interest_key(key, OP_NOOP); // selector_set_interest_key(key, OP_READ);
-    return PAM_DONE; // return next state;
+    selector_set_interest_key(key, OP_READ); 
+    return PAM_REQUEST;
 }

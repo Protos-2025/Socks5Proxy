@@ -4,13 +4,9 @@
 #include <stdint.h>
 #include "../../shared/include/selector.h"
 
-// - 0x01: Obtener cantidad de usuarios conectados actualmente
-// - 0x02: Obtener lista de usuarios conectados actualmente
-// - 0x03: Obtener la cantidad de conexiones históricas
-// - 0x04: Obtener bytes transferidos históricamente
-//
-// - 0xF3: Reiniciar la cantidad de conexiones históricas
-// - 0xF4: Reiniciar la cantidad de bytes transferidos históricamente
+#define PAM_REQUEST_SUCCESS 0x00
+#define PAM_REQUEST_FAILURE 0x01
+
 
 #define PAM_REQUEST_BODY_MAX_LENGTH 65536
 #define RESERVED_BYTE 0x00

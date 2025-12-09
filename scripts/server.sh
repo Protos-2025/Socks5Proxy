@@ -3,7 +3,7 @@ set -eou pipefail
 
 if [[ -z "${TRACE:-}" || "${TRACE}" == "false" ]]; then
     echo "server.sh: TRACE env var not set; skipping bpftrace test."
-    if [[ "${DEBUG:-}" == "true" ]]; then
+    if [[ "${DEBUG:-}" != "false" ]]; then
         echo "server.sh: DEBUG env var set true; running server with ASAN."
         LD_PRELOAD=$(gcc -print-file-name=libasan.so) \
             exec stdbuf -o0 -e0 ./bin/server

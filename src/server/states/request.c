@@ -57,7 +57,7 @@ unsigned request_read(struct selector_key * key) {
             return to_reply_state(key);
         }
         if (readn == 0) {
-            LOG_INFO("Client closed connection (REQUEST)");
+            LOG_DEBUG("Client closed connection (REQUEST)");
             return DONE;
         }
     
@@ -123,7 +123,7 @@ static unsigned resolve_dst_address(struct selector_key * key) {
             return to_reply_state(key);
         }
         if (readn == 0) {
-            LOG_INFO("Client closed connection (REQUEST)");
+            LOG_DEBUG("Client closed connection (REQUEST)");
             return DONE;
         }
         
@@ -168,8 +168,8 @@ static unsigned resolve_dst_address(struct selector_key * key) {
         case FQDN:
             get_fqdn(connection, addrBytes);
             get_port(connection);
-            LOG_DEBUG("FQDN address (%s:%s)", connection->origin_host, connection->origin_port);
-            LOG_INFO("Request processed successfully");
+            LOG_TRACE("FQDN address (%s:%s)", connection->origin_host, connection->origin_port);
+            LOG_DEBUG("Request processed successfully");
             if (FAILURE == resolve_fqdn(key)) {
                 connection->client.reply.rep = SERVER_FAILURE;
                 return to_reply_state(key);
@@ -190,7 +190,7 @@ static unsigned resolve_dst_address(struct selector_key * key) {
             break;
     }
 
-    LOG_INFO("Request processed successfully");
+    LOG_DEBUG("Request processed successfully");
 
     return connect_to_dest(key);
 }
@@ -243,7 +243,7 @@ static unsigned connect_to_dest(struct selector_key * key) {
             LOG_TRACE("Connection in progress");
             return CONNECT; 
         default: {
-            LOG_INFO("Connected to origin");
+            LOG_DEBUG("Connected to origin");
             selector_set_interest(key->s, connection->origin_fd, OP_NOOP);
             connection->client.reply.rep = SUCCEDED;
         }

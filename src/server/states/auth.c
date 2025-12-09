@@ -34,7 +34,7 @@ unsigned auth_read(struct selector_key * key) {
         return ERROR;
     }
     if (readn == 0) {
-        LOG_INFO("Client closed connection (AUTH)");
+        LOG_DEBUG("Client closed connection (AUTH)");
         return DONE;
     }
 
@@ -119,14 +119,14 @@ unsigned auth_read(struct selector_key * key) {
         }
         connection->client.auth.password[connection->client.auth.plen] = '\0';
 
-        LOG_DEBUG("Password received (length: %d)", connection->client.auth.plen);
+        LOG_TRACE("Password received (length: %d)", connection->client.auth.plen);
 
         // Check credentials
         bool authSuccess = false;
         if (strcmp(connection->client.auth.username, VALID_USERNAME) == 0 &&
             strcmp(connection->client.auth.password, VALID_PASSWORD) == 0) {
             authSuccess = true;
-            LOG_INFO("Authentication successful for user: %s", connection->client.auth.username);
+            LOG_DEBUG("Authentication successful for user: %s", connection->client.auth.username);
         } else {
             LOG_WARN("Authentication failed for user: %s", connection->client.auth.username);
         }
@@ -164,11 +164,11 @@ unsigned auth_write(struct selector_key * key) {
 
     // If auth fails, close connection
     if (!connection->client.auth.authenticated) {
-        LOG_INFO("Closing connection due to authentication failure");
+        LOG_DEBUG("Closing connection due to authentication failure");
         return ERROR;
     }
 
-    LOG_INFO("Authentication completed successfully");
+    LOG_DEBUG("Authentication completed successfully");
     buffer_reset(&connection->client_buffer);
     
     selector_set_interest_key(key, OP_READ);

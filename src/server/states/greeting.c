@@ -29,7 +29,7 @@ unsigned greeting_read(struct selector_key * key) {
         return ERROR;
     }
     if (readn == 0) {
-        LOG_INFO("Client closed connection (GREETING)");
+        LOG_DEBUG("Client closed connection (GREETING)");
         return DONE;
     }
 
@@ -115,7 +115,7 @@ unsigned greeting_write(struct selector_key * key) {
         return GREETING;
     }
 
-    LOG_INFO("Greeting completed");
+    LOG_DEBUG("Greeting completed");
 
     buffer_reset(&connection->client_buffer);
 

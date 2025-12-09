@@ -124,5 +124,5 @@ unsigned socksv5_copy_write(struct selector_key * key) {
 
 void socksv5_copy_close(const unsigned int state, struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
-    LOG_INFO("Closing copy connections: client_fd=%d, origin_fd=%d", connection->client_fd, connection->origin_fd);
+    LOG_DEBUG("Closing copy connections: client_fd=%d, origin_fd=%d", connection->client_fd, connection->origin_fd);
 }

@@ -167,6 +167,16 @@ void socksv5_block(struct selector_key * key) {
 
 void socksv5_close(struct selector_key * key) {
     struct state_machine *stm   = &ATTACHMENT(key)->stm;
+    char * origin = ATTACHMENT(key)->origin_host;
+    char clientIp[INET6_ADDRSTRLEN] = {0};
+    if (ATTACHMENT(key)->client_addr.ss_family == AF_INET) {
+        struct sockaddr_in * s = (struct sockaddr_in *) &ATTACHMENT(key)->client_addr;
+        inet_ntop(AF_INET, &s->sin_addr, clientIp, INET6_ADDRSTRLEN);
+    } else if (ATTACHMENT(key)->client_addr.ss_family == AF_INET6) {
+        struct sockaddr_in6 * s = (struct sockaddr_in6 *) &ATTACHMENT(key)->client_addr;
+        inet_ntop(AF_INET6, &s->sin6_addr, clientIp, INET6_ADDRSTRLEN);
+    }
+    LOG_INFO("Closing connection from %s %s%s", clientIp, origin != NULL && *origin ? " to " : "", origin != NULL ? origin : "");
     stm_handler_close(stm, key);
     register_connection_closed();
     socksv5_done(key);

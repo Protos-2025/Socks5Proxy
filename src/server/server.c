@@ -23,6 +23,7 @@
 #define GET_BUFFER_MAX_IDX_TO_READ(w) ((w) == 0 ? BUFFER_SIZE : (w))
 
 static void signal_handler(const int signal);
+static int interpret_socket_args(struct socks5args args, struct sockaddr_in * addr);
 
 typedef struct custom_key {
     uint8_t * buffer;
@@ -39,7 +40,7 @@ int main(const int argc, const char **argv) {
     metrics_init();
 
     struct socks5args args;
-    parse_args(argc, argv, &args);
+    parse_args(argc, (char **) argv, &args);
 
     close(STDIN_FILENO);
 
@@ -49,32 +50,24 @@ int main(const int argc, const char **argv) {
 
 
     // <---------------------------- create proxy server socket ---------------------------->
-    LOG_DEBUG("Starting server...");
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family      = AF_INET;
+    struct sockaddr_storage addr;
+	int addrlen = 0;
 
-    if (inet_addr(args.socks_addr) != INADDR_NONE) {
-        addr.sin_addr.s_addr = inet_addr(args.socks_addr);
-    } else {
-        LOG_FATAL("Invalid address provided: %s", args.socks_addr);
-        return 1;
+	if ((addrlen = interpret_socket_args(args, &addr)) < 0) {
+        errorMsg = "interpreting socket arguments";
+        goto finally;
     }
 
-    addr.sin_port        = htons(args.socks_port);
-    if (inet_pton(AF_INET, args.socks_addr, &addr.sin_addr) != 1) {
-        LOG_FATAL("Failed IP conversion for IPv4");
-        return 1;
-    }
+	LOG_DEBUG("Starting server...");
 
-    if ((server = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((server = socket(((struct sockaddr_in *)&addr)->sin_family, SOCK_STREAM, 0)) < 0) {
         errorMsg = "unable to create socket";
         goto finally;
     }
 
     setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int));
 
-    if (bind(server, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+    if (bind(server, (struct sockaddr *) &addr, addrlen) < 0) {
         errorMsg = "unable to bind socket";
         goto finally;
     }
@@ -84,7 +77,7 @@ int main(const int argc, const char **argv) {
         goto finally;
     }
 
-    LOG_INFO("Proxy server listening on TCP port %d", args.socks_port);
+    LOG_INFO("Proxy server listening on addr %s:%d (TCP)", args.socks_addr, args.socks_port);
 
     signal(SIGTERM, signal_handler);
     signal(SIGINT,  signal_handler);
@@ -148,14 +141,15 @@ int main(const int argc, const char **argv) {
     int ret = 0;
 
 finally:
-    free_logger();
     if (ss != SELECTOR_SUCCESS) {
-        fprintf(stderr, "%s: %s\n", (errorMsg == NULL) ? "": errorMsg, ss == SELECTOR_IO ? strerror(errno) : selector_error(ss));
+        LOG_FATAL("%s: %s", (errorMsg == NULL) ? "": errorMsg, ss == SELECTOR_IO ? strerror(errno) : selector_error(ss));
         ret = 2;
     } else if (errorMsg) {
-        perror(errorMsg);
+        LOG_FATAL("%s", errorMsg);
         ret = 1;
     }
+
+    free_logger();
 
     if (selector != NULL) {
         selector_destroy(selector);
@@ -175,4 +169,33 @@ static void signal_handler(const int signal) {
     flush_all_logs();
     free_logger();
     done = true;
+}
+
+static int interpret_socket_args(struct socks5args args, struct sockaddr_in * addr) {
+    int ipv6 = strchr(args.socks_addr, ':') != NULL;
+
+    if (ipv6) {
+        struct sockaddr_in6* socks6 = (struct sockaddr_in6*) addr;
+        memset(socks6, 0, sizeof(struct sockaddr_in6));
+		socks6->sin6_family = AF_INET6;
+        socks6->sin6_addr = in6addr_any;
+        socks6->sin6_port = htons(args.socks_port);
+        if (inet_pton(AF_INET6, args.socks_addr, &socks6->sin6_addr) != 1) {
+            LOG_FATAL("Invalid IPv6 address: %s", args.socks_addr);
+			return -1;
+		}
+		return sizeof(struct sockaddr_in6);
+	}
+
+    struct sockaddr_in * socks4 = (struct sockaddr_in*) addr;
+    memset(socks4, 0, sizeof(struct sockaddr_in));
+    socks4->sin_family = AF_INET;
+    socks4->sin_addr.s_addr = INADDR_ANY;
+    socks4->sin_port = htons(args.socks_port);
+    if (inet_pton(AF_INET, args.socks_addr, &socks4->sin_addr) != 1) {
+        LOG_FATAL("Invalid IPv4 address: %s", args.socks_addr);
+        return -1;
+    }
+
+	return sizeof(struct sockaddr_in);
 }

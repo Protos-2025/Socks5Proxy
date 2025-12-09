@@ -10,7 +10,7 @@
 // #define FQDN 0x03
 
 void reply_arrival(const unsigned state, struct selector_key * key) {
-    LOG_DEBUG("Replying...");
+    LOG_TRACE("Replying...");
 
     struct socks5 * connection = ATTACHMENT(key);
 
@@ -66,7 +66,7 @@ unsigned reply_write(struct selector_key * key) {
     buffer_reset(&connection->client_buffer);
     
     if (connection->client.reply.rep == SUCCEDED) {
-        LOG_INFO("Replied successfully");
+        LOG_DEBUG("Replied successfully");
         return COPY;
     }
 

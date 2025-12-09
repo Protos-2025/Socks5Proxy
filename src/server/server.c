@@ -37,6 +37,8 @@ static bool done = false;
 int main(const int argc, const char **argv) {
 	logger_init();
     metrics_init();
+    users_init();
+	unsigned port;
 
     struct socks5args args;
     parse_args(argc, (char **) argv, &args);

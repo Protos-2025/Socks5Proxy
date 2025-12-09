@@ -8,7 +8,7 @@
 #include <unistd.h> 
 #include "logs.h"
 #include "protocol.h"
-#include "clientArgs.h"
+#include "client_args.h"
 
 int main(int argc, char* argv[]) {
 

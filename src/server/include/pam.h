@@ -7,14 +7,14 @@
 #include "../../shared/include/selector.h"
 #include "../../shared/include/buffer.h"
 #include "../include/pamAuth.h"
+#include "pamRequest.h"
 #include "stm.h"
 
 #define PAM_ATTACHMENT(key) ( (struct pam *)(key)->data)
 
 enum pam_state {
 	PAM_AUTH,
-	// add more
-
+    PAM_REQUEST,
 
 	PAM_DONE,
     PAM_ERROR
@@ -28,6 +28,7 @@ struct pam {
   uint8_t client_buffer_data[BUFFER_SIZE];
   union {
     struct pamAuth_st auth;
+    struct pamRequest_st request;
     // add more
   } client;
 

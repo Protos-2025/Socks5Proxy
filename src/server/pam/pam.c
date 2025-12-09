@@ -1,5 +1,6 @@
 #include "../include/pam.h"
 #include "../include/pamAuth.h"
+#include "../include/pamRequest.h"
 #include "buffer.h"
 #include "selector.h"
 #include "stm.h"
@@ -26,6 +27,12 @@ static const struct state_definition pamStates[] = {
     .on_arrival = pam_auth_arrival,
     .on_read_ready = pam_auth_read,
     .on_write_ready = pam_auth_write
+  },
+  {
+    .state = PAM_REQUEST,
+    .on_arrival = pam_request_arrival,
+    .on_read_ready = pam_request_read,
+    .on_write_ready = pam_request_write
   },
   {
     .state = PAM_DONE

@@ -171,14 +171,17 @@ El campo RESERVED es un byte reservado para uso futuro y debe ser seteado en 0x0
 #### METHOD
 
 El campo METHOD indica el tipo de pedido que se quiere realizar. Los métodos soportados son:
-- 0x00: RESERVADO
-- 0x01: Obtener cantidad de usuarios conectados actualmente
-- 0x02: Obtener lista de usuarios conectados actualmente
-- 0x03: Obtener la cantidad de conexiones históricas
-- 0x04: Obtener bytes transferidos históricamente
-- 0x05-0xF0: RESERVADO
-- 0xF3: Reiniciar la cantidad de conexiones históricas
-- 0xF4: Reiniciar la cantidad de bytes transferidos históricamente
+- **0x00: RESERVADO**
+- **0x01: Obtener lista de usuarios conectados actualmente**
+- **0x02: Añadir usuario**
+- **0x03: Remover usuario**
+- **0x04: Cambiar contraseña**
+- **0x05: Cambiar rol**
+- **0x06: Métricas**
+
+- **0x07-0xF0: RESERVADO**
+- **0xF6: Reiniciar la cantidad de conexiones históricas**
+- **0xF7: Reiniciar la cantidad de bytes transferidos históricamente**
 
 Los valores de METHOD 0x10 - 0x20 se reservan a definición de cada implementación del protocolo.
 
@@ -191,6 +194,68 @@ El campo NBODY es un entero de 2 bytes que indica la longitud del campo BODY en 
 El campo BODY contiene la información adicional necesaria para completar el pedido, dependiendo del método seleccionado. Si el método no requiere información adicional, este campo deberá estar vacío y NBODY será 0x0000.
 
 Si BODY contiene más bytes que los indicados en NBODY (o más de 65.535), los bytes adicionales serán ignorados. Si BODY contiene menos bytes que los indicados en NBODY, el servidor deberá responder con un error y cerrar la conexión.
+
+El contenido de BODY debera ser, para cada método:
+
+- **0x01: Obtener lista de usuarios conectados actualmente**:
+
+Vacío.
+
+
+- **0x02: Añadir usuario**
+~~~~~~~~~~
+
++-------+------------+-------+------------+-------+
+| ULEN  |  USERNAME  | PLEN  |  PASSWORD  |  ROL  |
++-------+------------+-------+------------+-------+
+|   1   |    ULEN    |   1   |    PLEN    |   1   |
++-------+------------+-------+------------+-------+
+
+~~~~~~~~~~
+
+- **0x03: Remover usuario**
+
+~~~~~~~~~~
++-------+------------+
+| ULEN  |  USERNAME  | 
++-------+------------+
+|   1   |    ULEN    | 
++-------+------------+
+~~~~~~~~~~
+
+- **0x04: Cambiar contraseña**
+~~~~~~~~~~
+
++-------+------------+-----------+--------------+
+| ULEN  |  USERNAME  | NEW_PLEN  | NEW_PASSWORD |
++-------+------------+-----------+--------------+
+|   1   |    ULEN    |     1     |   NEW_PLEN   |
++-------+------------+-----------+--------------+
+
+~~~~~~~~~~
+- **0x05: Cambiar rol**
+
+~~~~~~~~~~
+
++-------+------------+-----------+--------------+
+| ULEN  |  USERNAME  | NEW_RLEN  |    NEW_ROL   |
++-------+------------+-----------+--------------+
+|   1   |    ULEN    |     1     |   NEW_RLEN   |
++-------+------------+-----------+--------------+
+
+~~~~~~~~~~
+- **0x06: Métricas**
+
+Vacío.
+
+- **0xF6: Reiniciar la cantidad de conexiones históricas**
+
+Vacío.
+
+- **0xF7: Reiniciar la cantidad de bytes transferidos históricamente**
+
+Vacío.
+
 
 # Figures
 
@@ -214,3 +279,4 @@ Seriously?
 # Lorem ipsum
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur nibh mi, mollis varius imperdiet id, venenatis ut nisi. Phasellus mauris urna, ultrices at massa id, faucibus malesuada nisi.
+

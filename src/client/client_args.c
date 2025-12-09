@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
-#include "clientArgs.h"
+#include "client_args.h"
 
 static int is_number(const char* s) {
     if (s == NULL || *s == '\0')

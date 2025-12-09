@@ -174,6 +174,7 @@ static void socksv5_done(struct selector_key * key) {
     for (unsigned i = 0; i < N(fds); i++) {
         if (fds[i] != -1) {
             if (SELECTOR_SUCCESS != selector_unregister_fd(key->s, fds[i])) {
+                LOG_FATAL("Failed to unregister fd=%d", fds[i]);
                 abort();
             }
             close(fds[i]);

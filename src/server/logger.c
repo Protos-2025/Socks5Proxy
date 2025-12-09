@@ -41,6 +41,13 @@ static Queue logQueue = NULL;
 static Buffer logBuffer;
 static char * currentLog = NULL;
 static int minLogLevel = LOGGER_MIN_LEVEL;
+static FdSelector loggerSelector = NULL;
+
+static const struct fd_handler loggerHandlers = {
+    .handle_read = NULL,
+    .handle_write = write_logs_deferred,
+    .handle_close = NULL,
+};
 
 void logger_init() {
     logQueue = create_queue(free_log, sizeof(char *), MAX_LOG_QUEUE_SIZE);
@@ -50,21 +57,31 @@ void logger_init() {
 int logger_register_selector(FdSelector selector) {
     if (!selector) return 0;
 
+    if (!loggerSelector) {
+        loggerSelector = selector;
+    }
+
 	if (selector_fd_set_nio(STDOUT_FILENO) < 0) {
         fprintf(stderr, "Failed to set STDOUT to non-blocking mode\n");
         return -1;
     };
 
-    static const struct fd_handler logger_handlers = {
-        .handle_read = NULL,
-        .handle_write = write_logs_deferred,
-        .handle_close = free_logger,
-    };
-
 	SelectorStatus ss = SELECTOR_SUCCESS;
-    ss = selector_register(selector, STDOUT_FILENO, &logger_handlers, OP_WRITE, NULL);
+    ss = selector_register(selector, STDOUT_FILENO, &loggerHandlers, OP_WRITE, NULL);
     if (ss != SELECTOR_SUCCESS) {
         fprintf(stderr, "Failed to register logger flush handler: %s\n", selector_error(ss));
+    }
+
+    return ss == SELECTOR_SUCCESS ? 0 : -1;
+}
+
+int logger_unregister_selector(FdSelector selector) {
+    if (!selector) return 0;
+
+    SelectorStatus ss = SELECTOR_SUCCESS;
+    ss = selector_unregister_fd(selector, STDOUT_FILENO);
+    if (ss != SELECTOR_SUCCESS) {
+        fprintf(stderr, "Failed to unregister logger flush handler: %s\n", selector_error(ss));
     }
 
     return ss == SELECTOR_SUCCESS ? 0 : -1;
@@ -108,7 +125,10 @@ void logger_log_message_deferred(int level, const char* file, int line, time_t *
     char *formattedMsg = format_log_message(log_level_to_string(level), file, line, now, msg, args);
     va_end(args);
 
-    if (formattedMsg) enqueue(logQueue, &formattedMsg);
+    if (formattedMsg) {
+        enqueue(logQueue, &formattedMsg);
+		if (loggerSelector) logger_register_selector(loggerSelector);
+	}
 }
 
 static void write_logs_deferred(struct selector_key* key) {
@@ -116,22 +136,27 @@ static void write_logs_deferred(struct selector_key* key) {
 	size_t toRead = 0;
 	int written = 0;
 
-	if (buffer_can_read(&logBuffer)) {
-		rPtr = buffer_read_ptr(&logBuffer, (size_t *) &toRead);
-		written = write(STDOUT_FILENO, rPtr, toRead);
-		buffer_read_adv(&logBuffer, written);
-        if (written == toRead) {
-            free(currentLog);
-            currentLog = NULL;
+    while (queue_size(logQueue) > 0) {
+        char * peekPtr = NULL;
+        if (toRead == 0 && written == toRead && queue_peek(logQueue, &peekPtr) != NULL) {
+            dequeue(logQueue, &currentLog);
+            buffer_init(&logBuffer, strlen(currentLog), (uint8_t *) currentLog);
+            buffer_write_adv(&logBuffer, strlen(currentLog));
+        } else {
+            break;
         }
-	};
 
-    char * peekPtr = NULL;
-	if (toRead == 0 && written == toRead && queue_peek(logQueue, &peekPtr) != NULL) {
-        dequeue(logQueue, &currentLog);
-        buffer_init(&logBuffer, strlen(currentLog), (uint8_t *) currentLog);
-        buffer_write_adv(&logBuffer, strlen(currentLog));
-	}
+        if (buffer_can_read(&logBuffer)) {
+            rPtr = buffer_read_ptr(&logBuffer, (size_t *) &toRead);
+            written = write(STDOUT_FILENO, rPtr, toRead);
+            buffer_read_adv(&logBuffer, written);
+            if (written == toRead) {
+                free(currentLog);
+                currentLog = NULL;
+            }
+        };
+    }
+	logger_unregister_selector(loggerSelector);
 }
 
 void flush_all_logs() {

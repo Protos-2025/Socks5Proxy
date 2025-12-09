@@ -207,12 +207,10 @@ static unsigned connect_to_dest(struct selector_key * key) {
 
     LOG_DEBUG("Connecting to origin...");
 
-    if (connection->origin_resolutions_list == NULL) {
-        connection->client.reply.rep = HOST_UNREACHABLE;
+    if (connection->origin_resolution == NULL) {
+        connection->client.reply.rep = SERVER_FAILURE;
         return to_reply_state(key);
     }
-
-    connection->origin_resolution = connection->origin_resolutions_list;
 
     int ret = try_connection(key);
     switch (ret) {
@@ -249,8 +247,6 @@ static unsigned connect_to_dest(struct selector_key * key) {
             connection->client.reply.rep = SUCCEDED;
         }
     };
-
-    connection->origin_resolutions_list = NULL;
 
     return to_reply_state(key);
 }
@@ -294,7 +290,7 @@ static uint8_t resolve_ipv4(struct socks5 * connection) {
     resolution->ai_addrlen = sizeof(struct sockaddr_in);
     resolution->ai_addr = (struct sockaddr *) sockAddr;
 
-    connection->origin_resolutions_list = resolution;
+    connection->origin_resolution = resolution;
 
     return SUCCESS;
 }
@@ -339,7 +335,7 @@ static uint8_t resolve_ipv6(struct socks5 * connection) {
     resolution->ai_addrlen = sizeof(struct sockaddr_in6);
     resolution->ai_addr = (struct sockaddr *) sockAddr;
 
-    connection->origin_resolutions_list = resolution;
+    connection->origin_resolution = resolution;
 
     return SUCCESS;
 }
@@ -384,9 +380,9 @@ static void * resolve_fqdn_blocking(void * data) {
     hints.ai_flags = AI_PASSIVE;
     hints.ai_protocol = IPPROTO_TCP;
 
-    if (0 != getaddrinfo((const char *) connection->origin_host, (const char *) connection->origin_port, &hints, &connection->origin_resolutions_list)) {
+    if (0 != getaddrinfo((const char *) connection->origin_host, (const char *) connection->origin_port, &hints, &connection->origin_resolution)) {
         // connection->client.reply.rep = SERVER_FAILURE;
-        connection->origin_resolutions_list = NULL; // in case it was modify (this is the flag i use to define wheter it was resolved or not)
+        connection->origin_resolution = NULL; // in case it was modify (this is the flag i use to define wheter it was resolved or not)
     }
 
     selector_notify_block(key->s, key->fd);

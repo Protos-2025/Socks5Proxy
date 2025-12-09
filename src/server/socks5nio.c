@@ -115,7 +115,6 @@ static struct socks5 * socks5_new(int client_fd) {
         buffer_init(&new->origin_buffer, BUFFER_SIZE, new->origin_buffer_data);
         new->origin_fd = -1;
         new->origin_resolution = NULL;
-        new->origin_resolutions_list = NULL;
         new->stm = (struct state_machine){
             .initial = GREETING,
             .states = socks5States,
@@ -198,10 +197,6 @@ static void socksv5_done(struct selector_key * key) {
 static void socks5_destroy(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
     if (connection != NULL) {
-        if (connection->origin_resolutions_list != NULL) {
-            freeaddrinfo(connection->origin_resolutions_list);
-            connection->origin_resolutions_list = NULL;
-        }
         if (connection->origin_resolution != NULL) {
             free(connection->origin_resolution->ai_addr);
             free(connection->origin_resolution);

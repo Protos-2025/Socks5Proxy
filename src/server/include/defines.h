@@ -35,4 +35,20 @@
 #define SOCKS5_VERSION 0x05
 #endif
 
+#ifndef RSV
+#define RSV 0x00
+#endif
+
+#ifndef IPv4_ADDR
+#define IPv4_ADDR 0x01
+#endif
+
+#ifndef FQDN
+#define FQDN 0x03
+#endif
+
+#ifndef IPv6_ADDR
+#define IPv6_ADDR 0x04
+#endif
+
 #endif

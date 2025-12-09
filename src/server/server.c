@@ -53,7 +53,7 @@ int main(const int argc, const char **argv) {
     struct sockaddr_storage addr;
 	int addrlen = 0;
 
-	if ((addrlen = interpret_socket_args(args, &addr)) < 0) {
+	if ((addrlen = interpret_socket_args(args, (struct sockaddr_in *)&addr)) < 0) {
         errorMsg = "interpreting socket arguments";
         goto finally;
     }

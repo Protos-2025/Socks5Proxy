@@ -16,9 +16,6 @@
 #include "../shared/include/selector.h"
 
 #define N(x) (sizeof(x)/sizeof((x)[0]))
-#define IPv4_ADDR 0x01
-#define FQDN 0x03
-#define IPv6_ADDR 0x04
 
 static const struct state_definition socks5States[] = {
     {
@@ -167,7 +164,7 @@ void socksv5_block(struct selector_key * key) {
 
 void socksv5_close(struct selector_key * key) {
     struct state_machine *stm   = &ATTACHMENT(key)->stm;
-    char * origin = ATTACHMENT(key)->origin_host;
+    char * origin = (char *) ATTACHMENT(key)->origin_host;
     char clientIp[INET6_ADDRSTRLEN] = {0};
     if (ATTACHMENT(key)->client_addr.ss_family == AF_INET) {
         struct sockaddr_in * s = (struct sockaddr_in *) &ATTACHMENT(key)->client_addr;

@@ -15,10 +15,6 @@
 #define CONNECT_CMD 0x01
 // #define BIND_CMD 0x02
 // #define UDP_ASSOCIATE_CDM 0x03
-#define RSV 0x00
-#define IPv4_ADDR 0x01
-#define FQDN 0x03
-#define IPv6_ADDR 0x04
 #define IPv4_ADDR_LEN 4
 #define IPv6_ADDR_LEN 16
 

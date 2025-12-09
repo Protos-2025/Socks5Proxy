@@ -75,3 +75,28 @@ UserStatus user_authenticate(const char *username, const char *password) {
   }
   return USER_OK;
 }
+
+
+int users_get_connected_users_list(char * buffer) {
+    char * initalMessage = "+OK listing users\n";
+    size_t copied = 0;
+    size_t len = strlen(initalMessage);
+    memcpy(buffer, initalMessage, len);
+    copied += len;  
+ 
+    list_begin_iter(usersList);
+    
+    while(list_has_next(usersList)) {
+        User user;
+        list_get_next(usersList, &user);
+        // append user.username to the result string
+        char * username = user.username;
+        size_t usernameLength = strlen(username);
+        memcpy(buffer + copied, username, usernameLength);
+        copied += usernameLength;
+        buffer[copied] = '\n';
+    }
+    copied += 1;
+    buffer[copied] = '\0';
+    return copied;
+}

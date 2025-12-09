@@ -1,5 +1,9 @@
 #include "../include/pamMethods.h"
+#include "../include/buffer.h"
+#include <string.h>
 #include "logger.h"
+#include "defines.h"
+#include "../include/users.h"
 
 void handle_get_connected_users_list(struct pam * connection);
 void handle_add_user(struct pam * connection);
@@ -47,8 +51,17 @@ void handle_pam_request_method(struct pam * connection) {
 }
 
 void handle_get_connected_users_list(struct pam * connection) {
-
-
+    LOG_DEBUG("Handling get connected users list request");
+    char buffer[BUFFER_SIZE];
+    int copied = users_get_connected_users_list(buffer);
+    if (copied < 0) {
+        LOG_ERROR("Error getting connected users list");
+        connection->client.request.status = PAM_SERVER_ERROR;
+        connection->client.request.write_nbody = 0;
+    } else {
+        memcpy(connection->client.request.write_body, buffer, copied);
+        connection->client.request.write_nbody = copied;
+    }
 }
 
 void handle_add_user(struct pam * connection) {

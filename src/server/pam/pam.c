@@ -48,7 +48,6 @@ static void pam_destroy(struct pam * pam);
 
 static void pam_read(struct selector_key * key);
 static void pam_write(struct selector_key * key);
-static void pam_block(struct selector_key * key);
 static void pam_close(struct selector_key * key);
 static void pam_done(struct selector_key * key);
 
@@ -57,16 +56,15 @@ static const struct fd_handler pamHandler = {
     .handle_read   = pam_read,
     .handle_write  = pam_write,
     .handle_close  = pam_close,
-    .handle_block  = pam_block,
 };
 
 
 void pam_passive_accept(struct selector_key * key) {
     struct sockaddr_storage clientAddr;
-    socklen_t alientAddrLen = sizeof(clientAddr);
+    socklen_t clientAddrLen = sizeof(clientAddr);
     struct pam * connection = NULL;
 
-    const int clientFd = accept(key->fd, (struct sockaddr *) &clientAddr, &alientAddrLen);
+    const int clientFd = accept(key->fd, (struct sockaddr *) &clientAddr, &clientAddrLen);
     if (clientFd == -1) {
         goto fail;
     }
@@ -74,10 +72,19 @@ void pam_passive_accept(struct selector_key * key) {
         goto fail;
     }
 
-    struct sockaddr_in * s = (struct sockaddr_in *) &clientAddr;
-    char clientIp[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &s->sin_addr, clientIp, INET_ADDRSTRLEN); // TODO: manage IPv6
-    LOG_DEBUG("Accepted connection on pam server from %s:%d", clientIp, ntohs(s->sin_port));
+
+    char clientIp[INET6_ADDRSTRLEN] = {0};
+    uint16_t port;
+    if (clientAddr.ss_family == AF_INET) {
+        struct sockaddr_in * s = (struct sockaddr_in *) &clientAddr;
+        inet_ntop(AF_INET, &s->sin_addr, clientIp, INET6_ADDRSTRLEN);
+        port = s->sin_port;
+    } else if (clientAddr.ss_family == AF_INET6) {
+        struct sockaddr_in6 * s = (struct sockaddr_in6 *) &clientAddr;
+        inet_ntop(AF_INET6, &s->sin6_addr, clientIp, INET6_ADDRSTRLEN);
+        port = s->sin6_port;
+    }
+    LOG_INFO("Accepted connection on pam server from %s:%hu", clientIp, ntohs(port));
 
     connection = pam_new(clientFd);
 
@@ -87,8 +94,8 @@ void pam_passive_accept(struct selector_key * key) {
         // que se liberó alguna conexión.
         goto fail;
     }
-    memcpy(&connection->client_addr, &clientAddr, alientAddrLen);
-    connection->client_addr_len = alientAddrLen;
+    memcpy(&connection->client_addr, &clientAddr, clientAddrLen);
+    connection->client_addr_len = clientAddrLen;
 
     if (SELECTOR_SUCCESS != selector_register(key->s, clientFd, &pamHandler, OP_READ, connection)) {
         goto fail;
@@ -116,7 +123,6 @@ static struct pam * pam_new(int client_fd) {
       .current = NULL,
     };
     stm_init(&new->stm);
-    new->references = 1;
   }
 
   return new;
@@ -141,16 +147,6 @@ static void pam_write(struct selector_key * key) {
   if (PAM_ERROR == st || PAM_DONE == st) {
     pam_done(key);
   }
-}
-
-static void pam_block(struct selector_key * key) {
-
-  struct state_machine *stm   = &PAM_ATTACHMENT(key)->stm;
-    const enum pam_state st = stm_handler_block(stm, key);
-
-    if(PAM_ERROR == st || PAM_DONE == st) {
-        pam_done(key);
-    }
 }
 
 static void pam_close(struct selector_key * key) {

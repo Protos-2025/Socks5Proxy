@@ -34,7 +34,6 @@ struct pam {
   } client;
 
   struct state_machine stm;
-  int references;
 };
 
 

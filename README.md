@@ -52,12 +52,22 @@ Then run the binaries found in the `bin/` folder.
 ./bin/server
 ```
 
-### Docker
-
-To run the client together with all of it's dependencies (server, nginx test container), run:
+```sh
+# FQDN Request example using curl
+curl --proxy "socks5h://admin:password@localhost:1080" http://www.google.com
+```
 
 ```sh
-docker compose up --build --attach-dependencies --abort-on-container-exit client
+# Example using nginx-test-server container
+curl --proxy "socks5h://admin:password@localhost:1080" 10.0.0.111/test_file_01.txt
+```
+
+### Docker
+
+To compile the server using docker, run:
+
+```sh
+docker compose up --build test
 ```
 
 To run tests, run:

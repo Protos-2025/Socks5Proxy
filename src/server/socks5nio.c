@@ -136,8 +136,6 @@ static struct socks5 * socks5_new(int client_fd) {
         stm_init(&new->stm);
 
         new->closed = false;
-
-        new->references = 1;
     }
 
     return new;
@@ -225,35 +223,3 @@ static void socks5_destroy(struct selector_key * key) {
         key->data = NULL;
     }
 }
-
-/**
- * destruye un  `struct socks5', tiene en cuenta las referencias
- * y el pool de objetos.
- */
-// static void
-// socks5_destroy(struct socks5 *s) {
-//     if(s == NULL) {
-//         // nada para hacer
-//     } else if(s->references == 1) {
-//         if(s != NULL) {
-//             if(pool_size < max_pool) {
-//                 s->next = pool;
-//                 pool    = s;
-//                 pool_size++;
-//             } else {
-//                 _(s);
-//             }
-//         }
-//     } else {
-//         s->references -= 1;
-//     }
-// }
-
-// void
-// socksv5_pool_destroy(void) {
-//     struct socks5 * next, *s;
-//     for(s = pool; s != NULL ; s = next) {
-//         next = s->next;
-//         free(s);
-//     }
-// }

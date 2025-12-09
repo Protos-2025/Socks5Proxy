@@ -32,14 +32,6 @@ enum socks_v5state {
     ERROR,
 };
 
-/*
- * Si bien cada estado tiene su propio struct que le da un alcance
- * acotado, disponemos de la siguiente estructura para hacer una única
- * alocación cuando recibimos la conexión.
- *
- * Se utiliza un contador de referencias (references) para saber cuando debemos
- * liberarlo finalmente, y un pool para reusar alocaciones previas.
- */
 struct socks5 {
     /* client */
     int client_fd;
@@ -73,11 +65,6 @@ struct socks5 {
     struct state_machine stm;
 
     bool closed;
-
-    int references;
-
-    // TODO: use this?
-    // struct socks5 * next;
 };
 
 void socksv5_read(struct selector_key * key);

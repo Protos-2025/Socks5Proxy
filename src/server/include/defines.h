@@ -23,6 +23,14 @@
 #define BUFFER_SIZE 1024
 #endif
 
+#ifndef MAX_PENDING_CONNECTIONS
+#define MAX_PENDING_CONNECTIONS 20
+#endif
+
+#ifndef SELECTOR_CAPACITY
+#define SELECTOR_CAPACITY 1024
+#endif
+
 #ifndef SUCCESS
 #define SUCCESS 0
 #endif

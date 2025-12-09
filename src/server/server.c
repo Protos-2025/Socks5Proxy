@@ -16,9 +16,6 @@
 #include "logger.h"
 #include "args.h"
 
-#define MAX_PENDING_CONNECTIONS 20
-#define SELECTOR_CAPACITY 1024
-
 #define GET_BUFFER_IDX(i, n) (((i) + (n)) == BUFFER_SIZE ? 0 : ((i) + (n)))
 #define GET_BUFFER_MAX_IDX_TO_READ(w) ((w) == 0 ? BUFFER_SIZE : (w))
 

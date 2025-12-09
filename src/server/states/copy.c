@@ -39,7 +39,7 @@ void socksv5_copy_arrival(const unsigned int state, struct selector_key * key) {
     originCopy->otherCopySt = clientCopy;
     clientCopy->otherCopySt = originCopy;
 
-    LOG_TRACE("Entering COPY state. Initial interests: client_fd=%d, origin_fd=%d", clientCopy->fd, originCopy->fd);
+    LOG_TRACE("Entering COPY state. client_fd=%d, origin_fd=%d", clientCopy->fd, originCopy->fd);
     clientCopy->interests = OP_READ;
     originCopy->interests = OP_READ;
     selector_set_interest(key->s, clientCopy->fd, clientCopy->interests);

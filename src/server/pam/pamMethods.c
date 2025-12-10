@@ -27,6 +27,7 @@ void handle_pam_request_method(struct pam * connection) {
     switch(connection->client.request.method) {
         case PAM_REQUEST_METHOD_GET_CONNECTED_USERS_LIST:
             handle_get_connected_users_list(connection);
+            break;
         case PAM_REQUEST_METHOD_ADD_USER:
             handle_add_user(connection);
             break;

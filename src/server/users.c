@@ -71,6 +71,36 @@ UserStatus user_create(const char *username, const char *password, UserPrivilege
     return USER_ALREADYEXISTS;
 }
 
+UserStatus user_remove(const char *username) {
+    User user;
+
+    if(user_exists(username, &user)) {
+        list_remove(usersList, &user);
+        return USER_OK;
+    }
+    return USER_BADUSERNAME;
+}
+
+
+UserStatus user_change_password(const char *username, const char *new_password) {
+    User user;
+    if(user_exists(username, &user)) {
+        strncpy(user.password, new_password, USERS_MAX_PASSWORD_LENGTH - 1);
+        user.password[USERS_MAX_PASSWORD_LENGTH - 1] = '\0';
+        return USER_OK;
+    }
+    return USER_BADUSERNAME;
+}
+
+
+UserStatus user_change_role(const char *username, UserPrivilegeLevel new_role) {
+    User user;
+    if(user_exists(username, &user)) {
+        user.privilege_level = new_role;
+        return USER_OK;
+    }
+    return USER_BADUSERNAME;
+}
 
 
 UserStatus user_authenticate(const char *username, const char *password) {

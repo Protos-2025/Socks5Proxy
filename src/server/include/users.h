@@ -29,7 +29,13 @@ void users_init();
 
 UserStatus user_create(const char *username, const char *password, UserPrivilegeLevel privilege_level);
 
+UserStatus user_remove(const char *username);
+
 bool user_exists(const char* username, User * out_user);
+
+UserStatus user_change_password(const char *username, const char *new_password);
+
+UserStatus user_change_role(const char *username, UserPrivilegeLevel new_role);
 
 bool user_is_admin(const char* username);
 

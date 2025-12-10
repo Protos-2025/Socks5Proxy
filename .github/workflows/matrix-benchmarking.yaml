@@ -72,14 +72,14 @@ jobs:
       - name: Save results to file
         run: |
           mkdir -p /tmp/bench-results
-          echo "${{ steps.metrics.outputs.p99 }}|${{ matrix.buffer_size }}|${{ steps.metrics.outputs.buffer }}|${{ steps.metrics.outputs.selector }}|${{ steps.metrics.outputs.pending }}|${{ steps.metrics.outputs.errorPct }}|${{ steps.metrics.outputs.mean }}|${{ steps.metrics.outputs.throughput }}" > /tmp/bench-results/${{ matrix.buffer_size }}.txt
+          echo "${{ steps.metrics.outputs.p99 }}|${{ matrix.buffer_size }}|${{ steps.metrics.outputs.buffer }}|${{ steps.metrics.outputs.selector }}|${{ steps.metrics.outputs.pending }}|${{ steps.metrics.outputs.errorPct }}|${{ steps.metrics.outputs.mean }}|${{ steps.metrics.outputs.throughput }}" > /tmp/bench-results/${{ matrix.buffer_size }}-${{ matrix.selector_capacity }}-${{ matrix.max_pending_connections }}.txt
 
       - name: Upload result for ranking
         uses: actions/upload-artifact@v4
         with:
-          name: result-${{ matrix.buffer_size }}
+          name: result-${{ matrix.buffer_size }}-${{ matrix.selector_capacity }}-${{ matrix.max_pending_connections }}
           overwrite: true
-          path: /tmp/bench-results/${{ matrix.buffer_size }}.txt
+          path: /tmp/bench-results/${{ matrix.buffer_size }}-${{ matrix.selector_capacity }}-${{ matrix.max_pending_connections }}.txt
           retention-days: 1
 
   rank-results:

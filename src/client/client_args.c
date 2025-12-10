@@ -142,19 +142,13 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
 
     out->option = argv[i++];
 
-    int nArgs = need_args(out->option);
-    if (nArgs < 0) {
+    int n_args = need_args(out->option);
+    if (n_args < 0) {
         fprintf(stderr, "ERROR: Unknown option '%s'.\n\n", out->option);
         print_help(argv[0]);
         return -1;
     }
 
-<<<<<<< HEAD
-    if (argc - i < nArgs) {
-        fprintf(stderr,
-            "ERROR: Option '%s' needs %d argument(s), but only %d provided.\n\n",
-            out->option, nArgs, argc - i);
-=======
     int remaining = 0;
     for (int j = i; j < argc; j++) {
         if (argv[j] != NULL) remaining++;
@@ -164,17 +158,10 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
         fprintf(stderr,
             "ERROR: Option '%s' needs %d argument(s), but only %d provided.\n\n",
             out->option, n_args, remaining);
->>>>>>> 69db260 (feat(client): added request functions)
         print_help(argv[0]);
         return -1;
     }
 
-<<<<<<< HEAD
-    // store extra arguments
-    out->arg1 = (nArgs >= 1 ? argv[i] : NULL);
-    out->arg2 = (nArgs >= 2 ? argv[i+1] : NULL);
-    out->arg3 = (nArgs >= 3 ? argv[i+2] : NULL);
-=======
     out->arg1 = NULL;
     out->arg2 = NULL;
     out->arg3 = NULL;
@@ -188,7 +175,6 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
             arg_count++;
         }
     }
->>>>>>> 69db260 (feat(client): added request functions)
 
     return 0;
 }

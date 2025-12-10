@@ -142,6 +142,7 @@ void handle_remove_user(struct pam * connection) {
 // +-------+------------+
 // |   1   |    ULEN    | 
 // +-------+------------+
+    LOG_DEBUG("Handling remove user request");
     uint8_t userLenght = buffer_read(&connection->client_buffer);
 
     LOG_DEBUG("username length = %d", userLenght);
@@ -183,7 +184,7 @@ void handle_change_password(struct pam * connection) {
 // +-------+------------+-----------+--------------+
 // |   1   |    ULEN    |     1     |   NEW_PLEN   |
 // +-------+------------+-----------+--------------+
-    
+    LOG_DEBUG("Handling change password request");
     uint8_t userLenght = buffer_read(&connection->client_buffer);
     LOG_DEBUG("username length = %d", userLenght);
     uint8_t username[PAM_AUTH_USERNAME_MAX_LENGHT];
@@ -231,6 +232,7 @@ void handle_change_role(struct pam * connection) {
 // +-------+------------+-----------+
 // |   1   |    ULEN    |     1     |
 // +-------+------------+-----------+
+    LOG_DEBUG("Handling change role request");
     
     uint8_t userLenght = buffer_read(&connection->client_buffer);
     LOG_DEBUG("username length = %d", userLenght);

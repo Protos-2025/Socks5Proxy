@@ -217,6 +217,10 @@ void handle_change_password(struct pam * connection) {
             case USER_BADUSERNAME:
                 LOG_DEBUG("Username %s not found", username);
                 connection->client.request.status = PAM_REQUEST_USER_ALREADY_EXISTS;
+            default:
+                connection->client.request.status = PAM_ERROR;    
+            break;
+
         }
     }
 }
@@ -255,6 +259,11 @@ void handle_change_role(struct pam * connection) {
             case USER_BADUSERNAME:
                 LOG_DEBUG("Username %s not found", username);
                 connection->client.request.status = PAM_REQUEST_USER_ALREADY_EXISTS;
+            break;
+            default:
+                connection->client.request.status = PAM_ERROR;    
+            break;
+
         }
     }
 }

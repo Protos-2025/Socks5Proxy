@@ -40,6 +40,6 @@ bool user_exists(const char* username, User * out_user);
  * */
 UserStatus user_authenticate(const char* username, const char* password);
 
-int users_get_connected_users_list(char * buffer);
+int users_get_connected_users_list(char * buffer, int from);
 
 #endif

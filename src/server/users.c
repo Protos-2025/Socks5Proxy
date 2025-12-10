@@ -77,13 +77,8 @@ UserStatus user_authenticate(const char *username, const char *password) {
 }
 
 
-int users_get_connected_users_list(char * buffer) {
-    char * initalMessage = "+OK listing users\n";
-    size_t copied = 0;
-    size_t len = strlen(initalMessage);
-    memcpy(buffer, initalMessage, len);
-    copied += len;  
- 
+int users_get_connected_users_list(char * buffer, int from) {
+    size_t copied = from; 
     list_begin_iter(usersList);
     
     while(list_has_next(usersList)) {

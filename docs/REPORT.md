@@ -12,7 +12,7 @@
   - [7. Ejemplos de prueba.](#7-ejemplos-de-prueba)
   - [8. Guía de instalación](#8-guía-de-instalación)
   - [9. Instrucciones para la configuración.](#9-instrucciones-para-la-configuración)
-  - [9.1 Variables](#91-variables)
+    - [9.1 Variables](#91-variables)
   - [10. Ejemplos de configuración y monitoreo.](#10-ejemplos-de-configuración-y-monitoreo)
   - [11. Documento de diseño del proyecto](#11-documento-de-diseño-del-proyecto)
   - [12. Extras](#12-extras)
@@ -61,7 +61,7 @@ make clean all
 
 ## 9. Instrucciones para la configuración.
 
-## 9.1 Variables
+### 9.1 Variables
 
 Se pueden modificar algunas constantes fácilmente definiendo variables de entorno. Estas se van a tomar de un archivo `.env` en la raíz del proyecto. Se puede usar el [`.env.sample`](./.env.sample) provisto como punto de partida.
 

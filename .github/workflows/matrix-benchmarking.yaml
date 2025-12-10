@@ -51,6 +51,7 @@ jobs:
           echo "DEBUG=false" > .env
           echo "TRACE=false" >> .env
           echo "LOGGER_MIN_LEVEL=LOGGER_FATAL" >> .env
+          echo "MOCK_ETC_HOST=./bench/data/mock-etc-host" >> .env
           echo "BUFFER_SIZE=${{ matrix.config.buffer_size }}" >> .env
           echo "SELECTOR_CAPACITY=${{ matrix.config.selector_capacity }}" >> .env
           echo "MAX_PENDING_CONNECTIONS=${{ matrix.config.max_pending }}" >> .env

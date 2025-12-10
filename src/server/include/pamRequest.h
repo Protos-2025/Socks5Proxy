@@ -1,5 +1,5 @@
-#ifndef __PAM_REEQUEST_H__
-#define __PAM_REEQUEST_H__
+#ifndef __PAM_REQUEST_H__
+#define __PAM_REQUEST_H__
 
 #include <stdint.h>
 #include "../../shared/include/selector.h"
@@ -48,6 +48,7 @@ struct pamRequest_st {
     uint8_t reserved;
     uint16_t method;
     uint16_t read_nbody;
+    char read_body[PAM_REQUEST_BODY_MAX_LENGTH];
 
     uint8_t status;
     uint16_t write_nbody;

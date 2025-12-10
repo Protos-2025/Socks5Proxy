@@ -4,7 +4,16 @@
 name: Matrix benchmarking
 on:
   workflow_dispatch:
-  workflow_call:
+    inputs:
+      selector_capacities:
+        description: "Selector capacities"
+        default: '[1024]'
+      buffer_sizes:
+        description: "Buffer sizes"
+        default: '[1024]'
+      max_pending_connections:
+        description: "Max pending connections"
+        default: '[20]'
 
 permissions: write-all
 
@@ -14,9 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        selector_capacity: [512, 1024, 2048]
-        buffer_size: [256, 1024, 4096]
-        max_pending_connections: [10, 20, 50]
+        selector_capacity: ${{ fromJson( github.event.inputs.selector_capacities || '[1024]' ) }}
+        buffer_size: ${{ fromJson( github.event.inputs.buffer_sizes || '[1024]' ) }}
+        max_pending_connections: ${{ fromJson( github.event.inputs.max_pending_connections || '[20]' ) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -69,6 +78,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: result-${{ matrix.buffer_size }}
+          overwrite: true
           path: /tmp/bench-results/${{ matrix.buffer_size }}.txt
           retention-days: 1
 

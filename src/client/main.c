@@ -9,6 +9,9 @@
 #include "logs.h"
 #include "protocol.h"
 #include "client_args.h"
+#include "client_utils.h"
+
+#define PROTOCOL_VERSION 0x01
 
 int main(int argc, char* argv[]) {
 
@@ -20,6 +23,10 @@ int main(int argc, char* argv[]) {
     if (r != 0) {
         // help already printed / or error printed by parse_args
         return (r == 1 ? 0 : -1);
+    }
+    if(args.user == NULL || args.password == NULL){
+        printf("Error, user or password missing.");
+        print_help(argv[0]);
     }
 
     // ------------------------------------------- CONNECTION ----------------------------------------------------->
@@ -49,32 +56,60 @@ int main(int argc, char* argv[]) {
 
     printf("Connected to server at %s:%d\n", args.host, args.port);
 
+    // --------------------------------------------- AUTH --------------------------------------------------------->
+
+    const char *user = args.user;
+	const char *pass = args.password;
+    uint8_t ulen = strlen(user);
+	uint8_t plen = strlen(pass);
+	uint8_t auth_msg[2 + ulen + plen];
+
+    int idx = 0;
+	auth_msg[idx++] = 0x01; //Ver   
+	auth_msg[idx++] = ulen;    
+	memcpy(&auth_msg[idx], user, ulen);
+	idx += ulen;
+	auth_msg[idx++] = plen;    
+	memcpy(&auth_msg[idx], pass, plen);
+	idx += plen;
+
+    // Send auth
+	send(sock, auth_msg, idx, 0);
+
+	uint8_t auth_resp[2];
+	recv(sock, auth_resp, 2, 0);
+
+    if (auth_resp[1] == 0x00) {
+		printf("Authentication successful!\n");
+	} else {
+		printf("Authentication failed!\n");
+		close(sock);
+		return 1;
+	}
+
     // --------------------------------------------- REQUEST ------------------------------------------------------>
 
     printf("Option '%s' selected.\n", args.option);
 
     if (strcmp(args.option, "users") == 0) {
-        // TODO: implement
+        get_users(&args, sock);
     }
     else if (strcmp(args.option, "add-user") == 0) {
-        // args.arg1 = username
-        // args.arg2 = password
-        // args.arg3 = role
-    }
+        add_user(&args, sock);
+    }   
     else if (strcmp(args.option, "remove-user") == 0) {
-        // args.arg1 = username
+        remove_user(&args, sock);
     }
     else if (strcmp(args.option, "change-password") == 0) {
-        // args.arg1 = username
-        // args.arg2 = password
+       change_password(&args, sock);
     }
     else if (strcmp(args.option, "change-rol") == 0) {
-        // args.arg1 = username
-        // args.arg2 = role
+        change_role(&args, sock);
     }
     else if (strcmp(args.option, "metrics") == 0) {
-        // no args
+        get_metrics(&args, sock);
     }
+
 	// <----------------------------------------- FINISH ----------------------------------------->
     
 	close(sock);

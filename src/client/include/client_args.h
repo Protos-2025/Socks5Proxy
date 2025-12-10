@@ -5,6 +5,9 @@ struct ClientArgs {
     const char* host;
     unsigned short port;
     const char* option;
+    const char* user;
+    const char* password;
+    int usr_count;
 
     // arguments following the option
     const char* arg1;

@@ -18,8 +18,6 @@
 #include "logger.h"
 #include "args.h"
 
-#define GET_SOCK_DOMAIN(l) ((l) == sizeof(struct sockaddr_in) ? AF_INET : AF_INET6)
-
 static void signal_handler(const int signal);
 static int interpret_socket_args(struct sockaddr_storage * addr_storage, char * addr, unsigned short port);
 
@@ -33,23 +31,48 @@ typedef struct custom_key {
 static bool done = false;
 
 int main(const int argc, const char ** argv) {
-    int server, pam_server;
-
-    logger_init();
-    metrics_init();
-    users_init();
-
-    struct socks5args args;
-    parse_args(argc, (char **) argv, &args);
-
     close(STDIN_FILENO);
+    int server = -1, pam_server = -1;
 
+    
+    // <--------------------------------- configure selector --------------------------------->
     const char * errorMsg = NULL;
     FdSelector selector = NULL;
     SelectorStatus ss = SELECTOR_SUCCESS;
-    struct sockaddr_storage addr;
-	int addrlen = 0;
 
+    const struct selector_init conf = {
+        .signal = SIGALRM,
+        .select_timeout = {
+            .tv_sec  = 10,
+            .tv_nsec = 0,
+        },
+    };
+
+    if(0 != selector_init(&conf)) {
+        errorMsg = "initializing selector";
+        goto finally;
+    }
+
+    selector = selector_new(SELECTOR_CAPACITY);
+    if (selector == NULL) {
+        errorMsg = "unable to create selector";
+        goto finally;
+    }
+
+
+    metrics_init();
+    users_init();
+    logger_init();
+    if (logger_register_selector(selector) < 0) {
+		errorMsg = "initializing logger";
+		goto finally;
+    }
+
+    struct socks5args args;
+    parse_args(argc, (char **) argv, &args);
+    
+    struct sockaddr_storage addr;
+	socklen_t addrlen = 0;
 
     // <---------------------------- create proxy server socket ---------------------------->
 	if ((addrlen = interpret_socket_args(&addr, args.socks_addr, args.socks_port)) < 0) {
@@ -59,7 +82,7 @@ int main(const int argc, const char ** argv) {
 
 	LOG_DEBUG("Starting server...");
 
-    if ((server = socket(GET_SOCK_DOMAIN(addrlen), SOCK_STREAM, 0)) < 0) {
+    if ((server = socket(addr.ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
         errorMsg = "unable to create socket";
         goto finally;
     }
@@ -76,6 +99,11 @@ int main(const int argc, const char ** argv) {
         goto finally;
     }
 
+    if (selector_fd_set_nio(server) == -1) {
+        errorMsg = "getting server socket flags";
+        goto finally;
+    }
+
     LOG_INFO("Proxy server listening on addr %s:%d (TCP)", args.socks_addr, args.socks_port);
 
 
@@ -87,7 +115,7 @@ int main(const int argc, const char ** argv) {
     
     LOG_DEBUG("Starting pam server...");
 
-	if ((pam_server = socket(GET_SOCK_DOMAIN(addrlen), SOCK_STREAM, 0)) < 0) {
+	if ((pam_server = socket(addr.ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
 		errorMsg = "unable to create pam socket";
 		goto finally;
 	}
@@ -104,6 +132,11 @@ int main(const int argc, const char ** argv) {
 		goto finally;
 	}
 
+    if (selector_fd_set_nio(pam_server) == -1) {
+        errorMsg = "getting pam server socket flags";
+        goto finally;
+    }
+
 	LOG_INFO("Pam server listening on addr %s:%d (TCP)", args.mng_addr, args.mng_port);
 
 
@@ -114,42 +147,7 @@ int main(const int argc, const char ** argv) {
     signal(SIGABRT, signal_handler);
 
 
-    // <--------------------------------- configure selector --------------------------------->
-    if (selector_fd_set_nio(server) == -1) {
-        errorMsg = "getting server socket flags";
-        goto finally;
-    }
-
-    if (selector_fd_set_nio(pam_server) == -1) {
-        errorMsg = "getting pam server socket flags";
-        goto finally;
-    }
-
-    const struct selector_init conf = {
-        .signal = SIGALRM,
-        .select_timeout = {
-            .tv_sec  = 10,
-            .tv_nsec = 0,
-        },
-    };
-
-    if(0 != selector_init(&conf)) {
-        errorMsg = "initializing selector";
-        goto finally;
-    }
-
-    selector = selector_new(SELECTOR_CAPACITY);
-
-    if (selector == NULL) {
-        errorMsg = "unable to create selector";
-        goto finally;
-    }
-
-    if (logger_register_selector(selector) < 0) {
-		errorMsg = "initializing logger";
-		goto finally;
-    };
-
+    // <--------------------------------- register handlers --------------------------------->
     const struct fd_handler socksv5 = {
         .handle_read = socksv5_passive_accept,
         .handle_write = NULL,

@@ -10,57 +10,31 @@ permissions: write-all
 
 jobs:
   benchmark:
-    name: Performance regression check
+    name: Bench
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        config:
-          - name: "baseline"
-            buffer_size: 1024
-            selector_capacity: 1024
-            max_pending: 20
-          - name: "half-buffer"
-            buffer_size: 512
-            selector_capacity: 1024
-            max_pending: 20
-          - name: "double-buffer"
-            buffer_size: 2048
-            selector_capacity: 1024
-            max_pending: 20
-          - name: "quadruple-buffer"
-            buffer_size: 4096
-            selector_capacity: 1024
-            max_pending: 20
-          - name: "double-selector"
-            buffer_size: 1024
-            selector_capacity: 2048
-            max_pending: 20
-          - name: "half-pending"
-            buffer_size: 1024
-            selector_capacity: 512
-            max_pending: 10
-          - name: "half-selector-double-pending"
-            buffer_size: 1024
-            selector_capacity: 512
-            max_pending: 40
+        selector_capacity: [512, 1024, 2048]
+        buffer_size: [256, 1024, 4096]
+        max_pending_connections: [10, 20, 50]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run benchmark - ${{ matrix.config.name }}
+      - name: Run benchmark - (buffer=${{ matrix.buffer_size }}, selector=${{ matrix.selector_capacity }}, pending=${{ matrix.max_pending_connections }})
         run: |
           echo "DEBUG=false" > .env
           echo "TRACE=false" >> .env
           echo "LOGGER_MIN_LEVEL=LOGGER_FATAL" >> .env
           echo "MOCK_ETC_HOST=./bench/data/mock-etc-host" >> .env
-          echo "BUFFER_SIZE=${{ matrix.config.buffer_size }}" >> .env
-          echo "SELECTOR_CAPACITY=${{ matrix.config.selector_capacity }}" >> .env
-          echo "MAX_PENDING_CONNECTIONS=${{ matrix.config.max_pending }}" >> .env
+          echo "BUFFER_SIZE=${{ matrix.buffer_size }}" >> .env
+          echo "SELECTOR_CAPACITY=${{ matrix.selector_capacity }}" >> .env
+          echo "MAX_PENDING_CONNECTIONS=${{ matrix.max_pending_connections }}" >> .env
           docker compose up --build --abort-on-container-exit benchmark
       
       - name: Format benchmark output
         run: |
           stats=bench/results/jmeter-html-report/statistics.json
-          outfile=output-${{ matrix.config.name }}.txt
+          outfile=output-${{ matrix.buffer_size }}-${{ matrix.selector_capacity }}-${{ matrix.max_pending_connections }}.txt
           mean=$(jq '."Total".meanResTime' "$stats")
           p99=$(jq '."Total".pct3ResTime' "$stats")
           min=$(jq '."Total".minResTime' "$stats")
@@ -70,8 +44,8 @@ jobs:
           samples=$(jq '."Total".sampleCount' "$stats")
           throughput=$(jq '."Total".throughput' "$stats")
           extra=$(printf 'Config: %s\nBuffer: %s\nSelector: %s\nPending: %s\nSamples: %s\nMedian: %s\nThroughput: %s rpm\n' \
-            "${{ matrix.config.name }}" "${{ matrix.config.buffer_size }}" "${{ matrix.config.selector_capacity }}" \
-            "${{ matrix.config.max_pending }}" "$samples" "$median" "$throughput")
+            "b=${{ matrix.buffer_size }}, s=${{matrix.selector_capacity}}, p=${{ matrix.max_pending_connections }}" "${{ matrix.buffer_size }}" "${{ matrix.selector_capacity }}" \
+            "${{ matrix.max_pending_connections }}" "$samples" "$median" "$throughput")
           jq -n --arg name1 "JMeter Mean Response Time" --arg unit1 "Milliseconds" --argjson value1 "$mean" \
             --arg name2 "JMeter P99 Response Time" --arg unit2 "Milliseconds" --argjson value2 "$p99" \
             --arg name3 "Error Percentage" --arg unit3 "Percent" --argjson value3 "$errorPct" \
@@ -81,21 +55,21 @@ jobs:
           echo "errorPct=$errorPct" >> $GITHUB_OUTPUT
           echo "mean=$mean" >> $GITHUB_OUTPUT
           echo "throughput=$throughput" >> $GITHUB_OUTPUT
-          echo "buffer=${{ matrix.config.buffer_size }}" >> $GITHUB_OUTPUT
-          echo "selector=${{ matrix.config.selector_capacity }}" >> $GITHUB_OUTPUT
-          echo "pending=${{ matrix.config.max_pending }}" >> $GITHUB_OUTPUT
+          echo "buffer=${{ matrix.buffer_size }}" >> $GITHUB_OUTPUT
+          echo "selector=${{ matrix.selector_capacity }}" >> $GITHUB_OUTPUT
+          echo "pending=${{ matrix.max_pending_connections }}" >> $GITHUB_OUTPUT
         id: metrics
 
       - name: Save results to file
         run: |
           mkdir -p /tmp/bench-results
-          echo "${{ steps.metrics.outputs.p99 }}|${{ matrix.config.name }}|${{ steps.metrics.outputs.buffer }}|${{ steps.metrics.outputs.selector }}|${{ steps.metrics.outputs.pending }}|${{ steps.metrics.outputs.errorPct }}|${{ steps.metrics.outputs.mean }}|${{ steps.metrics.outputs.throughput }}" > /tmp/bench-results/${{ matrix.config.name }}.txt
+          echo "${{ steps.metrics.outputs.p99 }}|${{ matrix.buffer_size }}|${{ steps.metrics.outputs.buffer }}|${{ steps.metrics.outputs.selector }}|${{ steps.metrics.outputs.pending }}|${{ steps.metrics.outputs.errorPct }}|${{ steps.metrics.outputs.mean }}|${{ steps.metrics.outputs.throughput }}" > /tmp/bench-results/${{ matrix.buffer_size }}.txt
 
       - name: Upload result for ranking
         uses: actions/upload-artifact@v4
         with:
-          name: result-${{ matrix.config.name }}
-          path: /tmp/bench-results/${{ matrix.config.name }}.txt
+          name: result-${{ matrix.buffer_size }}
+          path: /tmp/bench-results/${{ matrix.buffer_size }}.txt
           retention-days: 1
 
   rank-results:

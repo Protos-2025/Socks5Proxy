@@ -11,7 +11,7 @@
     </TestPlan>
     <hashTree>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Concurrent Users">
-        <intProp name="ThreadGroup.num_threads">750</intProp>
+        <intProp name="ThreadGroup.num_threads">550</intProp>
         <intProp name="ThreadGroup.ramp_time">1</intProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
@@ -34,7 +34,7 @@
           <longProp name="randomSeed">0</longProp>
           <doubleProp>
             <name>throughput</name>
-            <value>750.0</value>
+            <value>550.0</value>
             <savedValue>0.0</savedValue>
           </doubleProp>
           <intProp name="throughputPeriod">10</intProp>

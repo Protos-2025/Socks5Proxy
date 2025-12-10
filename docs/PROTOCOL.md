@@ -93,12 +93,11 @@ La conexión entre el cliente y el servidor se realiza a través de TCP utilizan
 El cliente de este protocolo deberá comenzar la comunicación con un pedido con la siguiente estructura:
 
 ~~~~~~~~~~
-+-------+-------+------------+-------+------------+
-|  VER  | ULEN  |  USERNAME  | PLEN  |  PASSWORD  |
-+-------+-------+------------+-------+------------+
-|   1   |   1   |  1 to 255  |   1   |  1 to 255  |
-+-------+-------+------------+-------+------------+
-
++-------+-----------+-----------+------------+------------+
+|  VER  |   NUSER   |   NPASS   |  USERNAME  |  PASSWORD  |
++-------+-----------+-----------+------------+------------+
+|   1   |     1     |     1     |    NUSER   |    NPASS   |
++-------+-----------+-----------+------------+------------+
 ~~~~~~~~~~
 {: #clientreq title="Pedido de autenticación de un cliente" alt="Pedido de autenticación de un cliente" }
 

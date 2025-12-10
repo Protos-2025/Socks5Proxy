@@ -29,7 +29,7 @@ services:
     entrypoint: ["scripts/server.sh"]
     ports:
       - "1080:1080"
-      - "4242:4242"
+      - "8080:8080"
     dns:
       - 8.8.8.8
     healthcheck:

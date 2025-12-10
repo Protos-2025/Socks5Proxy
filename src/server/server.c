@@ -18,7 +18,7 @@
 #include "logger.h"
 #include "args.h"
 
-#define GET_SOCK_DOMAIN(l) ((l) == sizeof(struct sockaddr_in) ? (((struct sockaddr_in *)&addr)->sin_family) : (((struct sockaddr_in6 *)&addr)->sin6_family))
+#define GET_SOCK_DOMAIN(l) ((l) == sizeof(struct sockaddr_in) ? AF_INET : AF_INET6)
 
 static void signal_handler(const int signal);
 static int interpret_socket_args(struct sockaddr_storage * addr_storage, char * addr, unsigned short port);
@@ -47,12 +47,11 @@ int main(const int argc, const char ** argv) {
     const char * errorMsg = NULL;
     FdSelector selector = NULL;
     SelectorStatus ss = SELECTOR_SUCCESS;
-
-
-    // <---------------------------- create proxy server socket ---------------------------->
     struct sockaddr_storage addr;
 	int addrlen = 0;
 
+
+    // <---------------------------- create proxy server socket ---------------------------->
 	if ((addrlen = interpret_socket_args(&addr, args.socks_addr, args.socks_port)) < 0) {
         errorMsg = "interpreting socket arguments";
         goto finally;
@@ -80,25 +79,22 @@ int main(const int argc, const char ** argv) {
     LOG_INFO("Proxy server listening on addr %s:%d (TCP)", args.socks_addr, args.socks_port);
 
 
-	// <---------------------------- create pam server socket ---------------------------->
-    struct sockaddr_storage pam_addr;
-	int pam_addrlen = 0, pam_domain;
-    
-    if ((pam_addrlen = interpret_socket_args(&pam_addr, args.mng_addr, args.mng_port)) < 0) {
+	// <---------------------------- create pam server socket ---------------------------->    
+    if ((addrlen = interpret_socket_args(&addr, args.mng_addr, args.mng_port)) < 0) {
         errorMsg = "interpreting pam socket arguments";
         goto finally;
     }
     
     LOG_DEBUG("Starting pam server...");
 
-	if ((pam_server = socket(GET_SOCK_DOMAIN(pam_addrlen), SOCK_STREAM, 0)) < 0) {
+	if ((pam_server = socket(GET_SOCK_DOMAIN(addrlen), SOCK_STREAM, 0)) < 0) {
 		errorMsg = "unable to create pam socket";
 		goto finally;
 	}
 
 	setsockopt(pam_server, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int));
 
-	if (bind(pam_server, (struct sockaddr *) &pam_addr, pam_addrlen) < 0) {
+	if (bind(pam_server, (struct sockaddr *) &addr, addrlen) < 0) {
 		errorMsg = "unable to bind pam socket";
 		goto finally;
 	}
@@ -211,6 +207,10 @@ finally:
 
     if (server >= 0) {
         close(server);
+    }
+
+    if (pam_server >= 0) {
+        close(pam_server);
     }
 
     return ret;

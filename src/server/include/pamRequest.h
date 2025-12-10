@@ -25,8 +25,6 @@
  // **0x05: Cambiar rol**
  // **0x06: Métricas**
  // 0x07-0xF0: RESERVADO
- // 0xF6: Reiniciar la cantidad de conexiones históricas
- // 0xF7: Reiniciar la cantidad de bytes transferidos históricamente
  
 #define PAM_REQUEST_METHOD_GET_CONNECTED_USERS_LIST 0x01
 #define PAM_REQUEST_METHOD_ADD_USER 0x02
@@ -34,8 +32,6 @@
 #define PAM_REQUEST_METHOD_CHANGE_PASSWORD 0x04
 #define PAM_REQUEST_METHOD_CHANGE_ROLE 0x05
 #define PAM_REQUEST_METHOD_GET_METRICS 0x06
-#define PAM_REQUEST_METHOD_RESET_HISTORICAL_CONNECTIONS 0xF6
-#define PAM_REQUEST_METHOD_RESET_HISTORICAL_BYTES 0xF7
 
 enum pam_request_state {
   VER_N_RESERVED,

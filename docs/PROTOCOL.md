@@ -19,7 +19,7 @@ author:
         uri: https://itba.edu.ar
       -
         ins: M. Wehncke
-        name: Maximo Wehncke
+        name: Máximo Wehncke
         org: Protocolos de Comunicación, ITBA
         street:
           - San Martín 202
@@ -168,8 +168,6 @@ El campo METHOD indica el tipo de pedido que se quiere realizar. Los métodos so
 - **0x06: Métricas**
 
 - **0x07-0xF0: RESERVADO**
-- **0xF6: Reiniciar la cantidad de conexiones históricas**
-- **0xF7: Reiniciar la cantidad de bytes transferidos históricamente**
 
 Los valores de METHOD 0x10 - 0x20 se reservan a definición de cada implementación del protocolo.
 
@@ -191,6 +189,7 @@ Vacío.
 
 
 - **0x02: Añadir usuario**
+
 ~~~~~~~~~~
 
 +-------+------------+-------+------------+-------+
@@ -200,6 +199,7 @@ Vacío.
 +-------+------------+-------+------------+-------+
 
 ~~~~~~~~~~
+{: #clientreq title="Formato de BODY para el pedido del método 0x02" alt="Respuesta del servidor a un pedido" }
 
 - **0x03: Remover usuario**
 
@@ -210,8 +210,10 @@ Vacío.
 |   1   |    ULEN    | 
 +-------+------------+
 ~~~~~~~~~~
+{: #clientreq title="Formato de BODY para el pedido del método 0x03" alt="Respuesta del servidor a un pedido" }
 
 - **0x04: Cambiar contraseña**
+
 ~~~~~~~~~~
 
 +-------+------------+-----------+--------------+
@@ -221,6 +223,7 @@ Vacío.
 +-------+------------+-----------+--------------+
 
 ~~~~~~~~~~
+{: #clientreq title="Formato de BODY para el pedido del método 0x04" alt="Respuesta del servidor a un pedido" }
 - **0x05: Cambiar rol**
 
 ~~~~~~~~~~
@@ -232,15 +235,8 @@ Vacío.
 +-------+------------+-----------+--------------+
 
 ~~~~~~~~~~
+{: #clientreq title="Formato de BODY para el pedido del método 0x05" alt="Respuesta del servidor a un pedido" }
 - **0x06: Métricas**
-
-Vacío.
-
-- **0xF6: Reiniciar la cantidad de conexiones históricas**
-
-Vacío.
-
-- **0xF7: Reiniciar la cantidad de bytes transferidos históricamente**
 
 Vacío.
 
@@ -251,11 +247,13 @@ El servidor responde al pedido con un mensaje de la siguiente estructura
 
 ~~~~~~~~~~
 
+
 +-------+-----------+-------------+------------+
 |  VER  |   STATUS  |    NBODY    |    BODY    |
 +-------+-----------+-------------+------------+
 |   1   |     1     |      2      |    NBODY   |
 +-------+-----------+-------------+------------+
+
 
 ~~~~~~~~~~
 {: #clientreq title="Respuesta del servidor a un pedido" alt="Respuesta del servidor a un pedido" }
@@ -269,6 +267,12 @@ El campo VER indica la versión del protocolo. Actualmente, solo se soporta la v
 El campo STATUS indica el estado de la respuesta del servidor al pedido realizado. Los estados posibles son:
 - 0x00: Pedido exitoso
 - 0x01: Pedido fallido
+- 0x02: No autorizado
+- 0x03: Usuario ya existente
+- 0x04: Usuario contraseña incorrecta
+- 0x05: Usuario credenciales muy largas
+- 0x06: Usuario incorrecto
+
 
 #### NBODY
 

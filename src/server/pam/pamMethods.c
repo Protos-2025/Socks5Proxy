@@ -18,8 +18,6 @@ void handle_remove_user(struct pam * connection);
 void handle_change_password(struct pam * connection);
 void handle_change_role(struct pam * connection);
 void handle_get_metrics(struct pam * connection);
-void handle_reset_historical_connections(struct pam * connection);
-void handle_reset_historical_bytes(struct pam * connection);
 
 
 void handle_pam_request_method(struct pam * connection) {
@@ -42,12 +40,6 @@ void handle_pam_request_method(struct pam * connection) {
             break;
         case PAM_REQUEST_METHOD_GET_METRICS:
             handle_get_metrics(connection);
-            break;
-        case PAM_REQUEST_METHOD_RESET_HISTORICAL_CONNECTIONS:
-            handle_reset_historical_connections(connection);
-            break;
-        case PAM_REQUEST_METHOD_RESET_HISTORICAL_BYTES:
-            handle_reset_historical_bytes(connection);
             break;
         default:
             LOG_WARN("Invalid PAM request method: 0x%04X", connection->client
@@ -197,12 +189,3 @@ void handle_get_metrics(struct pam * connection) {
     }
 }
 
-void handle_reset_historical_connections(struct pam * connection) {
-
-
-}
-
-void handle_reset_historical_bytes(struct pam * connection) {
-
-
-}

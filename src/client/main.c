@@ -60,24 +60,34 @@ int main(int argc, char* argv[]) {
 
     const char *user = args.user;
 	const char *pass = args.password;
-    uint8_t ulen = strlen(user);
-	uint8_t plen = strlen(pass);
-	uint8_t auth_msg[2 + ulen + plen];
+
+    size_t ulen = strlen(user);
+    size_t plen = strlen(pass);
+
+    if (ulen > 255 || plen > 255) {
+        fprintf(stderr, "user or pass too long\n");
+        return -1;
+    }
+
+	size_t total = 3 + ulen + plen;
+    uint8_t *auth_msg = malloc(total);
 
     int idx = 0;
-	auth_msg[idx++] = 0x01; //Ver   
+	auth_msg[idx++] = 0x01; 
 	auth_msg[idx++] = ulen;    
-	memcpy(&auth_msg[idx], user, ulen);
-	idx += ulen;
 	auth_msg[idx++] = plen;    
+	memcpy(&auth_msg[idx], user, ulen);
+    idx += ulen;
 	memcpy(&auth_msg[idx], pass, plen);
 	idx += plen;
-
+    printf("Sending authentication...\n");
+    printf("User: %s, Pass: %s\n", user, pass);
     // Send auth
 	send(sock, auth_msg, idx, 0);
-
+    free(auth_msg);
 	uint8_t auth_resp[2];
 	recv(sock, auth_resp, 2, 0);
+    printf("server response: VER=0x%02X, STATUS=0x%02X\n", auth_resp[0], auth_resp[1]);
 
     if (auth_resp[1] == 0x00) {
 		printf("Authentication successful!\n");

@@ -6,11 +6,11 @@
 #include <arpa/inet.h> // htons()
 #include <unistd.h>
 
-int send_request(uint8_t ver, uint8_t method, uint16_t n_body, char *body, int sock) {
+int send_request(uint8_t ver, uint16_t method, uint16_t n_body, char *body, int sock) {
 
     uint8_t reserved = 0x00;
 
-    int header_size = 1 + 1 + 1 + 2; // ver + reserved + method + n_body
+    int header_size = 1 + 1 + 2 + 2; // ver + reserved + method + n_body
     int total_size = header_size + n_body;
 
     uint8_t *request_buffer = malloc(total_size);
@@ -22,7 +22,9 @@ int send_request(uint8_t ver, uint8_t method, uint16_t n_body, char *body, int s
 
     request_buffer[i++] = reserved;
 
-    request_buffer[i++] = method;
+    uint16_t method_net = htons(method);
+    memcpy(&request_buffer[i], &method_net, sizeof(uint16_t));
+    i += 2;
 
     uint16_t nb_net = htons(n_body);
     memcpy(&request_buffer[i], &nb_net, sizeof(uint16_t));

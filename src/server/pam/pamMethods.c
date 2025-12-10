@@ -51,9 +51,14 @@ void handle_pam_request_method(struct pam * connection) {
 
 void handle_get_connected_users_list(struct pam * connection) {
     LOG_DEBUG("Handling get connected users list request");
-    char buffer[BUFFER_SIZE];
-    int copied = users_get_connected_users_list(buffer);
-    if (copied < 0) {
+    char buffer[PAM_BUFFER_SIZE];
+    char * initalMessage = "+OK listing users\n";
+    size_t len = strlen(initalMessage);
+    memcpy(buffer, initalMessage, len);
+    int copied = len;  
+
+    copied += users_get_connected_users_list(buffer, copied);
+    if (copied <= len) {
         LOG_ERROR("Error getting connected users list");
         connection->client.request.status = PAM_SERVER_ERROR;
         connection->client.request.write_nbody = 0;

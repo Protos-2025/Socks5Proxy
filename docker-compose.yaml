@@ -95,7 +95,9 @@ services:
   benchmark:
     container_name: benchmark
     networks:
-      - test-server-network
+      test-server-network:
+        ipv4_address: "10.0.0.99"
+        ipv6_address: "fc00:00fe:0000:0000:0000:0000:0000:0099"
     build:
       context: .
       dockerfile: Dockerfile.benchmark
@@ -106,6 +108,8 @@ services:
     depends_on:
       compiler:
         condition: service_completed_successfully
+      server:
+        condition: service_healthy
       nginx-test-server:
         condition: service_healthy
 

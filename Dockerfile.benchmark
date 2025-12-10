@@ -3,6 +3,13 @@ FROM alpine/jmeter:5 AS base
 ENV JMETER_HOME=/opt/apache-jmeter-5.6.3
 ENV PATH=${JMETER_HOME}/bin:${PATH}
 
+# Install Java 17
+RUN apk del openjdk8-jre
+RUN apk add --no-cache openjdk17-jre
+
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk
+ENV PATH="$JAVA_HOME/bin:$PATH"
+
 RUN cd ${JMETER_HOME}/lib \
 && wget https://repo1.maven.org/maven2/kg/apc/cmdrunner/2.2/cmdrunner-2.2.jar
 

@@ -39,10 +39,11 @@ jobs:
           p99=$(jq '."Total".pct3ResTime' "$stats")
           min=$(jq '."Total".minResTime' "$stats")
           max=$(jq '."Total".maxResTime' "$stats")
+          errorPct=$(jq '."Total".errorPct' "$stats")
           median=$(jq '."Total".medianResTime' "$stats")
           samples=$(jq '."Total".sampleCount' "$stats")
           throughput=$(jq '."Total".throughput' "$stats")
-          extra=$(printf 'Samples: %s\nMedian: %s\nThroughput: %s rpm\n' "$samples" "$median" "$throughput")
+          extra=$(printf 'Samples: %s\nMedian: %s\nThroughput: %s rpm\nError Percentage: %s%%\n' "$samples" "$median" "$throughput" "$errorPct")
           jq -n --arg name1 "JMeter Mean Response Time" --arg unit1 "Milliseconds" --argjson value1 "$mean" \
             --arg name2 "JMeter P99 Response Time" --arg unit2 "Milliseconds" --argjson value2 "$p99" \
             --arg range "$min - $max ms" --arg extra "$extra" \

@@ -1,0 +1,126 @@
+# NOTE: ***THIS ACTION IS EXPENSIVE TO RUN***
+# It should only have workflow_dispatch and workflow_call triggers to avoid running on every push/pr.
+
+name: Matrix benchmarking
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions: write-all
+
+jobs:
+  benchmark:
+    name: Performance regression check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config:
+          - name: "baseline"
+            buffer_size: 1024
+            selector_capacity: 1024
+            max_pending: 20
+          - name: "double-buffer"
+            buffer_size: 2048
+            selector_capacity: 1024
+            max_pending: 20
+          - name: "quadruple-buffer"
+            buffer_size: 4096
+            selector_capacity: 1024
+            max_pending: 20
+          - name: "double-selector"
+            buffer_size: 1024
+            selector_capacity: 2048
+            max_pending: 20
+          - name: "half-pending"
+            buffer_size: 1024
+            selector_capacity: 1024
+            max_pending: 10
+          - name: "all-changes"
+            buffer_size: 2048
+            selector_capacity: 2048
+            max_pending: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run benchmark - ${{ matrix.config.name }}
+        run: |
+          echo "DEBUG=false" > .env
+          echo "TRACE=false" >> .env
+          echo "BUFFER_SIZE=${{ matrix.config.buffer_size }}" >> .env
+          echo "SELECTOR_CAPACITY=${{ matrix.config.selector_capacity }}" >> .env
+          echo "MAX_PENDING_CONNECTIONS=${{ matrix.config.max_pending }}" >> .env
+          docker compose up --build --abort-on-container-exit benchmark
+      
+      - name: Format benchmark output
+        run: |
+          stats=bench/results/jmeter-html-report/statistics.json
+          outfile=output-${{ matrix.config.name }}.txt
+          mean=$(jq '."Total".meanResTime' "$stats")
+          p99=$(jq '."Total".pct3ResTime' "$stats")
+          min=$(jq '."Total".minResTime' "$stats")
+          max=$(jq '."Total".maxResTime' "$stats")
+          errorPct=$(jq '."Total".errorPct' "$stats")
+          median=$(jq '."Total".medianResTime' "$stats")
+          samples=$(jq '."Total".sampleCount' "$stats")
+          throughput=$(jq '."Total".throughput' "$stats")
+          extra=$(printf 'Config: %s\nBuffer: %s\nSelector: %s\nPending: %s\nSamples: %s\nMedian: %s\nThroughput: %s rpm\n' \
+            "${{ matrix.config.name }}" "${{ matrix.config.buffer_size }}" "${{ matrix.config.selector_capacity }}" \
+            "${{ matrix.config.max_pending }}" "$samples" "$median" "$throughput")
+          jq -n --arg name1 "JMeter Mean Response Time" --arg unit1 "Milliseconds" --argjson value1 "$mean" \
+            --arg name2 "JMeter P99 Response Time" --arg unit2 "Milliseconds" --argjson value2 "$p99" \
+            --arg name3 "Error Percentage" --arg unit3 "Percent" --argjson value3 "$errorPct" \
+            --arg range "$min - $max ms" --arg extra "$extra" \
+            '[ { name: $name1, unit: $unit1, value: $value1 }, { name: $name2, unit: $unit2, value: $value2, range: $range, extra: $extra }, { name: $name3, unit: $unit3, value: $value3 } ]' > "$outfile"
+          echo "p99=$p99" >> $GITHUB_OUTPUT
+          echo "errorPct=$errorPct" >> $GITHUB_OUTPUT
+          echo "mean=$mean" >> $GITHUB_OUTPUT
+          echo "throughput=$throughput" >> $GITHUB_OUTPUT
+          echo "buffer=${{ matrix.config.buffer_size }}" >> $GITHUB_OUTPUT
+          echo "selector=${{ matrix.config.selector_capacity }}" >> $GITHUB_OUTPUT
+          echo "pending=${{ matrix.config.max_pending }}" >> $GITHUB_OUTPUT
+        id: metrics
+
+      - name: Save results to file
+        run: |
+          mkdir -p /tmp/bench-results
+          echo "${{ steps.metrics.outputs.p99 }}|${{ matrix.config.name }}|${{ steps.metrics.outputs.buffer }}|${{ steps.metrics.outputs.selector }}|${{ steps.metrics.outputs.pending }}|${{ steps.metrics.outputs.errorPct }}|${{ steps.metrics.outputs.mean }}|${{ steps.metrics.outputs.throughput }}" > /tmp/bench-results/${{ matrix.config.name }}.txt
+
+      - name: Upload result for ranking
+        uses: actions/upload-artifact@v4
+        with:
+          name: result-${{ matrix.config.name }}
+          path: /tmp/bench-results/${{ matrix.config.name }}.txt
+          retention-days: 1
+
+  rank-results:
+    name: Rank configurations by P99
+    runs-on: ubuntu-latest
+    needs: benchmark
+    steps:
+      - name: Download all results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: result-*
+          path: results
+          merge-multiple: true
+
+      - name: Rank by P99 and create summary
+        run: |
+          echo "# Benchmark Results Ranking (by P99)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Rank | Configuration | Buffer Size | Selector Capacity | Max Pending | P99 (ms) | Error Percentage | Mean (ms) | Throughput (rpm) |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|---------------|-------------|-------------------|-------------|----------|------------------|-----------|------------------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Collect and sort results
+          rank=1
+          for file in results/*.txt; do
+            if [ -f "$file" ]; then
+              cat "$file"
+            fi
+          done | sort -t'|' -k1 -n | while IFS='|' read -r p99 config buffer selector pending errorPct mean throughput; do
+            echo "| $rank | $config | $buffer | $selector | $pending | $p99 | $errorPct | $mean | $throughput |" >> $GITHUB_STEP_SUMMARY
+            rank=$((rank + 1))
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Lower P99 values indicate better performance**" >> $GITHUB_STEP_SUMMARY

@@ -5,6 +5,7 @@
 #include "include/stm.h"
 
 #include <stdlib.h>
+#include <assert.h>
 
 #define N(x) (sizeof(x) / sizeof((x)[0]))
 
@@ -12,14 +13,14 @@ void stm_init(struct state_machine *stm) {
 	// verificamos que los estados son correlativos, y que están bien asignados.
 	for (unsigned i = 0; i <= stm->max_state; i++) {
 		if (i != stm->states[i].state) {
-			abort();
+			assert("The states must be ordered and consecutive" && 0);
 		}
 	}
 
 	if (stm->initial < stm->max_state) {
 		stm->current = NULL;
 	} else {
-		abort();
+		assert("The initial state must be less than the number of states" && 0);
 	}
 }
 
@@ -34,7 +35,7 @@ inline static void handle_first(struct state_machine *stm, struct selector_key *
 
 inline static void jump(struct state_machine *stm, unsigned next, struct selector_key *key) {
 	if (next > stm->max_state) {
-		abort();
+		assert("The state to jump to is invalid" && 0);
 	}
 	if (stm->current != stm->states + next) {
 		if (stm->current != NULL && stm->current->on_departure != NULL) {
@@ -51,7 +52,7 @@ inline static void jump(struct state_machine *stm, unsigned next, struct selecto
 unsigned stm_handler_read(struct state_machine *stm, struct selector_key *key) {
 	handle_first(stm, key);
 	if (stm->current->on_read_ready == 0) {
-		abort();
+		assert("The current state does not have a read handler" && 0);
 	}
 	const unsigned int ret = stm->current->on_read_ready(key);
 	jump(stm, ret, key);
@@ -62,7 +63,7 @@ unsigned stm_handler_read(struct state_machine *stm, struct selector_key *key) {
 unsigned stm_handler_write(struct state_machine *stm, struct selector_key *key) {
 	handle_first(stm, key);
 	if (stm->current->on_write_ready == 0) {
-		abort();
+		assert("The current state does not have a write handler" && 0);
 	}
 	const unsigned int ret = stm->current->on_write_ready(key);
 	jump(stm, ret, key);
@@ -73,7 +74,7 @@ unsigned stm_handler_write(struct state_machine *stm, struct selector_key *key) 
 unsigned stm_handler_block(struct state_machine *stm, struct selector_key *key) {
 	handle_first(stm, key);
 	if (stm->current->on_block_ready == 0) {
-		abort();
+		assert("The current state does not have a block handler" && 0);
 	}
 	const unsigned int ret = stm->current->on_block_ready(key);
 	jump(stm, ret, key);

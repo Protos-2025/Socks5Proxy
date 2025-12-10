@@ -12,30 +12,29 @@ void reply_arrival(const unsigned state, struct selector_key * key) {
 
     struct socks5 * connection = ATTACHMENT(key);
 
-    buffer_reset(&connection->client_buffer);
-    buffer_write(&connection->client_buffer, SOCKS5_VERSION);
-    buffer_write(&connection->client_buffer, connection->client.reply.rep);
-    buffer_write(&connection->client_buffer, RSV);
-    buffer_write(&connection->client_buffer, connection->atyp);
+    buffer_write(&connection->origin_buffer, SOCKS5_VERSION);
+    buffer_write(&connection->origin_buffer, connection->client.reply.rep);
+    buffer_write(&connection->origin_buffer, RSV);
+    buffer_write(&connection->origin_buffer, connection->atyp);
     if (connection->atyp == IPv4_ADDR) {
         struct sockaddr_in * s = (struct sockaddr_in *) &connection->client_addr;
         for (int i = 0; i < 4; i++) {
-            buffer_write(&connection->client_buffer, ((uint8_t *)&s->sin_addr.s_addr)[i]);
+            buffer_write(&connection->origin_buffer, ((uint8_t *)&s->sin_addr.s_addr)[i]);
         }
     } else if (connection->client_addr.ss_family == IPv6_ADDR) {
         struct sockaddr_in6 * s = (struct sockaddr_in6 *) &connection->client_addr;
         for (int i = 0; i < 16; i++) {
-            buffer_write(&connection->client_buffer, s->sin6_addr.s6_addr[i]);
+            buffer_write(&connection->origin_buffer, s->sin6_addr.s6_addr[i]);
         }
     } else if (connection->atyp == FQDN) {
-        buffer_write(&connection->client_buffer, strlen((char *)connection->origin_host));
+        buffer_write(&connection->origin_buffer, strlen((char *)connection->origin_host));
         for (size_t i = 0; i < strlen((const char *) connection->origin_host); i++) {
-            buffer_write(&connection->client_buffer, connection->origin_host[i]);
+            buffer_write(&connection->origin_buffer, connection->origin_host[i]);
         }
     }
 
-    buffer_write(&connection->client_buffer, htons(atoi((const char *) connection->origin_port)) >> 8);
-    buffer_write(&connection->client_buffer, htons(atoi((const char *) connection->origin_port)) & 0xFF);
+    buffer_write(&connection->origin_buffer, htons(atoi((const char *) connection->origin_port)) >> 8);
+    buffer_write(&connection->origin_buffer, htons(atoi((const char *) connection->origin_port)) & 0xFF);
 }
 
 unsigned reply_write(struct selector_key * key) {
@@ -43,20 +42,18 @@ unsigned reply_write(struct selector_key * key) {
     uint8_t * rPtr;
     size_t toRead, written;
     
-    rPtr = buffer_read_ptr(&connection->client_buffer, &toRead);
+    rPtr = buffer_read_ptr(&connection->origin_buffer, &toRead);
     written = send(connection->client_fd, rPtr, toRead, 0);
-    buffer_read_adv(&connection->client_buffer, written);
+    buffer_read_adv(&connection->origin_buffer, written);
 
     if (written < 0) {
         LOG_FATAL("Send failed (REPLY)");
         return ERROR;
     }
 
-    if (buffer_can_read(&connection->client_buffer)) {
+    if (buffer_can_read(&connection->origin_buffer)) {
         return REPLY;
     }
-    
-    buffer_reset(&connection->client_buffer);
     
     if (connection->client.reply.rep == SUCCEDED) {
         LOG_DEBUG("Replied successfully");

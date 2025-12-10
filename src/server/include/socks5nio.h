@@ -58,7 +58,7 @@ struct socks5 {
     uint8_t origin_buffer_data[BUFFER_SIZE];
     union {
         struct copy_st copy;
-    } origin_st;
+    } origin;
 
     uint8_t atyp;
 

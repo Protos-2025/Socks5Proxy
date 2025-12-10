@@ -9,12 +9,14 @@
 #define AUTH_METHOD_INVALID 0xFF
 
 void greeting_arrival(const unsigned state, struct selector_key * key) {
+    LOG_TRACE("Greeting arrival...");
     struct socks5 * connection = ATTACHMENT(key);
     connection->client.greeting.state = VER_N_NMETHODS;
     connection->client.greeting.method = NO_AUTH_METHOD;
 }
 
 unsigned greeting_read(struct selector_key * key) {
+    LOG_TRACE("Reading greeting...");
     struct socks5 * connection = ATTACHMENT(key);
     uint8_t * wPtr;
 	size_t count, toRead;
@@ -86,9 +88,8 @@ unsigned greeting_read(struct selector_key * key) {
             connection->client.greeting.method = AUTH_METHOD_INVALID; // No acceptable methods
         }
         
-        buffer_reset(&connection->client_buffer);
-        buffer_write(&connection->client_buffer, SOCKS5_VERSION);
-        buffer_write(&connection->client_buffer, connection->client.greeting.method);
+        buffer_write(&connection->origin_buffer, SOCKS5_VERSION);
+        buffer_write(&connection->origin_buffer, connection->client.greeting.method);
         
         selector_set_interest_key(key, OP_WRITE);
     }
@@ -97,28 +98,26 @@ unsigned greeting_read(struct selector_key * key) {
 }
 
 unsigned greeting_write(struct selector_key * key) {
+    LOG_TRACE("Writing greeting response...");
     struct socks5 * connection = ATTACHMENT(key);
     uint8_t * rPtr;
 	size_t toRead;
 	int written;
 
-	rPtr = buffer_read_ptr(&connection->client_buffer, &toRead);
+	rPtr = buffer_read_ptr(&connection->origin_buffer, &toRead);
     written = send(connection->client_fd, rPtr, toRead, 0);
-    buffer_read_adv(&connection->client_buffer, written);
+    buffer_read_adv(&connection->origin_buffer, written);
 
     if (written < 0) {
         LOG_FATAL("send failed (GREETING)");
         return ERROR;
     }
 
-    if (buffer_can_read(&connection->client_buffer)) {
+    if (buffer_can_read(&connection->origin_buffer)) {
         return GREETING;
     }
 
     LOG_DEBUG("Greeting completed");
-
-    buffer_reset(&connection->client_buffer);
-
   
     if (connection->client.greeting.method == AUTH_METHOD) {
         selector_set_interest_key(key, OP_READ);

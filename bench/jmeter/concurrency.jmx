@@ -55,7 +55,7 @@
           <longProp name="timeoutInMs">5000</longProp>
         </SyncTimer>
         <hashTree/>
-        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="GET /test_file_01.txt" enabled="true">
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="GET /test_file_01.txt">
           <stringProp name="cacheKey">true</stringProp>
           <stringProp name="filename"></stringProp>
           <stringProp name="parameters"></stringProp>
@@ -140,6 +140,116 @@ try {
 
     out.write(http.getBytes(StandardCharsets.UTF_8))
     out.flush()
+
+    // 5️⃣ Read server response
+    ByteArrayOutputStream body = new ByteArrayOutputStream()
+    byte[] buf = new byte[4096]
+    int n
+    while((n = in.read(buf)) != -1) {
+        body.write(buf, 0, n)
+    }
+
+    String response = new String(body.toByteArray(), StandardCharsets.UTF_8)
+    SampleResult.setResponseData(response, &quot;UTF-8&quot;)
+
+    // 6️⃣ ASSERT BODY CONTAINS EXPECTED TEXT
+    String expected = &quot;This is a text file of 31 bytes&quot;
+
+    if(!response.contains(expected)) {
+        SampleResult.setSuccessful(false)
+        SampleResult.setResponseMessage(
+             &quot;\&quot;Received: &quot; + response + &quot;. Assertion failed: expected body to contain: \&quot;&quot; + expected
+        )
+        return
+    }
+
+    // All good
+    SampleResult.setSuccessful(true)
+    SampleResult.setResponseCodeOK()
+    SampleResult.setResponseMessage(&quot;Assertion OK — connection closed cleanly&quot;)
+
+} catch(Exception e) {
+    // capture full stacktrace
+    StringWriter sw = new StringWriter()
+    e.printStackTrace(new PrintWriter(sw))
+    String fullError = sw.toString()
+
+    SampleResult.setSuccessful(false)
+    SampleResult.setResponseCode(&quot;500&quot;)
+    SampleResult.setResponseMessage(&quot;ERROR: &quot; + e.getMessage())
+    SampleResult.setResponseData(fullError, &quot;UTF-8&quot;)
+} finally {
+    if(socket != null) {
+        try { socket.close() } catch(Exception e) {}
+    }
+}
+</stringProp>
+          <stringProp name="scriptLanguage">groovy</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="GET /test_file_01.txt [PIPELINED]">
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="script">
+import java.nio.charset.StandardCharsets
+
+String proxyHost = &quot;10.0.0.9&quot;
+int proxyPort    = 1080
+
+String proxyUser = &quot;admin&quot;
+String proxyPass = &quot;password&quot;
+
+String targetHost = &quot;10.0.0.111&quot;
+int targetPort    = 80
+
+Socket socket = null
+
+try {
+    socket = new Socket(proxyHost, proxyPort)
+    InputStream  in  = socket.getInputStream()
+    OutputStream out = socket.getOutputStream()
+
+    out.write([
+    0x05, 0x03, 0x00, 0x01, 0x02,
+    0x01, 0x05, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x08, 
+    0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64,
+    0x05, 0x01, 0x00, 0x01, 0x0a, 0x00, 0x00, 0x6f, 
+    0x00, 0x50,
+    0x47, 0x45, 0x54, 0x20, 0x2f, 0x74, 0x65, 0x73, 
+    0x74, 0x5f, 0x66, 0x69, 0x6c, 0x65, 0x5f, 0x30, 
+    0x31, 0x2e, 0x74, 0x78, 0x74, 0x20, 0x48, 0x54, 
+    0x54, 0x50, 0x2f, 0x31, 0x2e, 0x31, 0x0d, 0x0a, 
+    0x48, 0x6f, 0x73, 0x74, 0x3a, 0x20, 0x31, 0x30, 
+    0x2e, 0x30, 0x2e, 0x30, 0x2e, 0x31, 0x31, 0x31, 
+    0x0d, 0x0a, 0x55, 0x73, 0x65, 0x72, 0x2d, 0x41, 
+    0x67, 0x65, 0x6e, 0x74, 0x3a, 0x20, 0x63, 0x75, 
+    0x72, 0x6c, 0x2f, 0x38, 0x2e, 0x37, 0x2e, 0x31, 
+    0x0d, 0x0a, 0x41, 0x63, 0x63, 0x65, 0x70, 0x74, 
+    0x3a, 0x20, 0x2a, 0x2f, 0x2a, 0x0d, 0x0a, 0x0d, 
+    0x0a] as byte[])
+    out.flush()
+
+    byte[] handshake = in.readNBytes(2)
+    if(handshake[1] != 0x02) {
+        SampleResult.setSuccessful(false)
+        SampleResult.setResponseMessage(&quot;SOCKS5: proxy refused username/password auth&quot;)
+        return
+    }
+
+    byte[] authReply = in.readNBytes(2)
+    if(authReply[1] != 0x00) {
+        SampleResult.setSuccessful(false)
+        SampleResult.setResponseMessage(&quot;SOCKS5: authentication failed&quot;)
+        return
+    }
+
+    byte[] connectReply = in.readNBytes(10)
+    if(connectReply[1] != 0x00) {
+        SampleResult.setSuccessful(false)
+        SampleResult.setResponseMessage(&quot;SOCKS5: CONNECT failed, code=&quot; + connectReply[1])
+        return
+    }
 
     // 5️⃣ Read server response
     ByteArrayOutputStream body = new ByteArrayOutputStream()

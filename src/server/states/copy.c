@@ -45,9 +45,10 @@ static int update_target_interests(FdSelector s, CopySt * target) {
 }
 
 void socksv5_copy_arrival(const unsigned int state, struct selector_key * key) {
+    LOG_TRACE("Entering COPY state...");
     struct socks5 * connection = ATTACHMENT(key);
 	CopySt * clientCopy = &connection->client.copy;
-    CopySt * originCopy = &connection->origin_st.copy;
+    CopySt * originCopy = &connection->origin.copy;
 
     clientCopy->buffer = &connection->client_buffer;
     clientCopy->fd = connection->client_fd;
@@ -61,13 +62,16 @@ void socksv5_copy_arrival(const unsigned int state, struct selector_key * key) {
     LOG_TRACE("Entering COPY state. client_fd=%d, origin_fd=%d", clientCopy->fd, originCopy->fd);
     clientCopy->interests = OP_READ;
     originCopy->interests = OP_READ;
+    LOG_WARN("Data on client buffer: %.*s", (int)(connection->client_buffer.limit - connection->client_buffer.data), connection->client_buffer.data);
+    LOG_WARN("Data on origin buffer: %.*s", (int)(connection->origin_buffer.limit - connection->origin_buffer.data), connection->origin_buffer.data);
     selector_set_interest(key->s, clientCopy->fd, clientCopy->interests);
     selector_set_interest(key->s, originCopy->fd, originCopy->interests);
 }
 
 unsigned socksv5_copy_read(struct selector_key * key) {
+    LOG_TRACE("COPY: Processing READ...");
 	struct socks5* connection = ATTACHMENT(key);
-    CopySt * from = IS_CLIENT_DATA(connection, key) ? &connection->client.copy : &connection->origin_st.copy;
+    CopySt * from = IS_CLIENT_DATA(connection, key) ? &connection->client.copy : &connection->origin.copy;
 	CopySt * to = from->otherCopySt;
     
     if (!buffer_can_write(to->buffer)) {
@@ -110,8 +114,9 @@ unsigned socksv5_copy_read(struct selector_key * key) {
 }
 
 unsigned socksv5_copy_write(struct selector_key * key) {
+    LOG_TRACE("COPY: Processing WRITE...");
     struct socks5 * connection = ATTACHMENT(key);
-	CopySt* from = IS_CLIENT_DATA(connection, key) ? &connection->client.copy : &connection->origin_st.copy;
+	CopySt* from = IS_CLIENT_DATA(connection, key) ? &connection->client.copy : &connection->origin.copy;
 	int toFd = from->fd;
 
 	if (!buffer_can_read(from->buffer)) {

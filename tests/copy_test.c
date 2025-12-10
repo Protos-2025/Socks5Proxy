@@ -126,7 +126,7 @@ START_TEST(test_copy_read_write_flow)
     connection.client_fd = FAKE_CLIENT_FD;
 	connection.origin_fd = FAKE_ORIGIN_FD;
 	connection.client.copy = (CopySt){0};
-	connection.origin_st.copy = (CopySt){0};
+	connection.origin.copy = (CopySt){0};
     connection.client_buffer = (Buffer){0};
     connection.origin_buffer = (Buffer){0};
     buffer_init(&connection.client_buffer, BUFFER_SIZE, connection.client_buffer_data);
@@ -191,7 +191,7 @@ START_TEST(test_copy_read_write_read_write_flow) {
     connection.client_fd = FAKE_CLIENT_FD;
     connection.origin_fd = FAKE_ORIGIN_FD;
     connection.client.copy = (CopySt){0};
-    connection.origin_st.copy = (CopySt){0};
+    connection.origin.copy = (CopySt){0};
     connection.client_buffer = (Buffer){0};
     connection.origin_buffer = (Buffer){0};
     buffer_init(&connection.client_buffer, BUFFER_SIZE, connection.client_buffer_data);

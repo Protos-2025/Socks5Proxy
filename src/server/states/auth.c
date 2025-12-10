@@ -29,54 +29,52 @@ unsigned auth_read(struct selector_key * key) {
     wPtr = buffer_write_ptr(&connection->client_buffer, &count);
     readn = recv(key->fd, wPtr, count, 0);
 
-    if (readn < 0) {
+    buffer_write_adv(&connection->client_buffer, readn);
+    buffer_read_ptr(&connection->client_buffer, &toRead);
+
+    if (toRead < 0) {
         LOG_FATAL("failed (AUTH)");
         return ERROR;
     }
-    if (readn == 0) {
+
+    if (toRead == 0) {
         LOG_DEBUG("Client closed connection (AUTH)");
         return DONE;
     }
 
-    buffer_write_adv(&connection->client_buffer, readn);
-
     // Read auth version
     if (connection->client.auth.state == AUTH_VER) {
-        buffer_read_ptr(&connection->client_buffer, &toRead);
-
         if (toRead < 1) {
             return AUTH;
         }
 
         uint8_t ver = buffer_read(&connection->client_buffer);
-        if (ver != AUTH_VERSION) {
-            LOG_WARN("Invalid auth version: 0x%02X", ver);
+		toRead--;
+		if (ver != AUTH_VERSION) {
+			LOG_WARN("Invalid auth version: 0x%02X", ver);
             return ERROR;
-        }
+		}
 
-        connection->client.auth.state = AUTH_ULEN;
+		connection->client.auth.state = AUTH_ULEN;
     }
 
     if (connection->client.auth.state == AUTH_ULEN) {
-        buffer_read_ptr(&connection->client_buffer, &toRead);
-
         if (toRead < 1) {
             return AUTH;
         }
 
         connection->client.auth.ulen = buffer_read(&connection->client_buffer);
-        if (connection->client.auth.ulen == 0 || connection->client.auth.ulen > 255) { 
-            LOG_WARN("Invalid username length: %d", connection->client.auth.ulen);
+		toRead--;
+		if (connection->client.auth.ulen == 0 || connection->client.auth.ulen > 255) {
+			LOG_WARN("Invalid username length: %d", connection->client.auth.ulen);
             return ERROR;
-        }
+		}
 
-        connection->client.auth.state = AUTH_UNAME;
+		connection->client.auth.state = AUTH_UNAME;
     }
 
     // Read username
     if (connection->client.auth.state == AUTH_UNAME) {
-        buffer_read_ptr(&connection->client_buffer, &toRead);
-
         if (toRead < connection->client.auth.ulen) {
             return AUTH;
         }
@@ -85,19 +83,19 @@ unsigned auth_read(struct selector_key * key) {
             connection->client.auth.username[i] = buffer_read(&connection->client_buffer);
         }
         connection->client.auth.username[connection->client.auth.ulen] = '\0';
+        toRead -= connection->client.auth.ulen;
 
         LOG_DEBUG("Username received: %s", connection->client.auth.username);
         connection->client.auth.state = AUTH_PLEN;
     }
 
     if (connection->client.auth.state == AUTH_PLEN) {
-        buffer_read_ptr(&connection->client_buffer, &toRead);
-
         if (toRead < 1) {
             return AUTH;
         }
 
         connection->client.auth.plen = buffer_read(&connection->client_buffer);
+        toRead--;
         if (connection->client.auth.plen == 0 || connection->client.auth.plen > 255) {
             LOG_WARN("Invalid password length: %d", connection->client.auth.plen);
             return ERROR;
@@ -108,8 +106,6 @@ unsigned auth_read(struct selector_key * key) {
 
     // Read password
     if (connection->client.auth.state == AUTH_PASSWD) {
-        buffer_read_ptr(&connection->client_buffer, &toRead);
-
         if (toRead < connection->client.auth.plen) {
             return AUTH;
         }
@@ -118,6 +114,7 @@ unsigned auth_read(struct selector_key * key) {
             connection->client.auth.password[i] = buffer_read(&connection->client_buffer);
         }
         connection->client.auth.password[connection->client.auth.plen] = '\0';
+        toRead -= connection->client.auth.plen;
 
         LOG_TRACE("Password received (length: %d)", connection->client.auth.plen);
 
@@ -131,10 +128,8 @@ unsigned auth_read(struct selector_key * key) {
             LOG_WARN("Authentication failed for user: %s", connection->client.auth.username);
         }
 
-        // Prepare response
-        buffer_reset(&connection->client_buffer);
-        buffer_write(&connection->client_buffer, AUTH_VERSION);
-        buffer_write(&connection->client_buffer, authSuccess ? AUTH_SUCCESS : AUTH_FAILURE);
+        buffer_write(&connection->origin_buffer, AUTH_VERSION);
+        buffer_write(&connection->origin_buffer, authSuccess ? AUTH_SUCCESS : AUTH_FAILURE);
 
         connection->client.auth.authenticated = authSuccess;
         selector_set_interest_key(key, OP_WRITE);
@@ -144,21 +139,22 @@ unsigned auth_read(struct selector_key * key) {
 }
 
 unsigned auth_write(struct selector_key * key) {
+    LOG_TRACE("Writing auth response...");
     struct socks5 * connection = ATTACHMENT(key);
     uint8_t * rPtr;
     size_t toRead;
     ssize_t written; 
     
-    rPtr = buffer_read_ptr(&connection->client_buffer, &toRead);
+    rPtr = buffer_read_ptr(&connection->origin_buffer, &toRead);
     written = send(connection->client_fd, rPtr, toRead, 0);
-    buffer_read_adv(&connection->client_buffer, written);
+    buffer_read_adv(&connection->origin_buffer, written);
 
     if (written < 0) {
         LOG_FATAL("send failed (AUTH)");
         return ERROR;
     }
 
-    if (buffer_can_read(&connection->client_buffer)) {
+    if (buffer_can_read(&connection->origin_buffer)) {
         return AUTH;
     }
 
@@ -169,7 +165,6 @@ unsigned auth_write(struct selector_key * key) {
     }
 
     LOG_DEBUG("Authentication completed successfully");
-    buffer_reset(&connection->client_buffer);
     
     selector_set_interest_key(key, OP_READ);
 

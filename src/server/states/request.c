@@ -39,6 +39,7 @@ void request_arrival(const unsigned state, struct selector_key * key) {
 }
 
 unsigned request_read(struct selector_key * key) {
+    LOG_TRACE("Reading request...");
     struct socks5 * connection = ATTACHMENT(key);
 
     if (connection->client.request.state == VER_CMD_ATYP) {
@@ -47,48 +48,54 @@ unsigned request_read(struct selector_key * key) {
 
         wPtr = buffer_write_ptr(&connection->client_buffer, &toWrite);
         readn = recv(key->fd, wPtr, toWrite, 0);
+
+        buffer_write_adv(&connection->client_buffer, readn);
+        buffer_read_ptr(&connection->client_buffer, &toRead);
     
-        if (readn < 0) {
+        if (toRead < 0) {
             connection->client.reply.rep = SERVER_FAILURE;
             return to_reply_state(key);
         }
-        if (readn == 0) {
-            LOG_DEBUG("Client closed connection (REQUEST)");
+
+        if (toRead == 0) {
             return DONE;
         }
     
-        buffer_write_adv(&connection->client_buffer, readn);
-
-        buffer_read_ptr(&connection->client_buffer, &toRead);
         if (toRead < 4) {
             return REQUEST;
         }
-    
-        if (SOCKS5_VERSION != buffer_read(&connection->client_buffer)) {
-            connection->client.reply.rep = INVALID_SOCKS5_VERSION;
-            return to_reply_state(key);
-        }
-    
-        connection->client.request.cmd = buffer_read(&connection->client_buffer);
 
-        // only connect is supported (for now)
+		uint8_t ver = buffer_read(&connection->client_buffer);
+		toRead--;
+		if (ver != SOCKS5_VERSION) {
+			connection->client.reply.rep = INVALID_SOCKS5_VERSION;
+            return to_reply_state(key);
+		}
+
+		connection->client.request.cmd = buffer_read(&connection->client_buffer);
+		toRead--;
+
+		// only connect is supported (for now)
         if (connection->client.request.cmd != CONNECT_CMD) {
             connection->client.reply.rep = COMMAND_NOT_SUPPORTED;
             return to_reply_state(key);
         }
-    
-        if (RSV != buffer_read(&connection->client_buffer)) {
-            connection->client.reply.rep = INVALID_RSV;
+
+		uint8_t rsv = buffer_read(&connection->client_buffer);
+		toRead--;
+		if (RSV != rsv) {
+			connection->client.reply.rep = INVALID_RSV;
             return to_reply_state(key);
-        }
-    
-        connection->client.request.atyp = buffer_read(&connection->client_buffer);
-        if (!IS_VALID_ATYP(connection->client.request.atyp)) {
-            connection->client.reply.rep = ADDRESS_TYPE_NOT_SUPPORTED;
+		}
+
+		connection->client.request.atyp = buffer_read(&connection->client_buffer);
+		toRead--;
+		if (!IS_VALID_ATYP(connection->client.request.atyp)) {
+			connection->client.reply.rep = ADDRESS_TYPE_NOT_SUPPORTED;
             return to_reply_state(key);
-        }
-        connection->atyp = connection->client.request.atyp;
-    
+		}
+        
+		connection->atyp = connection->client.request.atyp;
         connection->client.request.state = DST_LEN;
     }
 
@@ -112,35 +119,35 @@ static unsigned resolve_dst_address(struct selector_key * key) {
     
     wPtr = buffer_write_ptr(&connection->client_buffer, &toWrite);
     readn = recv(connection->client_fd, wPtr, toWrite, 0);
+
+    buffer_write_adv(&connection->client_buffer, readn);
+    buffer_read_ptr(&connection->client_buffer, &toRead);
     
     if (connection->client.request.state == DST_LEN) {
-        if (readn < 0) {
+        if (toRead < 0) {
             connection->client.reply.rep = SERVER_FAILURE;
             return to_reply_state(key);
         }
-        if (readn == 0) {
+        if (toRead == 0) {
             LOG_DEBUG("Client closed connection (REQUEST)");
             return DONE;
         }
-        
-        buffer_write_adv(&connection->client_buffer, readn);
-        
-        buffer_read_ptr(&connection->client_buffer, &toRead);
         
         if (connection->client.request.atyp == FQDN) {
             if (toRead < 1) {
                 return REQUEST;
             }
             addrBytes = buffer_read(&connection->client_buffer);
-            if (addrBytes == 0) {
-                connection->client.reply.rep = INVALID_FQDN_LENGHT;
+			toRead--;
+			if (addrBytes == 0) {
+				connection->client.reply.rep = INVALID_FQDN_LENGHT;
                 return to_reply_state(key);
-            }
-        } else {
+			}
+		} else {
             addrBytes = ADDR_BYTES_BY_IP_VERSION(connection->client.request.atyp);
         }
         
-        if (toRead < (addrBytes + 2)) {
+        if (toRead < (addrBytes + 1)) {
             return REQUEST;
         }
         
@@ -202,7 +209,7 @@ static void get_port(struct socks5 * connection) {
 static unsigned connect_to_dest(struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
 
-    LOG_DEBUG("Connecting to origin...");
+    LOG_TRACE("Connecting to origin...");
 
     if (connection->origin_resolution == NULL) {
         connection->client.reply.rep = SERVER_FAILURE;
@@ -237,6 +244,7 @@ static unsigned connect_to_dest(struct selector_key * key) {
             break;
         case CONNECTION_IN_PROGRESS:
             LOG_TRACE("Connection in progress");
+            selector_set_interest(key->s, connection->client_fd, OP_WRITE);
             return CONNECT; 
         default: {
             LOG_DEBUG("Connected to origin");

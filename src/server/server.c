@@ -20,7 +20,7 @@
 #define GET_BUFFER_MAX_IDX_TO_READ(w) ((w) == 0 ? BUFFER_SIZE : (w))
 
 static void signal_handler(const int signal);
-static int interpret_socket_args(struct socks5args args, struct sockaddr_in * addr);
+static int interpret_socket_args(struct socks5args args, struct sockaddr_storage * addr);
 
 typedef struct custom_key {
     uint8_t * buffer;
@@ -48,16 +48,18 @@ int main(const int argc, const char **argv) {
 
     // <---------------------------- create proxy server socket ---------------------------->
     struct sockaddr_storage addr;
-	int addrlen = 0;
+	int addrlen = 0, domain;
 
-	if ((addrlen = interpret_socket_args(args, (struct sockaddr_in *)&addr)) < 0) {
+	if ((addrlen = interpret_socket_args(args, &addr)) < 0) {
         errorMsg = "interpreting socket arguments";
         goto finally;
     }
 
 	LOG_DEBUG("Starting server...");
 
-    if ((server = socket(((struct sockaddr_in *)&addr)->sin_family, SOCK_STREAM, 0)) < 0) {
+    domain = (addrlen == sizeof(struct sockaddr_in) ? ((struct sockaddr_in *)&addr)->sin_family : ((struct sockaddr_in6 *)&addr)->sin6_family);
+
+    if ((server = socket(domain, SOCK_STREAM, 0)) < 0) {
         errorMsg = "unable to create socket";
         goto finally;
     }
@@ -168,11 +170,11 @@ static void signal_handler(const int signal) {
     done = true;
 }
 
-static int interpret_socket_args(struct socks5args args, struct sockaddr_in * addr) {
+static int interpret_socket_args(struct socks5args args, struct sockaddr_storage * addr) {
     int ipv6 = strchr(args.socks_addr, ':') != NULL;
 
     if (ipv6) {
-        struct sockaddr_in6* socks6 = (struct sockaddr_in6*) addr;
+        struct sockaddr_in6 * socks6 = (struct sockaddr_in6 *) addr;
         memset(socks6, 0, sizeof(struct sockaddr_in6));
 		socks6->sin6_family = AF_INET6;
         socks6->sin6_addr = in6addr_any;
@@ -184,7 +186,7 @@ static int interpret_socket_args(struct socks5args args, struct sockaddr_in * ad
 		return sizeof(struct sockaddr_in6);
 	}
 
-    struct sockaddr_in * socks4 = (struct sockaddr_in*) addr;
+    struct sockaddr_in * socks4 = (struct sockaddr_in *) addr;
     memset(socks4, 0, sizeof(struct sockaddr_in));
     socks4->sin_family = AF_INET;
     socks4->sin_addr.s_addr = INADDR_ANY;

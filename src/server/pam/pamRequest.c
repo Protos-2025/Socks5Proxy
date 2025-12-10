@@ -76,6 +76,7 @@ unsigned pam_request_read(struct selector_key * key){
         
         LOG_DEBUG("Received PAM request method: 0x%04X", connection->client.request.method); 
 
+        buffer_read_adv(&connection->client_buffer, 2);
         connection->client.request.state = NBODY;
     }
 
@@ -91,6 +92,7 @@ unsigned pam_request_read(struct selector_key * key){
 
         LOG_DEBUG("PAM request body length: %u", connection->client.request.read_nbody);
 
+        buffer_read_adv(&connection->client_buffer, 2);
         connection->client.request.state = READ_BODY;
     }
     
@@ -100,15 +102,16 @@ unsigned pam_request_read(struct selector_key * key){
             return PAM_REQUEST;
         }
 
-        for (size_t i = 0; i < connection->client.request.read_nbody; i++) {
-            connection->client.request.read_body[i] = buffer_read(&connection->client_buffer);
-        }
+        // for (size_t i = 0; i < connection->client.request.read_nbody; i++) {
+        //     connection->client.request.read_body[i] = buffer_read(&connection->client_buffer);
+        // }
 
         LOG_DEBUG("PAM request body received");
-
         
         // writes on client.request.write_body
         handle_pam_request_method(connection);
+
+        LOG_DEBUG("PAM REQUEST body:\n %s", connection->client.request.write_body);  
 
         if (connection->client.request.status != PAM_REQUEST_SUCCESS) {
             LOG_DEBUG("PAM request handling failed with status: 0x%02X", connection->client.request.status);
@@ -118,7 +121,14 @@ unsigned pam_request_read(struct selector_key * key){
         buffer_reset(&connection->client_buffer);
         buffer_write(&connection->client_buffer, PAM_VERSION_1);
         buffer_write(&connection->client_buffer, connection->client.request.status);
-        buffer_write(&connection->client_buffer, connection->client.request.write_nbody);
+
+        uint16_t nbody = connection->client.request.write_nbody;
+        buffer_write(&connection->client_buffer, nbody & 0xFF);
+        buffer_write(&connection->client_buffer, (nbody >> 8) & 0xFF);
+
+        for (size_t i = 0; i < connection->client.request.write_nbody; i++) {
+            buffer_write(&connection->client_buffer, connection->client.request.write_body[i]);
+        }
 
         selector_set_interest_key(key, OP_WRITE);
     }

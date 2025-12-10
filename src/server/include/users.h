@@ -31,6 +31,8 @@ UserStatus user_create(const char *username, const char *password, UserPrivilege
 
 bool user_exists(const char* username, User * out_user);
 
+bool user_is_admin(const char* username);
+
 /** 
  * @brief checks whether the provided username and password match an existing user.
  * @param username The username to authenticate.
@@ -39,6 +41,8 @@ bool user_exists(const char* username, User * out_user);
  * or USER_BADUSERNAME if the username does not exist.
  * */
 UserStatus user_authenticate(const char* username, const char* password);
+
+void users_free();
 
 int users_get_connected_users_list(char * buffer, int from);
 

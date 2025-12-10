@@ -3,9 +3,15 @@
 
 #include <stdint.h>
 #include "../../shared/include/selector.h"
+#include "buffer.h"
 
 #define PAM_REQUEST_SUCCESS 0x00
 #define PAM_REQUEST_FAILURE 0x01
+#define PAM_REQUEST_UNAUTHORIZED 0x02
+#define PAM_REQUEST_USER_ALREADY_EXISTS 0x03
+#define PAM_REQUEST_USER_WRONG_PASSWORD 0x04
+#define PAM_REQUEST_USER_CREDTOOLONG 0x05
+#define PAM_REQUEST_USER_BADUSERNAME 0x06
 
 
 #define PAM_REQUEST_BODY_MAX_LENGTH 65536
@@ -46,7 +52,6 @@ struct pamRequest_st {
     uint8_t reserved;
     uint16_t method;
     uint16_t read_nbody;
-    char read_body[PAM_REQUEST_BODY_MAX_LENGTH];
 
     uint8_t status;
     uint16_t write_nbody;

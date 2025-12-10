@@ -42,6 +42,14 @@ bool user_exists(const char *username, User * out_user) {
   return found;
 }
 
+bool user_is_admin(const char* username) {
+    User user;
+    if (user_exists(username, &user)) {
+        return user.privilege_level == USER_PRIVILEGE_ADMIN;
+    }
+    return false;
+}
+
 
 UserStatus user_create(const char *username, const char *password, UserPrivilegeLevel pl) {
     if(strlen(username) >= USERS_MAX_USERNAME_LENGTH) {
@@ -94,4 +102,8 @@ int users_get_connected_users_list(char * buffer, int from) {
     copied += 1;
     buffer[copied] = '\0';
     return copied;
+}
+
+void users_free() {
+    list_free(usersList);
 }

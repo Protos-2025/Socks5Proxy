@@ -19,6 +19,10 @@ jobs:
             buffer_size: 1024
             selector_capacity: 1024
             max_pending: 20
+          - name: "half-buffer"
+            buffer_size: 512
+            selector_capacity: 1024
+            max_pending: 20
           - name: "double-buffer"
             buffer_size: 2048
             selector_capacity: 1024
@@ -33,12 +37,12 @@ jobs:
             max_pending: 20
           - name: "half-pending"
             buffer_size: 1024
-            selector_capacity: 1024
+            selector_capacity: 512
             max_pending: 10
-          - name: "all-changes"
-            buffer_size: 2048
-            selector_capacity: 2048
-            max_pending: 10
+          - name: "half-selector-double-pending"
+            buffer_size: 1024
+            selector_capacity: 512
+            max_pending: 40
     steps:
       - uses: actions/checkout@v4
 
@@ -46,6 +50,7 @@ jobs:
         run: |
           echo "DEBUG=false" > .env
           echo "TRACE=false" >> .env
+          echo "LOGGER_MIN_LEVEL=LOGGER_FATAL" >> .env
           echo "BUFFER_SIZE=${{ matrix.config.buffer_size }}" >> .env
           echo "SELECTOR_CAPACITY=${{ matrix.config.selector_capacity }}" >> .env
           echo "MAX_PENDING_CONNECTIONS=${{ matrix.config.max_pending }}" >> .env
@@ -124,3 +129,4 @@ jobs:
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Lower P99 values indicate better performance**" >> $GITHUB_STEP_SUMMARY
+

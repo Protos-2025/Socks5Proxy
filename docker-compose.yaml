@@ -21,6 +21,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/root
+      - ${MOCK_ETC_HOST:-/dev/null}:/etc/hosts:ro
       - /sys/kernel/debug:/sys/kernel/debug
       - /sys/kernel/tracing:/sys/kernel/tracing
     privileged: "${TRACE:-false}"
@@ -83,7 +84,7 @@ services:
         ipv6_address: "fc00:00fe:0000:0000:0000:0000:0000:00fe"
     image: nginx:latest
     volumes:
-      - ./bench/data:/usr/share/nginx/html:ro
+      - ./bench/data/www:/usr/share/nginx/html:ro
     ports:
       - "80:80"
     healthcheck:

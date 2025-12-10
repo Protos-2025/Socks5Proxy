@@ -55,7 +55,7 @@
           <longProp name="timeoutInMs">5000</longProp>
         </SyncTimer>
         <hashTree/>
-        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="JSR223 Sampler">
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="GET /test_file_01.txt" enabled="true">
           <stringProp name="cacheKey">true</stringProp>
           <stringProp name="filename"></stringProp>
           <stringProp name="parameters"></stringProp>
@@ -90,8 +90,8 @@ try {
     }
 
     // 2️⃣ Username/password authentication (RFC 1929)
-    byte[] user = proxyUser.bytes
-    byte[] pass = proxyPass.bytes
+    byte[] user = proxyUser.getBytes(&quot;UTF-8&quot;)
+    byte[] pass = proxyPass.getBytes(&quot;UTF-8&quot;)
 
     ByteArrayOutputStream auth = new ByteArrayOutputStream()
     auth.write(0x01) // auth version
@@ -158,7 +158,7 @@ try {
     if(!response.contains(expected)) {
         SampleResult.setSuccessful(false)
         SampleResult.setResponseMessage(
-             &quot;\&quot;. Received: &quot; + response + &quot;. Assertion failed: expected body to contain: \&quot;&quot; + expected
+             &quot;\&quot;Received: &quot; + response + &quot;. Assertion failed: expected body to contain: \&quot;&quot; + expected
         )
         return
     }
@@ -167,6 +167,154 @@ try {
     SampleResult.setSuccessful(true)
     SampleResult.setResponseCodeOK()
     SampleResult.setResponseMessage(&quot;Assertion OK — connection closed cleanly&quot;)
+
+} catch(Exception e) {
+    // capture full stacktrace
+    StringWriter sw = new StringWriter()
+    e.printStackTrace(new PrintWriter(sw))
+    String fullError = sw.toString()
+
+    SampleResult.setSuccessful(false)
+    SampleResult.setResponseCode(&quot;500&quot;)
+    SampleResult.setResponseMessage(&quot;ERROR: &quot; + e.getMessage())
+    SampleResult.setResponseData(fullError, &quot;UTF-8&quot;)
+} finally {
+    if(socket != null) {
+        try { socket.close() } catch(Exception e) {}
+    }
+}
+</stringProp>
+          <stringProp name="scriptLanguage">groovy</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="GET /test_file_02.txt">
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="script">
+import java.nio.charset.StandardCharsets
+
+String proxyHost = &quot;10.0.0.9&quot;
+int proxyPort    = 1080
+
+String proxyUser = &quot;admin&quot;
+String proxyPass = &quot;password&quot;
+
+String targetPath = &quot;/test_file_02.txt&quot;
+String targetHost = &quot;fakegoogle.com&quot;
+int targetPort    = 80
+
+Socket socket = null
+
+try {
+    socket = new Socket(proxyHost, proxyPort)
+    InputStream  in  = socket.getInputStream()
+    OutputStream out = socket.getOutputStream()
+
+    // 1️⃣ SOCKS5 handshake — request username/password
+    out.write([0x05, 0x01, 0x02] as byte[])
+    out.flush()
+
+    byte[] handshake = in.readNBytes(2)
+    if(handshake[1] != 0x02) {
+        SampleResult.setSuccessful(false)
+        SampleResult.setResponseMessage(&quot;SOCKS5: proxy refused username/password auth&quot;)
+        return
+    }
+
+    // 2️⃣ Username/password authentication (RFC 1929)
+    byte[] user = proxyUser.getBytes(&quot;UTF-8&quot;)
+    byte[] pass = proxyPass.getBytes(&quot;UTF-8&quot;)
+
+    ByteArrayOutputStream auth = new ByteArrayOutputStream()
+    auth.write(0x01) // auth version
+    auth.write(user.length)
+    auth.write(user)
+    auth.write(pass.length)
+    auth.write(pass)
+
+    out.write(auth.toByteArray())
+    out.flush()
+
+    byte[] authReply = in.readNBytes(2)
+    if(authReply[1] != 0x00) {
+        SampleResult.setSuccessful(false)
+        SampleResult.setResponseMessage(&quot;SOCKS5: authentication failed&quot;)
+        return
+    }
+
+    // 3️⃣ CONNECT → target domain
+    ByteArrayOutputStream req = new ByteArrayOutputStream()
+    req.write(0x05)        // VER
+    req.write(0x01)        // CMD = CONNECT
+    req.write(0x00)        // RSV
+    req.write(0x03)        // ATYP = DOMAINNAME
+
+    byte[] hostBytes = targetHost.getBytes(&quot;UTF-8&quot;)
+    req.write(hostBytes.length)  // domain length
+    req.write(hostBytes)         // domain bytes
+
+    req.write((targetPort &gt;&gt; 8) &amp; 0xFF)
+    req.write(targetPort &amp; 0xFF)
+
+    out.write(req.toByteArray())
+    out.flush()
+
+    byte[] connectReply = in.readNBytes(10)
+    if(connectReply[1] != 0x00) {
+        SampleResult.setSuccessful(false)
+        SampleResult.setResponseMessage(&quot;SOCKS5: CONNECT failed, code=&quot; + connectReply[1])
+        return
+    }
+
+    // 4️⃣ Send HTTP GET request
+    String http =
+        &quot;GET ${targetPath} HTTP/1.1\r\n&quot; +
+        &quot;Host: ${targetHost}\r\n&quot; +
+        &quot;Connection: close\r\n\r\n&quot;
+
+    out.write(http.getBytes(StandardCharsets.UTF_8))
+    out.flush()
+
+    // 5️⃣ Read entire raw HTTP response (binary safe)
+    ByteArrayOutputStream raw = new ByteArrayOutputStream()
+    byte[] buf = new byte[4096]
+    int n
+    while ((n = in.read(buf)) != -1) {
+        raw.write(buf, 0, n)
+    }
+
+    byte[] rawBytes = raw.toByteArray()
+
+    // Convert once to string to separate headers
+    String rawStr = new String(rawBytes, StandardCharsets.UTF_8)
+    int headerEnd = rawStr.indexOf(&quot;\r\n\r\n&quot;)
+
+    if (headerEnd == -1) {
+        SampleResult.setSuccessful(false)
+        SampleResult.setResponseMessage(&quot;Malformed HTTP response: no header/body separator&quot;)
+        return
+    }
+
+    // Extract body bytes accurately (NO encoding loss)
+    int bodyStart = headerEnd + 4
+    byte[] bodyBytes = Arrays.copyOfRange(rawBytes, bodyStart, rawBytes.length)
+
+    // 6️⃣ ASSERT body size only
+    int expectedSize = 99881
+
+    if (bodyBytes.length != expectedSize) {
+        SampleResult.setSuccessful(false)
+        SampleResult.setResponseMessage(
+            &quot;Assertion failed: expected body size=${expectedSize}, but got bodyBytes.length=${bodyBytes.length}&quot;
+        )
+        return
+    }
+
+    // Success!
+    SampleResult.setSuccessful(true)
+    SampleResult.setResponseCodeOK()
+    SampleResult.setResponseMessage(&quot;Assertion OK — body size matched (${expectedSize} bytes)&quot;)
 
 } catch(Exception e) {
     // capture full stacktrace

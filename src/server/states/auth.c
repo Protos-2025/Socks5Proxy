@@ -29,13 +29,13 @@ unsigned auth_read(struct selector_key * key) {
     wPtr = buffer_write_ptr(&connection->client_buffer, &count);
     readn = recv(key->fd, wPtr, count, 0);
 
-    buffer_write_adv(&connection->client_buffer, readn);
-    buffer_read_ptr(&connection->client_buffer, &toRead);
-
-    if (toRead < 0) {
+    if (readn < 0) {
         LOG_FATAL("failed (AUTH)");
         return ERROR;
     }
+
+    buffer_write_adv(&connection->client_buffer, readn);
+    buffer_read_ptr(&connection->client_buffer, &toRead);
 
     if (toRead == 0) {
         LOG_DEBUG("Client closed connection (AUTH)");

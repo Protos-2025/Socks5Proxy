@@ -30,12 +30,14 @@ unsigned greeting_read(struct selector_key * key) {
         LOG_FATAL("recv failed (GREETING)");
         return ERROR;
     }
-    if (readn == 0) {
+
+    buffer_write_adv(&connection->client_buffer, readn);
+	buffer_read_ptr(&connection->client_buffer, &toRead);
+
+	if (toRead == 0) {
         LOG_DEBUG("Client closed connection (GREETING)");
         return DONE;
     }
-
-    buffer_write_adv(&connection->client_buffer, readn);
 
     if (connection->client.greeting.state == VER_N_NMETHODS) {
         buffer_read_ptr(&connection->client_buffer, &toRead);
@@ -101,19 +103,20 @@ unsigned greeting_write(struct selector_key * key) {
     LOG_TRACE("Writing greeting response...");
     struct socks5 * connection = ATTACHMENT(key);
     uint8_t * rPtr;
-	size_t toRead;
+	size_t toWrite;
 	int written;
 
-	rPtr = buffer_read_ptr(&connection->origin_buffer, &toRead);
-    written = send(connection->client_fd, rPtr, toRead, 0);
-    buffer_read_adv(&connection->origin_buffer, written);
-
+	rPtr = buffer_read_ptr(&connection->origin_buffer, &toWrite);
+    written = send(connection->client_fd, rPtr, toWrite, 0);
     if (written < 0) {
         LOG_FATAL("send failed (GREETING)");
         return ERROR;
     }
 
-    if (buffer_can_read(&connection->origin_buffer)) {
+    buffer_read_adv(&connection->origin_buffer, written);
+	buffer_write_ptr(&connection->origin_buffer, &toWrite);
+
+	if (buffer_can_read(&connection->origin_buffer)) {
         return GREETING;
     }
 

@@ -11,8 +11,6 @@
 unsigned connect_write(struct selector_key * key) {
     LOG_TRACE("CONNECT: Processing...");
     struct socks5 * connection = ATTACHMENT(key);
-    LOG_WARN("Data on client buffer: %.*s", (int)(connection->client_buffer.limit - connection->client_buffer.data), connection->client_buffer.data);
-    LOG_WARN("Data on origin buffer: %.*s", (int)(connection->origin_buffer.limit - connection->origin_buffer.data), connection->origin_buffer.data);
     
     int optVal, ret;
     socklen_t optLen = sizeof(optVal);

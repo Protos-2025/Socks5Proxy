@@ -50,22 +50,25 @@ void socksv5_copy_arrival(const unsigned int state, struct selector_key * key) {
 	CopySt * clientCopy = &connection->client.copy;
     CopySt * originCopy = &connection->origin.copy;
 
-    clientCopy->buffer = &connection->client_buffer;
+    // Swapping the buffers purposely because hindsight is 20/20, luckly this is only a ptr swap so it's fine
+    clientCopy->buffer = &connection->origin_buffer;
     clientCopy->fd = connection->client_fd;
     
-    originCopy->buffer = &connection->origin_buffer;
+    originCopy->buffer = &connection->client_buffer;
     originCopy->fd = connection->origin_fd;
 
     originCopy->otherCopySt = clientCopy;
     clientCopy->otherCopySt = originCopy;
 
-    LOG_TRACE("Entering COPY state. client_fd=%d, origin_fd=%d", clientCopy->fd, originCopy->fd);
+    size_t toWriteToClient = 0, toWriteToOrigin = 0;
+    buffer_read_ptr(clientCopy->buffer, &toWriteToClient);
+    buffer_read_ptr(originCopy->buffer, &toWriteToOrigin);
+
+	originCopy->interests = (toWriteToOrigin > 0 ? OP_WRITE : OP_READ);
     clientCopy->interests = OP_READ;
-    originCopy->interests = OP_READ;
-    LOG_WARN("Data on client buffer: %.*s", (int)(connection->client_buffer.limit - connection->client_buffer.data), connection->client_buffer.data);
-    LOG_WARN("Data on origin buffer: %.*s", (int)(connection->origin_buffer.limit - connection->origin_buffer.data), connection->origin_buffer.data);
-    selector_set_interest(key->s, clientCopy->fd, clientCopy->interests);
+
     selector_set_interest(key->s, originCopy->fd, originCopy->interests);
+    selector_set_interest(key->s, clientCopy->fd, toWriteToOrigin > 0 ? OP_NOOP : clientCopy->interests);
 }
 
 unsigned socksv5_copy_read(struct selector_key * key) {

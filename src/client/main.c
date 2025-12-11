@@ -36,6 +36,9 @@ int main(int argc, char* argv[]) {
 
 
     int ip_ver = detect_ip_version(args.host);
+
+
+    //Connect to IPV4
     if (ip_ver == 4) {
         struct sockaddr_in addr;
         memset(&addr, 0, sizeof(addr));
@@ -52,6 +55,7 @@ int main(int argc, char* argv[]) {
         }
         connect_result = connect(sock, (struct sockaddr*)&addr, sizeof(addr));
 
+    //Connect to IPV6
     }else if(ip_ver == 6){
         printf("Detected IPv6 address.\n");
         struct sockaddr_in6 addr6;

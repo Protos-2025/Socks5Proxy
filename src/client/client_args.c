@@ -4,6 +4,8 @@
 #include <ctype.h>
 #include "client_args.h"
 
+#define VERSION "1.0.0"
+
 static int is_number(const char* s) {
     if (s == NULL || *s == '\0')
         return 0;
@@ -17,18 +19,22 @@ static int is_number(const char* s) {
 
 void print_help(const char* prog) {
     fprintf(stderr,
-        "Usage: %s [HOST] [PORT] [OPTION] [ARGS...] -u [USR:PASS]\n"
+        "Usage: %s [OPTIONS] [COMMAND] [ARGS]\n"
         "\n"
-        "If PORT is not specified, default 4242 is used.\n"
+        "Options:\n"
+        "   -h                                       Print help and exit.\n"
+        "   -v                                       Print version info and exit.\n"
+        "   -L HOST                                  Specify remote host (default: 127.0.0.1).\n"
+        "   -P PORT                                  Specify connection port (default: 8080).\n"
+        "   -u USER:PASS                             Authentication credentials.\n"
         "\n"
         "Commands:\n"
-        "   -h,                                      Print help and exit.\n"
         "   users                                    Request list of users.\n"
+        "   metrics                                  Get server metrics.\n"
         "   add-user <username> <password> <role>    Add a user.\n"
         "   remove-user <username>                   Remove a user.\n"
-        "   change-password <username> <password>    Change password.\n"
-        "   change-role <username> <role>             Change role.\n"
-        "   metrics                                  Get server metrics.\n"
+        "   change-Password <username> <password>    Change password.\n"
+        "   change-role <username> <role>            Change role.\n"
         "\n",
         prog
     );
@@ -38,14 +44,14 @@ static int need_args(const char* opt) {
     if (strcmp(opt, "users") == 0) return 0;
     if (strcmp(opt, "metrics") == 0) return 0;
     if (strcmp(opt, "remove-user") == 0) return 1;
-    if (strcmp(opt, "change-rol") == 0) return 2;
-    if (strcmp(opt, "change-password") == 0) return 2;
+    if (strcmp(opt, "change-role") == 0) return 2;
+    if (strcmp(opt, "change-Password") == 0) return 2;
     if (strcmp(opt, "add-user") == 0) return 3;
     return -1; // unknown
 }
 
 static int parse_password(struct ClientArgs* out, char* usr_pass){
-     static char buffer[256];
+    static char buffer[256];
     strncpy(buffer, usr_pass, sizeof(buffer));
     buffer[sizeof(buffer)-1] = '\0';
 
@@ -61,27 +67,9 @@ static int parse_password(struct ClientArgs* out, char* usr_pass){
 }
 
 int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
-
     out->usr_count = 0;
-
-    for (int k = 0; k < argc; k++) {
-   
-        if (strcmp(argv[k], "-u") == 0) {
-            if (k + 1 >= argc) {
-                fprintf(stderr, "ERROR: -u needs a user.\n");
-                return -1;
-            }
-            if (out->usr_count >= 32) {
-                fprintf(stderr, "ERROR: too many -u.\n");
-                return -1;
-            }
-            parse_password(out, argv[k+1]);
-
-            argv[k]   = NULL;
-            argv[k+1] = NULL;
-            break;
-        }
-    }
+    out->port = 8080; // default port
+    out->host = "127.0.0.1"; // default host
 
     if (argc == 1) {
         fprintf(stderr, "Error: No arguments provided.\n\n");
@@ -89,53 +77,76 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
         return -1;
     }
 
-    if (argc == 2 && strcmp(argv[1], "-h") == 0) {
-        print_help(argv[0]);
-        return 1;
-    }
-
-    if (argc < 5) {
-        fprintf(stderr, "ERROR: HOST, OPTION and AUTH must be specified.\n\n");
-        print_help(argv[0]);
-        return -1;
-    }
-
+    // Pre-Procesar optional flags
     int i = 1;
-
-    while (i < argc && argv[i] == NULL) {
-        i++;
-    }
-
-    if (i >= argc) {
-        fprintf(stderr, "ERROR: HOST not found.\n\n");
-        print_help(argv[0]);
-        return -1;
-    }
-    out->host = argv[i++];
-
-    while (i < argc && argv[i] == NULL) {
-        i++;
-    }
-
-    if (i < argc && is_number(argv[i])) {
-        long p = strtol(argv[i], NULL, 10);
-        if (p < 1 || p > 65535) {
-            fprintf(stderr, "ERROR: invalid port %s\n", argv[i]);
-            return -1;
+    while (i < argc) {
+        if (strcmp(argv[i], "-h") == 0) {
+            print_help(argv[0]);
+            return 1;
         }
-        out->port = (unsigned short)p;
-        i++;
-    } else {
-        out->port = 4242;
+        else if (strcmp(argv[i], "-v") == 0) {
+            printf("Version: %s\n", VERSION);
+            return 1;
+        }
+        else if (strcmp(argv[i], "-L") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "ERROR: -L requires a host address.\n");
+                return -1;
+            }
+            out->host = argv[i+1];
+            argv[i] = NULL;
+            argv[i+1] = NULL;
+            i += 2;
+        }
+        else if (strcmp(argv[i], "-P") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "ERROR: -P requires a port number.\n");
+                return -1;
+            }
+            if (!is_number(argv[i+1])) {
+                fprintf(stderr, "ERROR: -P requires a numeric port.\n");
+                return -1;
+            }
+            long p = strtol(argv[i+1], NULL, 10);
+            if (p < 1 || p > 65535) {
+                fprintf(stderr, "ERROR: invalid port %s\n", argv[i+1]);
+                return -1;
+            }
+            out->port = (unsigned short)p;
+            argv[i] = NULL;
+            argv[i+1] = NULL;
+            i += 2;
+        }
+        else if (strcmp(argv[i], "-u") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "ERROR: -u needs USER:PASS.\n");
+                return -1;
+            }
+            if (out->usr_count >= 32) {
+                fprintf(stderr, "ERROR: too many -u.\n");
+                return -1;
+            }
+            if (parse_password(out, argv[i+1]) < 0) {
+                fprintf(stderr, "ERROR: -u format must be USER:PASS.\n");
+                return -1;
+            }
+            argv[i] = NULL;
+            argv[i+1] = NULL;
+            i += 2;
+        }
+        else {
+            i++;
+        }
     }
 
-    // Skip NULL entries
+    // Search COMMAND
+    i = 1;
     while (i < argc && argv[i] == NULL) {
         i++;
     }
 
     if (i >= argc) {
-        fprintf(stderr, "ERROR: Missing OPTION.\n\n");
+        fprintf(stderr, "ERROR: Missing COMMAND.\n\n");
         print_help(argv[0]);
         return -1;
     }
@@ -144,11 +155,12 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
 
     int nArgs = need_args(out->option);
     if (nArgs < 0) {
-        fprintf(stderr, "ERROR: Unknown option '%s'.\n\n", out->option);
+        fprintf(stderr, "ERROR: Unknown command '%s'.\n\n", out->option);
         print_help(argv[0]);
         return -1;
     }
 
+    // Count remaining arguments
     int remaining = 0;
     for (int j = i; j < argc; j++) {
         if (argv[j] != NULL) remaining++;
@@ -156,12 +168,13 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
 
     if (remaining < nArgs) {
         fprintf(stderr,
-            "ERROR: Option '%s' needs %d argument(s), but only %d provided.\n\n",
+            "ERROR: Command '%s' needs %d argument(s), but only %d provided.\n\n",
             out->option, nArgs, remaining);
         print_help(argv[0]);
         return -1;
     }
 
+    // Asignar arguments
     out->arg1 = NULL;
     out->arg2 = NULL;
     out->arg3 = NULL;

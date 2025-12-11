@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
         return (r == 1 ? 0 : -1);
     }
     if(args.user == NULL || args.password == NULL){
-        printf("Error, user or password missing.");
+        printf("[Error]: user or password missing.");
         print_help(argv[0]);
     }
 
@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
     addr.sin_port = htons(args.port);
 
     if (inet_pton(AF_INET, args.host, &addr.sin_addr) <= 0) {
-        fprintf(stderr, "Invalid host: %s\n", args.host);
+        fprintf(stderr, "Error: Invalid host: %s\n", args.host);
         close(sock);
         return -1;
     }
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
     size_t plen = strlen(pass);
 
     if (ulen > 255 || plen > 255) {
-        fprintf(stderr, "user or pass too long\n");
+        fprintf(stderr, "Error: User or Password too long\n");
         return -1;
     }
 
@@ -81,25 +81,23 @@ int main(int argc, char* argv[]) {
 	memcpy(&authMsg[idx], pass, plen);
 	idx += plen;
     printf("Sending authentication...\n");
-    printf("User: %s, Pass: %s\n", user, pass);
     // Send auth
 	send(sock, authMsg, idx, 0);
     free(authMsg);
 	uint8_t authResp[2];
 	recv(sock, authResp, 2, 0);
-    printf("server response: VER=0x%02X, STATUS=0x%02X\n", authResp[0], authResp[1]);
 
     if (authResp[1] == 0x00) {
-		printf("Authentication successful!\n");
+		printf("Authentication successful\n");
 	} else {
-		printf("Authentication failed!\n");
+		printf("Error: Authentication failed!\n");
 		close(sock);
 		return 1;
 	}
 
-    // --------------------------------------------- REQUEST ------------------------------------------------------>
+    printf("Server response to authentication: VER=0x%02X, STATUS=0x%02X\n", authResp[0], authResp[1]);
 
-    printf("Option '%s' selected.\n", args.option);
+    // --------------------------------------------- REQUEST ------------------------------------------------------>
 
     if (strcmp(args.option, "users") == 0) {
         get_users(&args, sock);
@@ -113,7 +111,7 @@ int main(int argc, char* argv[]) {
     else if (strcmp(args.option, "change-password") == 0) {
        change_password(&args, sock);
     }
-    else if (strcmp(args.option, "change-rol") == 0) {
+    else if (strcmp(args.option, "change-role") == 0) {
         change_role(&args, sock);
     }
     else if (strcmp(args.option, "metrics") == 0) {

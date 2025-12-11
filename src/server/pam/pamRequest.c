@@ -118,11 +118,6 @@ unsigned pam_request_read(struct selector_key * key){
         // writes on client.request.write_body
         handle_pam_request_method(connection, &buffer);
 
-        if (connection->client.request.status != PAM_REQUEST_SUCCESS) {
-            LOG_DEBUG("PAM request handling failed with status: 0x%02X", connection->client.request.status);
-            return PAM_ERROR;
-        } 
-
         buffer_reset(&connection->client_buffer);
         buffer_write(&connection->client_buffer, PAM_VERSION_1);
         buffer_write(&connection->client_buffer, connection->client.request.status);

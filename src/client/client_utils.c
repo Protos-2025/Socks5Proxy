@@ -8,6 +8,8 @@
 
 int send_request(uint8_t ver, uint16_t method, uint16_t n_body, char *body, int sock) {
 
+    printf("Sending request: VER=0x%02X, METHOD=0x%04X, NBODY=%d bytes\n", ver, method, n_body); 
+
     uint8_t reserved = 0x00;
 
     int headerSize = 1 + 1 + 2 + 2; // ver + reserved + method + n_body
@@ -53,8 +55,9 @@ ServerResponse* receive_response(int sock) {
     // Receive header: VER (1) + STATUS (1) + NBODY (2)
     uint8_t header[4];
     ssize_t n = recv(sock, header, 4, 0);
-    if (n < 4) {
-        fprintf(stderr, "Error: Failed to receive response header\n");
+
+     if (n < 2) {
+        fprintf(stderr, "Error: Failed to receive minimum response header\n");
         free(resp);
         return NULL;
     }
@@ -62,6 +65,25 @@ ServerResponse* receive_response(int sock) {
     int i = 0;
     resp->ver = header[i++];
     resp->status = header[i++];
+
+    if(resp->status != 0x00){
+        resp->nbody = 0;
+        resp->body = NULL;
+        if(resp->status == 0x1){
+            fprintf(stderr, "Error: Request failure\n");
+        } else if(resp->status == 0x2){
+            fprintf(stderr, "Error: Unauthorized operation\n");
+        } else if(resp->status == 0x3){
+            fprintf(stderr, "Error: User already exists\n");
+        } else if(resp->status == 0x4){
+            fprintf(stderr, "Error: Wrong password for user\n");
+        } else if(resp->status == 0x5){
+            fprintf(stderr, "Error: Credentials too long\n");
+        } else if(resp->status == 0x6){
+            fprintf(stderr, "Error: Bad username\n");
+        }
+        return resp;
+    }
     
     // NBODY is in network byte order
     uint16_t nbodyNet;

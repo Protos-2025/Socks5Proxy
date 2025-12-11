@@ -27,7 +27,7 @@ void print_help(const char* prog) {
         "   add-user <username> <password> <role>    Add a user.\n"
         "   remove-user <username>                   Remove a user.\n"
         "   change-password <username> <password>    Change password.\n"
-        "   change-rol <username> <role>             Change role.\n"
+        "   change-role <username> <role>             Change role.\n"
         "   metrics                                  Get server metrics.\n"
         "\n",
         prog
@@ -68,11 +68,11 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
    
         if (strcmp(argv[k], "-u") == 0) {
             if (k + 1 >= argc) {
-                fprintf(stderr, "ERROR: -u necesita un usuario.\n");
+                fprintf(stderr, "ERROR: -u needs a user.\n");
                 return -1;
             }
             if (out->usr_count >= 32) {
-                fprintf(stderr, "ERROR: demasiados -u.\n");
+                fprintf(stderr, "ERROR: too many -u.\n");
                 return -1;
             }
             parse_password(out, argv[k+1]);
@@ -84,7 +84,7 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
     }
 
     if (argc == 1) {
-        fprintf(stderr, "No arguments provided.\n\n");
+        fprintf(stderr, "Error: No arguments provided.\n\n");
         print_help(argv[0]);
         return -1;
     }

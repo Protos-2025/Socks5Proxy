@@ -152,7 +152,7 @@ Para poder conectarse a PAM mediante el cliente:
 
 ## 9. Instrucciones para la configuración
 
-### 9.1 Variables
+### 9.1 Variables de compilación
 
 Se pueden modificar algunas constantes fácilmente definiendo variables de entorno. Estas se van a tomar de un archivo `.env` en la raíz del proyecto. Se puede usar el [`.env.sample`](./.env.sample) provisto como punto de partida.
 
@@ -171,6 +171,12 @@ Algunas de las variables disponibles para su modificación incluyen:
 Todas las variables del servidor y sus valores por defecto se pueden encontrar en [defines.h](./src/server/include/defines.h).
 
 Además, la variable `MOCK_ETC_HOST` puede ser definida para establecer un archivo alternativo al `/etc/hosts` del sistema host, el cual será montado en el contenedor Docker del servidor proxy. Esto es útil para pruebas de integración y performance, ya que permite controlar la resolución DNS.
+
+### 9.2 Variables de ejecución
+
+Se provee un usuario ya existente con privilegios de administrador: `username=admin`, `password=admin`.
+
+Algunas variables pueden ser cambiadas en ejecución, por ejemplo, los [usuarios aurotizados al servidor](#10-ejemplos-de-configuración-y-monitoreo).
 
 ## 10. Ejemplos de configuración y monitoreo
 

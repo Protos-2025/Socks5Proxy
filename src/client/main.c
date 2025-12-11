@@ -70,26 +70,26 @@ int main(int argc, char* argv[]) {
     }
 
 	size_t total = 3 + ulen + plen;
-    uint8_t *auth_msg = malloc(total);
+    uint8_t *authMsg = malloc(total);
 
     int idx = 0;
-	auth_msg[idx++] = 0x01; 
-	auth_msg[idx++] = ulen;    
-	auth_msg[idx++] = plen;    
-	memcpy(&auth_msg[idx], user, ulen);
+	authMsg[idx++] = 0x01; 
+	authMsg[idx++] = ulen;    
+	authMsg[idx++] = plen;    
+	memcpy(&authMsg[idx], user, ulen);
     idx += ulen;
-	memcpy(&auth_msg[idx], pass, plen);
+	memcpy(&authMsg[idx], pass, plen);
 	idx += plen;
     printf("Sending authentication...\n");
     printf("User: %s, Pass: %s\n", user, pass);
     // Send auth
-	send(sock, auth_msg, idx, 0);
-    free(auth_msg);
-	uint8_t auth_resp[2];
-	recv(sock, auth_resp, 2, 0);
-    printf("server response: VER=0x%02X, STATUS=0x%02X\n", auth_resp[0], auth_resp[1]);
+	send(sock, authMsg, idx, 0);
+    free(authMsg);
+	uint8_t authResp[2];
+	recv(sock, authResp, 2, 0);
+    printf("server response: VER=0x%02X, STATUS=0x%02X\n", authResp[0], authResp[1]);
 
-    if (auth_resp[1] == 0x00) {
+    if (authResp[1] == 0x00) {
 		printf("Authentication successful!\n");
 	} else {
 		printf("Authentication failed!\n");

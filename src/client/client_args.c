@@ -142,8 +142,8 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
 
     out->option = argv[i++];
 
-    int n_args = need_args(out->option);
-    if (n_args < 0) {
+    int nArgs = need_args(out->option);
+    if (nArgs < 0) {
         fprintf(stderr, "ERROR: Unknown option '%s'.\n\n", out->option);
         print_help(argv[0]);
         return -1;
@@ -154,10 +154,10 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
         if (argv[j] != NULL) remaining++;
     }
 
-    if (remaining < n_args) {
+    if (remaining < nArgs) {
         fprintf(stderr,
             "ERROR: Option '%s' needs %d argument(s), but only %d provided.\n\n",
-            out->option, n_args, remaining);
+            out->option, nArgs, remaining);
         print_help(argv[0]);
         return -1;
     }
@@ -166,13 +166,13 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
     out->arg2 = NULL;
     out->arg3 = NULL;
 
-    int arg_count = 0;
-    for (int j = i; j < argc && arg_count < n_args; j++) {
+    int argCount = 0;
+    for (int j = i; j < argc && argCount < nArgs; j++) {
         if (argv[j] != NULL) {
-            if (arg_count == 0) out->arg1 = argv[j];
-            else if (arg_count == 1) out->arg2 = argv[j];
-            else if (arg_count == 2) out->arg3 = argv[j];
-            arg_count++;
+            if (argCount == 0) out->arg1 = argv[j];
+            else if (argCount == 1) out->arg2 = argv[j];
+            else if (argCount == 2) out->arg3 = argv[j];
+            argCount++;
         }
     }
 

@@ -32,7 +32,7 @@ static bool done = false;
 
 int main(const int argc, const char ** argv) {
     close(STDIN_FILENO);
-    int server = -1, pam_server = -1;
+    int server = -1, pamServer = -1;
 
     
     // <--------------------------------- configure selector --------------------------------->
@@ -115,24 +115,24 @@ int main(const int argc, const char ** argv) {
     
     LOG_DEBUG("Starting pam server...");
 
-	if ((pam_server = socket(addr.ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+	if ((pamServer = socket(addr.ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
 		errorMsg = "unable to create pam socket";
 		goto finally;
 	}
 
-	setsockopt(pam_server, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int));
+	setsockopt(pamServer, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int));
 
-	if (bind(pam_server, (struct sockaddr *) &addr, addrlen) < 0) {
+	if (bind(pamServer, (struct sockaddr *) &addr, addrlen) < 0) {
 		errorMsg = "unable to bind pam socket";
 		goto finally;
 	}
 
-	if (listen(pam_server, MAX_PENDING_CONNECTIONS) < 0) {
+	if (listen(pamServer, MAX_PENDING_CONNECTIONS) < 0) {
 		errorMsg = "unable to listen on pam server";
 		goto finally;
 	}
 
-    if (selector_fd_set_nio(pam_server) == -1) {
+    if (selector_fd_set_nio(pamServer) == -1) {
         errorMsg = "getting pam server socket flags";
         goto finally;
     }
@@ -166,7 +166,7 @@ int main(const int argc, const char ** argv) {
         goto finally;
     }
 
-    ss = selector_register(selector, pam_server, &pam, OP_READ, NULL);
+    ss = selector_register(selector, pamServer, &pam, OP_READ, NULL);
 
     if (ss != SELECTOR_SUCCESS) {
         errorMsg = "registering pam fd";
@@ -207,8 +207,8 @@ finally:
         close(server);
     }
 
-    if (pam_server >= 0) {
-        close(pam_server);
+    if (pamServer >= 0) {
+        close(pamServer);
     }
 
     return ret;

@@ -35,17 +35,17 @@ unsigned auth_read(struct selector_key * key) {
     buffer_write_adv(&connection->client_buffer, readn);
     buffer_read_ptr(&connection->client_buffer, &toRead);
 
-    if (toRead == 0) {
+    if (toRead == 0
+        || (readn == 0
+            && ((connection->client.auth.state == AUTH_UNAME && (toRead < connection->client.auth.ulen))
+                || (connection->client.auth.state == AUTH_PASSWD && (toRead < connection->client.auth.plen)))
+            )) {
         LOG_DEBUG("Client closed connection (AUTH)");
         return DONE;
     }
 
     // Read auth version
     if (connection->client.auth.state == AUTH_VER) {
-        if (toRead < 1) {
-            return AUTH;
-        }
-
         uint8_t ver = buffer_read(&connection->client_buffer);
 		toRead--;
 		if (ver != AUTH_VERSION) {

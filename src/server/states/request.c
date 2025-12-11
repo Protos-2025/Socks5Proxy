@@ -50,12 +50,12 @@ unsigned request_read(struct selector_key * key) {
         buffer_write_adv(&connection->client_buffer, readn);
         buffer_read_ptr(&connection->client_buffer, &toRead);
     
-        if (toRead < 0) {
+        if (readn < 0) {
             connection->client.reply.rep = SERVER_FAILURE;
             return to_reply_state(key);
         }
 
-        if (toRead == 0) {
+        if (toRead == 0 || (toRead < 4 && readn == 0)) {
             return DONE;
         }
     
@@ -126,26 +126,28 @@ static unsigned resolve_dst_address(struct selector_key * key) {
             connection->client.reply.rep = SERVER_FAILURE;
             return to_reply_state(key);
         }
-        if (toRead == 0) {
+
+        if (toRead == 0
+            || (readn == 0
+                && (((connection->client.request.atyp == FQDN) && ((addrBytes = buffer_read(&connection->client_buffer)) - 1 + 2) > toRead)
+                    || ((connection->client.request.atyp == IPv4_ADDR || connection->client.request.atyp == IPv6_ADDR)
+                        && ((addrBytes = ADDR_BYTES_BY_IP_VERSION(connection->client.request.atyp)) + 2) > toRead)
+                    )
+                )
+        ) {
             LOG_DEBUG("Client closed connection (REQUEST)");
             return DONE;
         }
         
         if (connection->client.request.atyp == FQDN) {
-            if (toRead < 1) {
-                return REQUEST;
-            }
-            addrBytes = buffer_read(&connection->client_buffer);
 			toRead--;
 			if (addrBytes == 0) {
 				connection->client.reply.rep = INVALID_FQDN_LENGHT;
                 return to_reply_state(key);
 			}
-		} else {
-            addrBytes = ADDR_BYTES_BY_IP_VERSION(connection->client.request.atyp);
-        }
+		}
         
-        if (toRead < (addrBytes + 1)) {
+        if (toRead < (addrBytes + 2)) {
             return REQUEST;
         }
         

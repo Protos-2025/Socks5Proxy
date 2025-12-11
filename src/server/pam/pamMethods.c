@@ -5,6 +5,7 @@
 #include <string.h>
 #include "logger.h"
 #include "../include/users.h"
+#include "../include/logger.h"
 #include "../include/pam.h"
 #include "../include/pamAuth.h"
 #include "../include/metrics.h"
@@ -18,6 +19,8 @@ void handle_remove_user(struct pam * connection, Buffer * buffer);
 void handle_change_password(struct pam * connection, Buffer * buffer);
 void handle_change_role(struct pam * connection, Buffer * buffer);
 void handle_get_metrics(struct pam * connection);
+void handle_set_logger_level(struct pam * connection, Buffer * buffer);
+void handle_get_logger_level(struct pam * connection);
 
 
 void handle_pam_request_method(struct pam * connection, Buffer * buffer) {
@@ -40,6 +43,12 @@ void handle_pam_request_method(struct pam * connection, Buffer * buffer) {
             break;
         case PAM_REQUEST_METHOD_GET_METRICS:
             handle_get_metrics(connection);
+            break;
+        case PAM_REQUEST_SET_LOGGER_LEVEL:
+            handle_set_logger_level(connection, buffer);
+            break;
+        case PAM_REQUEST_GET_LOGGER_LEVEL:
+            handle_get_logger_level(connection);
             break;
         default:
             LOG_WARN("Invalid PAM request method: 0x%04X", connection->client
@@ -315,5 +324,23 @@ void handle_get_metrics(struct pam * connection) {
         connection->client.request.status = PAM_REQUEST_SUCCESS;
         connection->client.request.write_nbody = copied;
     }
+}
+
+void handle_set_logger_level(struct pam * connection, Buffer * buffer) {
+    LOG_DEBUG("Handling change logger level request");
+    uint8_t level = buffer_read(buffer);
+    logger_set_min_level(level);
+    connection->client.request.status = PAM_REQUEST_SUCCESS;
+    connection->client.request.write_nbody = 0;
+}
+
+void handle_get_logger_level(struct pam * connection) {
+    LOG_DEBUG("Handling get logger level request");
+    uint8_t level = logger_get_min_level();
+    uint8_t buffer[1];
+    buffer[0] = level;
+    memcpy(connection->client.request.write_body, buffer, 1);
+    connection->client.request.status = PAM_REQUEST_SUCCESS;
+    connection->client.request.write_nbody = 1;
 }
 

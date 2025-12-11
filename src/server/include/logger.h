@@ -13,6 +13,10 @@ void logger_log_message_deferred(int level, const char* file, int line, time_t *
 
 void flush_all_logs();
 
+int logger_get_min_level();
+
+void logger_set_min_level(int level);
+
 void free_logger();
 
 #define __LOG_LEVEL(level, msg, ...) \

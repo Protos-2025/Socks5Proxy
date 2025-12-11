@@ -58,6 +58,14 @@ make clean all
 # Correr el servidor
 ./bin/server
 ```
+Para poder conectarse a PAM mediante el cliente:
+
+```sh
+# Correr el cliente
+./bin/client <command>
+# Para consultar los distintos commandos y opciones se puede ejecutar
+./bin/client -h
+```
 
 ## 9. Instrucciones para la configuración.
 
@@ -81,6 +89,85 @@ Todas las variables del servidor y sus valores por defecto se pueden encontrar e
 Ademas, la variable `MOCK_ETC_HOST` puede ser definida para establecer un archivo alternativo al `/etc/hosts` del sistema host, el cual sera montado en el contenedor Docker del servidor proxy. Esto es util para pruebas de integracion y performance, ya que permite controlar la resolucion DNS.
 
 ## 10. Ejemplos de configuración y monitoreo.
+
+### Ejemplos de monitoreo. 
+
+El protocolo PAM perminte monitorear el servidor de socks5 ofreciendo metricas y estadisticas del funcionamiento de este. Tambien ofrece opciones para poder gestionar usuarios que pueden obtener esta informacion. 
+
+Para poder conectarse a PAM se ofrece un cliente el cual puede conectarse tanto con IPV4 como IPV6. La estructura de las request es la siguiente:
+```
+Usage: ./bin/client [OPTIONS] [COMMAND] [ARGS]
+
+Options:
+   -h                                       Print help and exit.
+   -v                                       Print version info and exit.
+   -L HOST                                  Specify remote host (default: 127.0.0.1).
+   -P PORT                                  Specify connection port (default: 8080).
+   -u USER:PASS                             Authentication credentials.
+
+Commands:
+   users                                    Request list of users.
+   metrics                                  Get server metrics.
+   add-user <username> <password> <role>    Add a user.
+   remove-user <username>                   Remove a user.
+   change-Password <username> <password>    Change password.
+   change-role <username> <role>            Change role.
+```
+
+Algunos ejemplos de pedidos son:
+
+**users** `./bin/client -L 127.0.0.1  -P 8080 -u admin:admin users`
+```
+Connecting to host 127.0.0.1 and port 8080...
+Connected to server at 127.0.0.1:8080
+Sending authentication...
+Authentication successful
+Server response to authentication: VER=0x01, STATUS=0x00
+Sending request: VER=0x01, METHOD=0x0001, NBODY=0 bytes
+
+[GET_USERS] Response received:
+  VER:    0x01
+  STATUS: 0x00 (Success)
+  NBODY:  43 bytes
+  BODY:   +OK listing users
+@admin
+```
+
+**add-user** `./bin/client -L 127.0.0.1  -P 8080 -u admin:admin add-user new_usr pass 1`
+```
+Connecting to host 127.0.0.1 and port 8080...
+Connected to server at 127.0.0.1:8080
+Sending authentication...
+Authentication successful
+Server response to authentication: VER=0x01, STATUS=0x00
+Sending request: VER=0x01, METHOD=0x0002, NBODY=14 bytes
+
+[ADD_USER] Response received:
+  VER:    0x01
+  STATUS: 0x00 (Success)
+  NBODY:  0 bytes
+```
+
+**metrics** `./bin/client -L 127.0.0.1  -P 8080 -u admin:admin metrics`
+
+```
+Connecting to host 127.0.0.1 and port 8080...
+Connected to server at 127.0.0.1:8080
+Sending authentication...
+Authentication successful
+Server response to authentication: VER=0x01, STATUS=0x00
+Sending request: VER=0x01, METHOD=0x0006, NBODY=0 bytes
+
+[GET_METRICS] Response received:
+  VER:    0x01
+  STATUS: 0x00 (Success)
+  NBODY:  109 bytes
+  BODY:   +OK Metrics snapshot
+Current Connections: 0
+Total Connections: 0
+Total Bytes Sent: 0
+Total Bytes Received: 0
+```
 
 ## 11. Documento de diseño del proyecto
 

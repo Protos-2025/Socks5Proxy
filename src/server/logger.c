@@ -8,40 +8,24 @@
 #include <string.h>
 #include <signal.h>
 #include <errno.h>
+#include <fcntl.h>
 #include "selector.h"
 #include "defines.h"
+
+#define LOG_FILE_FLAGS (O_APPEND | O_WRONLY | O_CREAT | O_NONBLOCK)
+#define LOG_FILE_PERMISSIONS (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH)
 
 static const char* log_level_to_string(int level);
 static void write_logs_deferred(struct selector_key* key);
 static void free_log(void * data);
 
-static const char* log_level_to_string(int level) {
-	switch (level) {
-        #ifndef NO_COLOR_LOGS
-            case LOGGER_TRACE: return "\x1b[0;90mTRACE\x1b[0m";
-            case LOGGER_DEBUG: return "\x1b[36mDEBUG\x1b[0m";
-            case LOGGER_INFO:  return "\x1b[34mINFO\x1b[0m";
-            case LOGGER_WARN:  return "\x1b[33mWARN\x1b[0m";
-            case LOGGER_ERROR: return "\x1b[31mERROR\x1b[0m";
-            case LOGGER_FATAL: return "\x1b[41;37mFATAL\x1b[0m";
-            default:    return "UNKNOWN";
-        #else
-            case LOGGER_TRACE: return "TRACE";
-            case LOGGER_DEBUG: return "DEBUG";
-            case LOGGER_INFO:  return "INFO";
-            case LOGGER_WARN:  return "WARN";
-            case LOGGER_ERROR: return "ERROR";
-            case LOGGER_FATAL: return "FATAL";
-            default:    return "UNKNOWN";
-        #endif
-    }
-}
-
 static Queue logQueue = NULL;
 static Buffer logBuffer;
 static char * currentLog = NULL;
 static int minLogLevel = LOGGER_MIN_LEVEL;
+static int logFile = -1;
 static FdSelector loggerSelector = NULL;
+static long logAlwaysIncrementalId = 0; // Used to detect logs that may have been dropped
 
 static const struct fd_handler loggerHandlers = {
     .handle_read = NULL,
@@ -49,26 +33,78 @@ static const struct fd_handler loggerHandlers = {
     .handle_close = NULL,
 };
 
+static const char* log_level_to_string(int level) {
+    #ifdef NO_COLOR_LOGS
+        switch (level) {
+            case LOGGER_TRACE: return "TRACE";
+            case LOGGER_DEBUG: return "DEBUG";
+            case LOGGER_INFO:  return "INFO";
+            case LOGGER_WARN:  return "WARN";
+            case LOGGER_ERROR: return "ERROR";
+            case LOGGER_FATAL: return "FATAL";
+            default:    return "UNKNOWN";
+        }
+    #endif
+
+	int useColorLogs = (logFile == STDOUT_FILENO);
+
+    if (useColorLogs) {
+        switch (level) {
+            case LOGGER_TRACE: return "\x1b[0;90mTRACE\x1b[0m";
+            case LOGGER_DEBUG: return "\x1b[36mDEBUG\x1b[0m";
+            case LOGGER_INFO:  return "\x1b[34mINFO\x1b[0m";
+            case LOGGER_WARN:  return "\x1b[33mWARN\x1b[0m";
+            case LOGGER_ERROR: return "\x1b[31mERROR\x1b[0m";
+            case LOGGER_FATAL: return "\x1b[41;37mFATAL\x1b[0m";
+            case LOGGER_ACCESS_LOG:   return "\x1b[44m\x1b[37mACCESS\x1b[0m";
+            default:    return "UNKNOWN";
+        }
+    } else {
+        switch (level) {
+            case LOGGER_TRACE: return "TRACE";
+            case LOGGER_DEBUG: return "DEBUG";
+            case LOGGER_INFO:  return "INFO";
+            case LOGGER_WARN:  return "WARN";
+            case LOGGER_ERROR: return "ERROR";
+            case LOGGER_FATAL: return "FATAL";
+            case LOGGER_ACCESS_LOG:   return "ACCESS";
+            default:    return "UNKNOWN";
+        }
+    }
+}
+
+static int open_file_non_blocking(const char * filename) {
+    int file = -1;
+    if (filename == NULL) {
+        file = STDOUT_FILENO;
+        LOG_WARN("No file provided, logging to STDOUT");
+    } else {
+		file = open(filename, LOG_FILE_FLAGS, LOG_FILE_PERMISSIONS);
+        if (file < 0) {
+            LOG_ERROR("Failed to open log file \"%s\": %s. Logging to STD_OUT", filename, strerror(errno));
+            file = STDOUT_FILENO;
+        }
+    }
+    return file;
+}
+
 void logger_init() {
     logQueue = create_queue(free_log, sizeof(char *), MAX_LOG_QUEUE_SIZE);
     buffer_init(&logBuffer, MAX_LOG_SIZE, NULL);
+    logFile = open_file_non_blocking(NULL);
 }
 
 int logger_register_selector(FdSelector selector) {
     if (!selector) return 0;
 
-    if (!loggerSelector) {
-        loggerSelector = selector;
-    }
-
-	if (selector_fd_set_nio(STDOUT_FILENO) < 0) {
-        fprintf(stderr, "Failed to set STDOUT to non-blocking mode\n");
+	if (selector_fd_set_nio(logFile) < 0) {
+        fprintf(stderr, "Failed to set log file to non-blocking mode\n");
         return -1;
     };
 
 	SelectorStatus ss = SELECTOR_SUCCESS;
-    ss = selector_register(selector, STDOUT_FILENO, &loggerHandlers, OP_WRITE, NULL);
-    if (ss != SELECTOR_SUCCESS && ss != SELECTOR_FDINUSE) {
+    ss = selector_register(selector, logFile, &loggerHandlers, OP_WRITE, NULL);
+    if (ss != SELECTOR_SUCCESS) {
         fprintf(stderr, "Failed to register logger flush handler: %s\n", selector_error(ss));
     }
 
@@ -92,11 +128,12 @@ static void free_log(void * data) {
     }
 }
 
-static char * format_log_message(const char* level_str, const char * file, int line, const time_t * now_ptr, const char* fmt, va_list args) {
-    if (!level_str) level_str = "UNKNOWN";
-    if (!fmt) fmt = "";
+static char * format_log_message(int level, const char * file, int line, const time_t * now_ptr, const char* fmt, va_list args) {
+    const char * levelStr = log_level_to_string(level);
+	const long logId = logAlwaysIncrementalId++;
+	if (!fmt) fmt = "";
 
-    char body[MAX_LOG_SIZE];
+	char body[MAX_LOG_SIZE];
 
     vsnprintf(body, (size_t)MAX_LOG_SIZE, fmt, args);
 
@@ -105,9 +142,13 @@ static char * format_log_message(const char* level_str, const char * file, int l
 
 	time_t now = now_ptr != NULL ? *now_ptr : time(NULL);
     struct tm *t = localtime(&now);
+    char * padding = (level == LOGGER_INFO || level == LOGGER_WARN) ? " " : "";
 
-    int prefixSize = snprintf(out, (size_t)MAX_LOG_SIZE , "[%s] [%s:%d @ %04d-%02d-%02d %02d:%02d:%02d] ", level_str, file, line, (t->tm_year + 1900), t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
-	snprintf(out + prefixSize, MAX_LOG_SIZE - prefixSize, "%s\n", body);
+    int prefixSize = level == LOGGER_ACCESS_LOG ?
+      snprintf(out, (size_t)MAX_LOG_SIZE , "[%s]%s [%06ld] [%04d-%02d-%02d %02d:%02d:%02d]  ", levelStr, padding, logId % 1000000, (t->tm_year + 1900), t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec)
+    : snprintf(out, (size_t)MAX_LOG_SIZE , "[%s]%s  [%06ld] [%04d-%02d-%02d %02d:%02d:%02d @ %s:%d] ", levelStr, padding, logId % 1000000, (t->tm_year + 1900), t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec, file, line);
+	
+    snprintf(out + prefixSize, MAX_LOG_SIZE - prefixSize, "%s\n", body);
 	const char* ellipsis = "...\n";
 	if (strlen(out) >= MAX_LOG_SIZE - 1) {
 		strncpy(out + MAX_LOG_SIZE - 5, ellipsis, 5);
@@ -120,12 +161,12 @@ void logger_log_message_deferred(int level, const char* file, int line, time_t *
     if (!logQueue || level < minLogLevel) return;
     va_list args;
     va_start(args, msg);
-    char *formattedMsg = format_log_message(log_level_to_string(level), file, line, now, msg, args);
+    char *formattedMsg = format_log_message(level, file, line, now, msg, args);
     va_end(args);
 
     if (formattedMsg) {
         enqueue(logQueue, &formattedMsg);
-		if (loggerSelector) logger_register_selector(loggerSelector);
+		if (loggerSelector > 0) logger_register_selector(loggerSelector);
 	}
 }
 
@@ -146,14 +187,15 @@ static void write_logs_deferred(struct selector_key* key) {
 
         if (buffer_can_read(&logBuffer)) {
             rPtr = buffer_read_ptr(&logBuffer, (size_t *) &toRead);
-            written = write(STDOUT_FILENO, rPtr, toRead);
+            written = write(logFile, rPtr, toRead);
             buffer_read_adv(&logBuffer, written);
             if (written == toRead) {
                 free(currentLog);
                 currentLog = NULL;
-            }
-        };
-    }
+			}
+		}
+	}
+
 	logger_unregister_selector(loggerSelector);
 }
 
@@ -163,7 +205,7 @@ void flush_all_logs() {
         char * msg = NULL;
         dequeue(logQueue, &msg);
         if (msg) {
-            fprintf(stdout, "%s", msg);
+            write(logFile, msg, strlen(msg));
             free(msg);
         }
     }
@@ -171,6 +213,10 @@ void flush_all_logs() {
 
 void free_logger() {
     if (!logQueue) return;
+    if (logFile >= 0 && logFile != STDOUT_FILENO) {
+        close(logFile);
+        logFile = -1;
+    }
 	flush_all_logs();
 	free_queue(logQueue);
 	logQueue = NULL;

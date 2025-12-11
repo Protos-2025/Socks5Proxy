@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <netdb.h>
 #include <errno.h>
-#include "../include/socks5nio.h"
+#include <arpa/inet.h>
 #include "logger.h"
 
 int try_connection(struct selector_key * key) {
@@ -65,4 +65,41 @@ void get_next_resolution(struct selector_key * key) {
     connection->origin_resolution->ai_next = NULL;
     freeaddrinfo(connection->origin_resolution);
     connection->origin_resolution = next;
+}
+
+void print_connection_access_log(struct socks5 * connection) {
+    char originIp[INET6_ADDRSTRLEN] = {0};
+    char clientIp[INET6_ADDRSTRLEN] = {0};
+	uint16_t clientPort = 0;
+    uint16_t originPort = ntohs((uint16_t)atoi((const char *)connection->origin_port));
+
+	if (connection->origin_resolution->ai_family == AF_INET) {
+        struct sockaddr_in * s = (struct sockaddr_in *) connection->origin_resolution->ai_addr;
+        inet_ntop(AF_INET, &s->sin_addr, originIp, INET6_ADDRSTRLEN);
+    } else if (connection->origin_resolution->ai_family == AF_INET6) {
+        struct sockaddr_in6 * s = (struct sockaddr_in6 *) connection->origin_resolution->ai_addr;
+        inet_ntop(AF_INET6, &s->sin6_addr, originIp, INET6_ADDRSTRLEN);
+    }
+
+    if (connection->client_addr.ss_family == AF_INET) {
+        struct sockaddr_in * s = (struct sockaddr_in *) &connection->client_addr;
+        inet_ntop(AF_INET, &s->sin_addr, clientIp, INET6_ADDRSTRLEN);
+        clientPort = ntohs(s->sin_port);
+    } else if (connection->client_addr.ss_family == AF_INET6) {
+        struct sockaddr_in6 * s = (struct sockaddr_in6 *) &connection->client_addr;
+        inet_ntop(AF_INET6, &s->sin6_addr, clientIp, INET6_ADDRSTRLEN);
+        clientPort = ntohs(s->sin6_port);
+    }
+
+    if (connection->atyp == FQDN) {
+        ACCESS_LOG("%s:%hu connected to %s:%hu (IPv%d=%s)",
+                    clientIp, clientPort,
+                    (char*)connection->origin_host,
+                    originPort, connection->origin_resolution->ai_addr->sa_family == AF_INET ? 4 : 6,
+                    originIp);
+    } else {
+        ACCESS_LOG("%s:%hu connected to IPv%d=%s on port %hu",
+                    clientIp, clientPort, connection->origin_resolution->ai_addr->sa_family == AF_INET ? 4 : 6,
+                    originIp, originPort);
+    }
 }

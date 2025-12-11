@@ -17,18 +17,18 @@ void reply_arrival(const unsigned state, struct selector_key * key) {
     buffer_write(&connection->origin_buffer, connection->client.reply.rep);
     buffer_write(&connection->origin_buffer, RSV);
 
-    struct sockaddr_storage local_addr;
-    socklen_t local_addr_len = sizeof(local_addr);
-    uint16_t bnd_port = 0;
+    struct sockaddr_storage localAddr;
+    socklen_t localAddrLen = sizeof(localAddr);
+    uint16_t bndPort = 0;
 
-    if (getsockname(connection->origin_fd, (struct sockaddr *)&local_addr, &local_addr_len) == -1) {
+    if (getsockname(connection->origin_fd, (struct sockaddr *)&localAddr, &localAddrLen) == -1) {
         LOG_ERROR("getsockname failed: %d", errno);
         connection->client.reply.found_bnd_info = false;
         return;
     }
 
-    if (local_addr.ss_family == AF_INET) {
-        struct sockaddr_in * sin = (struct sockaddr_in *)&local_addr;
+    if (localAddr.ss_family == AF_INET) {
+        struct sockaddr_in * sin = (struct sockaddr_in *)&localAddr;
 
         buffer_write(&connection->origin_buffer, IPv4_ADDR);
 
@@ -36,9 +36,9 @@ void reply_arrival(const unsigned state, struct selector_key * key) {
             buffer_write(&connection->origin_buffer, ((uint8_t *)&sin->sin_addr.s_addr)[i]);
         }
 
-        bnd_port = ntohs(sin->sin_port);
-    } else if (local_addr.ss_family == AF_INET6) {
-        struct sockaddr_in6 * sin6 = (struct sockaddr_in6 *)&local_addr;
+        bndPort = ntohs(sin->sin_port);
+    } else if (localAddr.ss_family == AF_INET6) {
+        struct sockaddr_in6 * sin6 = (struct sockaddr_in6 *)&localAddr;
 
         buffer_write(&connection->origin_buffer, IPv6_ADDR);
 
@@ -46,11 +46,11 @@ void reply_arrival(const unsigned state, struct selector_key * key) {
             buffer_write(&connection->origin_buffer, sin6->sin6_addr.s6_addr[i]);
         }
 
-        bnd_port = ntohs(sin6->sin6_port);
+        bndPort = ntohs(sin6->sin6_port);
     }
 
-    buffer_write(&connection->origin_buffer, (bnd_port >> 8) & 0xFF);
-    buffer_write(&connection->origin_buffer, bnd_port & 0xFF);
+    buffer_write(&connection->origin_buffer, (bndPort >> 8) & 0xFF);
+    buffer_write(&connection->origin_buffer, bndPort & 0xFF);
 
     connection->client.reply.found_bnd_info = true;
 }

@@ -24,5 +24,6 @@ void free_logger();
 #define LOG_WARN(...)  __LOG_LEVEL(LOGGER_WARN,  __VA_ARGS__)
 #define LOG_ERROR(...) __LOG_LEVEL(LOGGER_ERROR, __VA_ARGS__)
 #define LOG_FATAL(...) __LOG_LEVEL(LOGGER_FATAL, __VA_ARGS__)
+#define ACCESS_LOG(...) __LOG_LEVEL(LOGGER_ACCESS_LOG, __VA_ARGS__)
 
 #endif

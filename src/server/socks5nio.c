@@ -184,14 +184,17 @@ static void socksv5_done(struct selector_key * key) {
 
     char * origin = (char *) ATTACHMENT(key)->origin_host;
     char clientIp[INET6_ADDRSTRLEN] = {0};
+    uint16_t clientPort = 0;
     if (ATTACHMENT(key)->client_addr.ss_family == AF_INET) {
         struct sockaddr_in * s = (struct sockaddr_in *) &ATTACHMENT(key)->client_addr;
         inet_ntop(AF_INET, &s->sin_addr, clientIp, INET6_ADDRSTRLEN);
+        clientPort = ntohs(s->sin_port);
     } else if (ATTACHMENT(key)->client_addr.ss_family == AF_INET6) {
         struct sockaddr_in6 * s = (struct sockaddr_in6 *) &ATTACHMENT(key)->client_addr;
         inet_ntop(AF_INET6, &s->sin6_addr, clientIp, INET6_ADDRSTRLEN);
+        clientPort = ntohs(s->sin6_port);
     }
-    LOG_INFO("Closing connection from %s %s%s", clientIp, origin != NULL && *origin ? " to " : "", origin != NULL ? origin : "");
+    LOG_INFO("Closing connection from %s:%hu %s%s", clientIp, clientPort, origin != NULL && *origin ? "to " : "", origin != NULL ? origin : "");
     
     connection->closed = true;
 

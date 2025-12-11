@@ -6,6 +6,7 @@
 #define LOGGER_WARN 3
 #define LOGGER_ERROR 4
 #define LOGGER_FATAL 5
+#define LOGGER_ACCESS_LOG 6
 
 #ifndef MAX_LOG_SIZE
 #define MAX_LOG_SIZE 1024

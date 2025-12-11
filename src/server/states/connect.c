@@ -81,16 +81,17 @@ unsigned connect_write(struct selector_key * key) {
                 break;
             case CONNECTION_IN_PROGRESS:
                 LOG_TRACE("Connection in progress");
-                return CONNECT; 
-            
-            default: {
-                LOG_INFO("Connected to origin: %s:%s", connection->origin_host, connection->origin_port);
+				return CONNECT;
+			default: {
+                LOG_DEBUG("Connected to origin: %s:%s", connection->origin_host, connection->origin_port);
+                print_connection_access_log(connection);
                 selector_set_interest(key->s, connection->origin_fd, OP_NOOP);
                 connection->client.reply.rep = SUCCEDED;
             }
         };
     } else {
-        LOG_INFO("Connected to origin: %s:%s", connection->origin_host, connection->origin_port);
+        LOG_DEBUG("Connected to origin: %s:%s", connection->origin_host, connection->origin_port);
+        print_connection_access_log(connection);
         selector_set_interest(key->s, connection->origin_fd, OP_NOOP);
         connection->client.reply.rep = SUCCEDED;
     }

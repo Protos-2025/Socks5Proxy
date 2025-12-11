@@ -77,36 +77,39 @@ void handle_add_user(struct pam * connection) {
 // +-------+------------+-------+------------+-------+
     LOG_DEBUG("Handling add user request");
 
-    uint8_t userLenght = buffer_read(&connection->client_buffer);
+    Buffer buffer;
+    buffer_init(&buffer, PAM_BUFFER_SIZE, connection->client.request.read_body);
+    buffer_write_adv(&buffer, connection->client.request.read_nbody);
+
+    uint8_t userLenght = buffer_read(&buffer);
 
     LOG_DEBUG("username length = %d", userLenght);
 
     uint8_t username[PAM_AUTH_USERNAME_MAX_LENGHT];
 
     for (size_t i = 0; i < userLenght; i++) {
-        username[i] = buffer_read(&connection->client_buffer);
+        username[i] = buffer_read(&buffer);
     }
     username[userLenght] = '\0';
 
-    uint8_t passLenght = buffer_read(&connection->client_buffer);
+    uint8_t passLenght = buffer_read(&buffer);
 
     LOG_DEBUG("username length = %d", userLenght);
 
     uint8_t password[PAM_AUTH_USERNAME_MAX_LENGHT];
 
     for (size_t i = 0; i < passLenght ; i++) {
-        password[i] = buffer_read(&connection->client_buffer);
+        password[i] = buffer_read(&buffer);
     }
     password[passLenght] = '\0';
 
-    uint8_t role = buffer_read(&connection->client_buffer); 
+    uint8_t role = buffer_read(&buffer); 
 
     LOG_DEBUG("Recievied username %s and and password %s, role %d", username, password, role);
 
     connection->client.request.status = PAM_REQUEST_SUCCESS;    
     
-    char * currentUserName = connection->client.auth.username;
-    if(!user_is_admin(currentUserName)) {
+    if(!user_is_admin(connection->client.auth.username)) {
         connection->client.request.status = PAM_REQUEST_UNAUTHORIZED;
     } else {
         UserStatus userStatus = user_create(username, password, role);
@@ -143,14 +146,19 @@ void handle_remove_user(struct pam * connection) {
 // |   1   |    ULEN    | 
 // +-------+------------+
     LOG_DEBUG("Handling remove user request");
-    uint8_t userLenght = buffer_read(&connection->client_buffer);
+
+    Buffer buffer;
+    buffer_init(&buffer, PAM_BUFFER_SIZE, connection->client.request.read_body);
+    buffer_write_adv(&buffer, connection->client.request.read_nbody);
+
+    uint8_t userLenght = buffer_read(&buffer);
 
     LOG_DEBUG("username length = %d", userLenght);
 
     uint8_t username[PAM_AUTH_USERNAME_MAX_LENGHT];
 
     for (size_t i = 0; i < userLenght; i++) {
-        username[i] = buffer_read(&connection->client_buffer);
+        username[i] = buffer_read(&buffer);
     }
     username[userLenght] = '\0';
     LOG_DEBUG("Recievied username %s", username);
@@ -185,28 +193,33 @@ void handle_change_password(struct pam * connection) {
 // |   1   |    ULEN    |     1     |   NEW_PLEN   |
 // +-------+------------+-----------+--------------+
     LOG_DEBUG("Handling change password request");
-    uint8_t userLenght = buffer_read(&connection->client_buffer);
+
+    Buffer buffer;
+    buffer_init(&buffer, PAM_BUFFER_SIZE, connection->client.request.read_body);
+    buffer_write_adv(&buffer, connection->client.request.read_nbody);
+
+
+    uint8_t userLenght = buffer_read(&buffer);
     LOG_DEBUG("username length = %d", userLenght);
     uint8_t username[PAM_AUTH_USERNAME_MAX_LENGHT];
     for (size_t i = 0; i < userLenght; i++) {
-        username[i] = buffer_read(&connection->client_buffer);
+        username[i] = buffer_read(&buffer);
     }
     username[userLenght] = '\0';
     LOG_DEBUG("Recievied username %s", username);
     
-    uint8_t newPasswordLenght = buffer_read(&connection->client_buffer);
+    uint8_t newPasswordLenght = buffer_read(&buffer);
     LOG_DEBUG("new password length = %d", newPasswordLenght);
     uint8_t newPassword[PAM_AUTH_USERNAME_MAX_LENGHT];
     for (size_t i = 0; i < newPasswordLenght; i++) {
-        newPassword[i] = buffer_read(&connection->client_buffer);
+        newPassword[i] = buffer_read(&buffer);
     }
     newPassword[newPasswordLenght] = '\0';
     LOG_DEBUG("Recievied new password %s", newPassword);
     
     connection->client.request.status = PAM_REQUEST_SUCCESS;
     
-    char * currentUserName = connection->client.auth.username;
-    if(!user_is_admin(currentUserName)) {
+    if(!user_is_admin(connection->client.auth.username)) {
         connection->client.request.status = PAM_REQUEST_UNAUTHORIZED;
     } else {
         UserStatus userStatus = user_change_password(username, newPassword);
@@ -233,17 +246,22 @@ void handle_change_role(struct pam * connection) {
 // |   1   |    ULEN    |     1     |
 // +-------+------------+-----------+
     LOG_DEBUG("Handling change role request");
+
+    Buffer buffer;
+    buffer_init(&buffer, PAM_BUFFER_SIZE, connection->client.request.read_body);
+    buffer_write_adv(&buffer, connection->client.request.read_nbody);
+
     
-    uint8_t userLenght = buffer_read(&connection->client_buffer);
+    uint8_t userLenght = buffer_read(&buffer);
     LOG_DEBUG("username length = %d", userLenght);
     uint8_t username[PAM_AUTH_USERNAME_MAX_LENGHT];
     for (size_t i = 0; i < userLenght; i++) {
-        username[i] = buffer_read(&connection->client_buffer);
+        username[i] = buffer_read(&buffer);
     }
     username[userLenght] = '\0';
     LOG_DEBUG("Recievied username %s", username);
     
-    uint8_t newRole = buffer_read(&connection->client_buffer);
+    uint8_t newRole = buffer_read(&buffer);
     LOG_DEBUG("new role = %d", newRole);
     
     connection->client.request.status = PAM_REQUEST_SUCCESS;

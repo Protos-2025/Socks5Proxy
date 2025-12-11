@@ -143,11 +143,15 @@ void *list_get_next(List list, void *buffer) {
 	if (list->iter == NULL) {
 		return NULL;
 	}
-
-	copy_element_to_buffer(buffer, list->iter->data, list->sizeOfElem);
-
-	list->iter = list->iter->next;
-	return buffer;
+	
+	void *dataPtr = list->iter->data;
+	list->iter = list->iter->next;      
+	
+	if (buffer != NULL) {
+		copy_element_to_buffer(buffer, dataPtr, list->sizeOfElem);
+	}
+	
+	return dataPtr;  
 }
 
 uint64_t list_get_size(List list) { return list->size; }

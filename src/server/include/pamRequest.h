@@ -48,11 +48,11 @@ struct pamRequest_st {
     uint8_t reserved;
     uint16_t method;
     uint16_t read_nbody;
-    char read_body[PAM_REQUEST_BODY_MAX_LENGTH];
+    uint8_t read_body[PAM_REQUEST_BODY_MAX_LENGTH];
 
     uint8_t status;
     uint16_t write_nbody;
-    char write_body[PAM_REQUEST_BODY_MAX_LENGTH];
+    uint8_t write_body[PAM_REQUEST_BODY_MAX_LENGTH];
 };
 
 

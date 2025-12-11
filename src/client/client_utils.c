@@ -68,8 +68,6 @@ ServerResponse* receive_response(int sock) {
     memcpy(&nbodyNet, &header[i], sizeof(uint16_t));
     resp->nbody = ntohs(nbodyNet);
 
-    printf("AAAAAAAAAAAAAAAAAAAAANBODY: 0x%04X\n", resp->nbody);
-
     // Receive body if present
     if (resp->nbody > 0) {
         resp->body = malloc(resp->nbody);

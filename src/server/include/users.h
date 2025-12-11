@@ -7,8 +7,8 @@
 
 
 typedef enum user_privilege_level{
-    USER_PRIVILEGE_DEFAULT = 0,
-    USER_PRIVILEGE_ADMIN = 1
+    USER_PRIVILEGE_ADMIN = 0, 
+    USER_PRIVILEGE_DEFAULT = 1,
 } UserPrivilegeLevel;
 
 typedef struct User {
@@ -31,7 +31,7 @@ UserStatus user_create(const char *username, const char *password, UserPrivilege
 
 UserStatus user_remove(const char *username);
 
-bool user_exists(const char* username, User * out_user);
+User* user_get_if_exists(const char *username);
 
 UserStatus user_change_password(const char *username, const char *new_password);
 

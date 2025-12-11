@@ -109,10 +109,14 @@ unsigned pam_request_read(struct selector_key * key){
         }
         connection->client.request.read_body[connection->client.request.read_nbody] = '\0';
 
+        Buffer buffer;
+        buffer_init(&buffer, PAM_BUFFER_SIZE, connection->client.request.read_body);
+        buffer_write_adv(&buffer, connection->client.request.read_nbody);
+
         LOG_DEBUG("PAM request body received");
         
         // writes on client.request.write_body
-        handle_pam_request_method(connection);
+        handle_pam_request_method(connection, &buffer);
 
         if (connection->client.request.status != PAM_REQUEST_SUCCESS) {
             LOG_DEBUG("PAM request handling failed with status: 0x%02X", connection->client.request.status);

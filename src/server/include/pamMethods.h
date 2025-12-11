@@ -3,6 +3,6 @@
 
 #include "pam.h"
 
-void handle_pam_request_method(struct pam * connection);
+void handle_pam_request_method(struct pam * connection, Buffer * buffer);
 
 #endif

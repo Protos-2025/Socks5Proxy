@@ -236,12 +236,3 @@ void free_logger() {
 	free_queue(logQueue);
 	logQueue = NULL;
 }
-
-int logger_get_min_level() {
-    return minLogLevel;
-}
-
-void logger_set_min_level(int level) {
-    minLogLevel = level;
-}
-

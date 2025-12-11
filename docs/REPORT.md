@@ -41,7 +41,17 @@ Algunas dificultades encontradas durante el desarrollo del proyecto incluyen:
 
 ## 5. Posibles extensiones
 
-## 6. Conclusiones
+Existen diversas líneas de trabajo que permitirían ampliar y mejorar el alcance del proyecto. En primer lugar, podría incorporarse soporte para los comandos BIND y UDP ASSOCIATE del protocolo SOCKS5, lo cual habilitaría un conjunto más completo de funcionalidades y haría la implementación compatible con un mayor número de casos de uso.
+
+Otra posible extensión consiste en la incorporación de multithreading, permitiendo manejar múltiples solicitudes de manera concurrente y mejorando significativamente el rendimiento del sistema.
+
+Finalmente, una mejora en la interfaz del cliente permitiría ofrecer una experiencia de uso más clara y eficiente, facilitando la interacción con las distintas funcionalidades del servicio.
+
+## 6. Conclusiones.
+
+Este proyecto representó un gran desafío para el equipo, ya que requirió un profundo entendimiento de los distintos protocolos de comunicación. El trabajo resultó complejo pero satisfactorio, dado que plantea casos de uso reales.
+
+La implementación del SOCKS5, del protocolo propio y del cliente brindó al equipo una perspectiva amplia acerca de lo que implica trabajar con protocolos de comunicación. Además de la implementación en sí, se adquirieron conocimientos sobre el diseño y la lectura de protocolos, dado que un buen diseño y una documentación adecuada hacen que el desarrollo sea mucho más eficiente.
 
 ## 7. Ejemplos de prueba
 

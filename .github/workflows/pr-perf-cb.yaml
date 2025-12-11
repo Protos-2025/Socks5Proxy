@@ -22,7 +22,7 @@ permissions: write-all
 jobs:
   benchmark:
     name: Performance regression check
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v2
 
@@ -80,7 +80,7 @@ jobs:
   bpftrace:
     if: false # disable due to gha flakiness
     name: bpftrace syscall check
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v2
         

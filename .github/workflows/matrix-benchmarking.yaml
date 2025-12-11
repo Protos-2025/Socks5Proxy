@@ -20,7 +20,7 @@ permissions: write-all
 jobs:
   benchmark:
     name: Bench
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       matrix:
         selector_capacity: ${{ fromJson( github.event.inputs.selector_capacities || '[1024]' ) }}
@@ -85,7 +85,7 @@ jobs:
 
   rank-results:
     name: Rank configurations by P99
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: benchmark
     steps:
       - name: Download all results

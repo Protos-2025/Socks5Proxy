@@ -20,7 +20,7 @@ on:
 
 jobs:  
   pvs:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps: 
     - uses: actions/checkout@v3
@@ -85,7 +85,7 @@ jobs:
         path: ./${{ steps.pvs.outputs.report_name }}.tasks
 
   compile:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
     - uses: actions/checkout@v3
@@ -110,7 +110,7 @@ jobs:
 
   pampero:
       needs: [compile, pvs]
-      runs-on: ubuntu-latest
+      runs-on: blacksmith-4vcpu-ubuntu-2404
       timeout-minutes: 3
       steps:
         # Checks the repository under $GITHUB_WORKSPACE, so the job can access it

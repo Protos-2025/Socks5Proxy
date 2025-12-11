@@ -65,7 +65,7 @@ String proxyHost = &quot;10.0.0.9&quot;
 int proxyPort    = 1080
 
 String proxyUser = &quot;admin&quot;
-String proxyPass = &quot;password&quot;
+String proxyPass = &quot;admin&quot;
 
 String targetHost = &quot;10.0.0.111&quot;
 int targetPort    = 80
@@ -243,7 +243,7 @@ String proxyHost = &quot;10.0.0.9&quot;
 int proxyPort    = 1080
 
 String proxyUser = &quot;admin&quot;
-String proxyPass = &quot;password&quot;
+String proxyPass = &quot;admin&quot;
 
 String targetHost = &quot;10.0.0.111&quot;
 int targetPort    = 80
@@ -400,7 +400,7 @@ String proxyHost = &quot;10.0.0.9&quot;
 int proxyPort    = 1080
 
 String proxyUser = &quot;admin&quot;
-String proxyPass = &quot;password&quot;
+String proxyPass = &quot;admin&quot;
 
 String targetPath = &quot;/test_file_02.txt&quot;
 String targetHost = &quot;fakegoogle.com&quot;

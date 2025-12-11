@@ -26,7 +26,6 @@ unsigned greeting_read(struct selector_key * key) {
     readn = recv(key->fd, wPtr, count, 0);
 
     if (readn < 0) {
-        // TODO: handle error correctly
         LOG_FATAL("recv failed (GREETING)");
         return ERROR;
     }
@@ -34,7 +33,10 @@ unsigned greeting_read(struct selector_key * key) {
     buffer_write_adv(&connection->client_buffer, readn);
 	buffer_read_ptr(&connection->client_buffer, &toRead);
 
-	if (toRead == 0) {
+	if (toRead == 0
+        || (readn == 0
+            && ((connection->client.greeting.state == VER_N_NMETHODS && (toRead < 2))
+                || (connection->client.greeting.state == METHODS && (toRead < connection->client.greeting.n_methods))))) {
         LOG_DEBUG("Client closed connection (GREETING)");
         return DONE;
     }

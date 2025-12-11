@@ -16,7 +16,7 @@
 You may compile this project by running:
 
 ```sh
-make clean all
+make
 ```
 
 Then run the binaries found in the `bin/` folder.

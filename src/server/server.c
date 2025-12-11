@@ -229,7 +229,7 @@ finally:
 static void signal_handler(const int signal) {
     struct metricSnapshot snapshot;
     get_metrics_snapshot(&snapshot);
-    LOG_FATAL("Signal %d, cleaning up and exiting.\nMetrics:\n\tBytes transferred\n\tSent: %zu\n\tReceived: %zu.\n\tTotal connections: %zu", signal, snapshot.totalBytesSent, snapshot.totalBytesReceived, snapshot.totalConnections);
+    LOG_FATAL("Signal %d, cleaning up and exiting.\nMetrics:\n\tBytes transferred\n\tSent: %zu\n\tReceived: %zu\n\tTotal connections: %zu", signal, snapshot.totalBytesSent, snapshot.totalBytesReceived, snapshot.totalConnections);
     flush_all_logs();
     free_logger();
     done = true;

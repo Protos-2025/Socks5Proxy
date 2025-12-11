@@ -33,7 +33,7 @@ void print_help(const char* prog) {
         "   metrics                                  Get server metrics.\n"
         "   add-user <username> <password> <role>    Add a user.\n"
         "   remove-user <username>                   Remove a user.\n"
-        "   change-Password <username> <password>    Change password.\n"
+        "   change-password <username> <password>    Change password.\n"
         "   change-role <username> <role>            Change role.\n"
         "\n",
         prog
@@ -45,7 +45,7 @@ static int need_args(const char* opt) {
     if (strcmp(opt, "metrics") == 0) return 0;
     if (strcmp(opt, "remove-user") == 0) return 1;
     if (strcmp(opt, "change-role") == 0) return 2;
-    if (strcmp(opt, "change-Password") == 0) return 2;
+    if (strcmp(opt, "change-password") == 0) return 2;
     if (strcmp(opt, "add-user") == 0) return 3;
     return -1; // unknown
 }

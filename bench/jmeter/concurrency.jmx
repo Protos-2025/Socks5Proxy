@@ -27,7 +27,7 @@
           <stringProp name="parameters"></stringProp>
           <stringProp name="script">import java.nio.charset.StandardCharsets
 
-String proxyHost = &quot;127.0.0.1&quot;
+String proxyHost = &quot;10.0.0.9&quot;
 int proxyPort    = 1080
 
 String proxyUser = &quot;admin&quot;
@@ -176,7 +176,7 @@ try {
           <stringProp name="script">
 import java.nio.charset.StandardCharsets
 
-String proxyHost = &quot;127.0.0.1&quot;
+String proxyHost = &quot;10.0.0.9&quot;
 int proxyPort    = 1080
 
 String proxyUser = &quot;admin&quot;

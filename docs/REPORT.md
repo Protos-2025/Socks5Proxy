@@ -274,7 +274,7 @@ El proyecto cuenta con los siguientes módulos principales:
 
 ### 12.1 Matriz de Benchmarks
 
-Para poder probar el proxy bajo condiciones de carga y encontrar la mejor configuración de parámetros, se utilizó [Apache JMeter](https://jmeter.apache.org/) para crear escenarios de prueba que simularan múltiples conexiones concurrentes. Los scripts de JMeter se encuentran en la carpeta [bench/jmeter](./bench/jmeter). Estas pruebas de carga se corrieron contra una matriz variada de parámetros (compilando con mayor y menor tamaño de buffer, mayor y menor capacidad de selectores, etc.) y los resultados se evaluaron de acuerdo a su porcentaje de error en respuesta a las conexiones y el tiempo de respuesta (p99 y media). La ejecución de estas pruebas se automatizó utilizando Github Actions, permitiendo así la obtención de resultados consistentes y la comparación entre distintas configuraciones.
+Para poder probar el proxy bajo condiciones de carga y encontrar la mejor configuración de parámetros default, se utilizó [Apache JMeter](https://jmeter.apache.org/) para crear escenarios de prueba que simularan múltiples conexiones concurrentes. Los scripts de JMeter se encuentran en la carpeta [bench/jmeter](./bench/jmeter). Estas pruebas de carga se corrieron contra una matriz variada de parámetros (compilando con mayor y menor tamaño de buffer, mayor y menor capacidad de selectores, etc.) y los resultados se evaluaron de acuerdo a su porcentaje de error en respuesta a las conexiones y el tiempo de respuesta (p99 y media). La ejecución de estas pruebas se automatizó utilizando Github Actions, permitiendo así la obtención de resultados consistentes y la comparación entre distintas configuraciones.
 
 ![img/bench-matrix.jpeg](./img/bench-matrix.jpeg)
 

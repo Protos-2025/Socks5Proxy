@@ -46,8 +46,6 @@ struct socks5 {
         struct reply_st reply;
         struct copy_st copy;
     } client;
-    uint8_t username[USERNAME_MAX_LENGHT];
-    uint8_t password[PASSWORD_MAX_LENGHT];
 
     /* origin */
     int origin_fd;

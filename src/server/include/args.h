@@ -21,6 +21,7 @@ struct socks5args
 
     bool disectors_enabled;
 
+    int nusers;
     struct users users[MAX_USERS];
 };
 

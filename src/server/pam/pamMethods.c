@@ -44,15 +44,19 @@ void handle_pam_request_method(struct pam * connection, Buffer * buffer) {
         default:
             LOG_WARN("Invalid PAM request method: 0x%04X", connection->client
                      .request.method);
-            connection->client.request.status = PAM_SERVER_ERROR;
+            connection->client.request.status = PAM_REQUEST_FAILURE;
             connection->client.request.write_nbody = 0;
             break;
     }
 }
 
+
+// TODO: can't delete
+
 void handle_get_connected_users_list(struct pam * connection) {
     LOG_DEBUG("Handling get connected users list request");
     uint8_t buffer[PAM_BUFFER_SIZE];
+    memset(buffer, 0, PAM_BUFFER_SIZE);
     char * initalMessage = "+OK listing users\n";
 size_t len = strlen(initalMessage);
     memcpy(buffer, initalMessage, len);
@@ -129,7 +133,7 @@ void handle_add_user(struct pam * connection, Buffer * buffer) {
                 connection->client.request.status = PAM_REQUEST_USER_BADUSERNAME;    
             break;
             default:
-                connection->client.request.status = PAM_ERROR;    
+                connection->client.request.status = PAM_REQUEST_FAILURE;    
             break;
         }
     }
@@ -159,7 +163,11 @@ void handle_remove_user(struct pam * connection, Buffer * buffer) {
     connection->client.request.status = PAM_REQUEST_SUCCESS;    
     
     uint8_t * currentUserName = connection->client.auth.username;
-    if(!user_is_admin(currentUserName)) {
+    User * userToRemove = user_get_if_exists(username);
+    if( !user_is_admin(currentUserName) || 
+        (user_total_admins() == 1 && userToRemove->privilege_level == USER_PRIVILEGE_ADMIN) ||
+        strcmp((char *)currentUserName, (char *)username) == 0
+    ) {
         connection->client.request.status = PAM_REQUEST_UNAUTHORIZED;
     } else {
         UserStatus userStatus = user_remove(username);

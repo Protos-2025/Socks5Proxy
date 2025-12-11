@@ -49,6 +49,8 @@ bool user_is_admin(const uint8_t* username);
  * */
 UserStatus user_authenticate(const uint8_t* username, const uint8_t* password);
 
+int user_total_admins();
+
 void users_free();
 
 int users_get_connected_users_list(uint8_t * buffer, int from);

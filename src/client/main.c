@@ -25,30 +25,63 @@ int main(int argc, char* argv[]) {
         return (r == 1 ? 0 : -1);
     }
     if(args.user == NULL || args.password == NULL){
-        printf("Error, user or password missing.");
+        printf("[Error]: user or password missing.");
         print_help(argv[0]);
     }
 
     // ------------------------------------------- CONNECTION ----------------------------------------------------->
 
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-        perror("socket");
-        return -1;
+    int sock;
+    int connect_result;
+
+
+    int ip_ver = detect_ip_version(args.host);
+
+
+    //Connect to IPV4
+    if (ip_ver == 4) {
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_port = htons(args.port);
+        addr.sin_family = AF_INET;
+        if (inet_pton(AF_INET, args.host, &addr.sin_addr) <= 0) {
+            printf("Error: Invalid host: %s\n", args.host);
+            return -1;
+        }
+        sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock < 0) {
+            perror("socket");
+            return -1;
+        }
+        connect_result = connect(sock, (struct sockaddr*)&addr, sizeof(addr));
+
+    //Connect to IPV6
+    }else if(ip_ver == 6){
+        printf("Detected IPv6 address.\n");
+        struct sockaddr_in6 addr6;
+        memset(&addr6, 0, sizeof(addr6));
+        addr6.sin6_family = AF_INET6;
+        addr6.sin6_port = htons(args.port);
+
+        if (inet_pton(AF_INET6, args.host, &addr6.sin6_addr) <= 0) {
+            printf("Error: Invalid host: %s\n", args.host);
+            return -1;
+        }
+        sock = socket(AF_INET6, SOCK_STREAM, 0);
+        if (sock < 0) {
+            perror("socket");
+            return -1;
+        }
+        connect_result = connect(sock, (struct sockaddr*)&addr6, sizeof(addr6));
     }
 
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(args.port);
-
-    if (inet_pton(AF_INET, args.host, &addr.sin_addr) <= 0) {
-        fprintf(stderr, "Invalid host: %s\n", args.host);
+    else {
+        printf("Error: Invalid host: %s\n", args.host);
         close(sock);
         return -1;
     }
 	printf("Connecting to host %s and port %d...\n", args.host, args.port);
-    if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+    if (connect_result < 0) {
         perror("connect");
         close(sock);
         return -1;
@@ -65,7 +98,7 @@ int main(int argc, char* argv[]) {
     size_t plen = strlen(pass);
 
     if (ulen > 255 || plen > 255) {
-        fprintf(stderr, "user or pass too long\n");
+        fprintf(stderr, "Error: User or Password too long\n");
         return -1;
     }
 
@@ -81,25 +114,23 @@ int main(int argc, char* argv[]) {
 	memcpy(&authMsg[idx], pass, plen);
 	idx += plen;
     printf("Sending authentication...\n");
-    printf("User: %s, Pass: %s\n", user, pass);
     // Send auth
 	send(sock, authMsg, idx, 0);
     free(authMsg);
 	uint8_t authResp[2];
 	recv(sock, authResp, 2, 0);
-    printf("server response: VER=0x%02X, STATUS=0x%02X\n", authResp[0], authResp[1]);
 
     if (authResp[1] == 0x00) {
-		printf("Authentication successful!\n");
+		printf("Authentication successful\n");
 	} else {
-		printf("Authentication failed!\n");
+		printf("Error: Authentication failed!\n");
 		close(sock);
 		return 1;
 	}
 
-    // --------------------------------------------- REQUEST ------------------------------------------------------>
+    printf("Server response to authentication: VER=0x%02X, STATUS=0x%02X\n", authResp[0], authResp[1]);
 
-    printf("Option '%s' selected.\n", args.option);
+    // --------------------------------------------- REQUEST ------------------------------------------------------>
 
     if (strcmp(args.option, "users") == 0) {
         get_users(&args, sock);
@@ -113,7 +144,7 @@ int main(int argc, char* argv[]) {
     else if (strcmp(args.option, "change-password") == 0) {
        change_password(&args, sock);
     }
-    else if (strcmp(args.option, "change-rol") == 0) {
+    else if (strcmp(args.option, "change-role") == 0) {
         change_role(&args, sock);
     }
     else if (strcmp(args.option, "metrics") == 0) {

@@ -3,6 +3,7 @@
 #include "../shared/include/list.h"
 
 static List usersList = NULL;
+static int totalAdmins = 1;
 
 static int user_cmp(void * a, void * b) {
     User aa = *(User *)a;
@@ -61,6 +62,9 @@ UserStatus user_create(const uint8_t *username, const uint8_t *password, UserPri
         strncpy((char*)user.password, (char*)password, USERS_MAX_PASSWORD_LENGTH - 1);
         user.password[USERS_MAX_PASSWORD_LENGTH - 1] = '\0';
         user.privilege_level = pl;
+        if (pl == USER_PRIVILEGE_ADMIN) {
+            totalAdmins++;
+        }
         list_add(usersList, &user);
         return USER_OK;
     }
@@ -71,7 +75,7 @@ UserStatus user_remove(const uint8_t *username) {
     User *user = user_get_if_exists(username);
 
     if(user != NULL) {
-        list_remove(usersList, &user);
+        list_remove(usersList, user);
         return USER_OK;
     }
     return USER_BADUSERNAME;
@@ -107,6 +111,10 @@ UserStatus user_authenticate(const uint8_t *username, const uint8_t *password) {
     return USER_WRONGPASSWORD;
   }
   return USER_OK;
+}
+
+int user_total_admins() {
+    return totalAdmins;
 }
 
 

@@ -43,6 +43,10 @@
 #define SOCKS5_VERSION 0x05
 #endif
 
+#ifndef PAM_VERSION_1
+#define PAM_VERSION_1 0x01
+#endif
+
 #ifndef RSV
 #define RSV 0x00
 #endif

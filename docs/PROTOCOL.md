@@ -19,7 +19,7 @@ author:
         uri: https://itba.edu.ar
       -
         ins: M. Wehncke
-        name: Maximo Wehncke
+        name: Máximo Wehncke
         org: Protocolos de Comunicación, ITBA
         street:
           - San Martín 202
@@ -93,12 +93,11 @@ La conexión entre el cliente y el servidor se realiza a través de TCP utilizan
 El cliente de este protocolo deberá comenzar la comunicación con un pedido con la siguiente estructura:
 
 ~~~~~~~~~~
-+-------+-------+------------+-------+------------+
-|  VER  | ULEN  |  USERNAME  | PLEN  |  PASSWORD  |
-+-------+-------+------------+-------+------------+
-|   1   |   1   |  1 to 255  |   1   |  1 to 255  |
-+-------+-------+------------+-------+------------+
-
++-------+-----------+-----------+------------+------------+
+|  VER  |   NUSER   |   NPASS   |  USERNAME  |  PASSWORD  |
++-------+-----------+-----------+------------+------------+
+|   1   |     1     |     1     |    NUSER   |    NPASS   |
++-------+-----------+-----------+------------+------------+
 ~~~~~~~~~~
 {: #clientreq title="Pedido de autenticación de un cliente" alt="Pedido de autenticación de un cliente" }
 
@@ -116,11 +115,9 @@ Donde el servidor responderá al pedido con un mensaje de la siguiente estructur
 {: #clientreq title="Respuesta del servidor a pedido de autenticación" alt="Respuesta del servidor a pedido de autenticación" }
 
 Siendo VER la versión del protocolo, y STATUS un byte que indica el estado de la autenticación:
+
 - 0x00: Autenticación exitosa
 - 0x01: Autenticación fallida
-# - 0x02: Error de protocolo        (devuelve 0x00 si es succses 0x01 si es failure, no dice nada mas, yo sacaria estos)
-# - 0x03: Error interno del servidor
-# - 0x04: Demasiados intentos fallidos de autenticacion
 
 Los estados 0x5 a 0x0F se reservan para futuras definiciones.
 
@@ -145,16 +142,7 @@ Un cliente autenticado podrá enviar pedidos de información o configuración al
 ~~~~~~~~~~
 {: #clientreq title="Pedido de un cliente" alt="Pedido de un cliente" }
 
-~~~~~~~~~~
 
-+-------+-----------+-------------+------------+
-|  VER  |   STATUS  |    NBODY    |    BODY    |
-+-------+-----------+-------------+------------+
-|   1   |     1     |      2      |    NBODY   |
-+-------+-----------+-------------+------------+
-
-~~~~~~~~~~
-{: #clientreq title="Respuesta del servidor a un pedido" alt="Respuesta del servidor a un pedido" }
 
 #### VER
 
@@ -171,14 +159,15 @@ El campo RESERVED es un byte reservado para uso futuro y debe ser seteado en 0x0
 #### METHOD
 
 El campo METHOD indica el tipo de pedido que se quiere realizar. Los métodos soportados son:
-- 0x00: RESERVADO
-- 0x01: Obtener cantidad de usuarios conectados actualmente
-- 0x02: Obtener lista de usuarios conectados actualmente
-- 0x03: Obtener la cantidad de conexiones históricas
-- 0x04: Obtener bytes transferidos históricamente
-- 0x05-0xF0: RESERVADO
-- 0xF3: Reiniciar la cantidad de conexiones históricas
-- 0xF4: Reiniciar la cantidad de bytes transferidos históricamente
+- **0x00: RESERVADO**
+- **0x01: Obtener lista de usuarios conectados actualmente**
+- **0x02: Añadir usuario**
+- **0x03: Remover usuario**
+- **0x04: Cambiar contraseña**
+- **0x05: Cambiar rol**
+- **0x06: Métricas**
+
+- **0x07-0xF0: RESERVADO**
 
 Los valores de METHOD 0x10 - 0x20 se reservan a definición de cada implementación del protocolo.
 
@@ -191,6 +180,107 @@ El campo NBODY es un entero de 2 bytes que indica la longitud del campo BODY en 
 El campo BODY contiene la información adicional necesaria para completar el pedido, dependiendo del método seleccionado. Si el método no requiere información adicional, este campo deberá estar vacío y NBODY será 0x0000.
 
 Si BODY contiene más bytes que los indicados en NBODY (o más de 65.535), los bytes adicionales serán ignorados. Si BODY contiene menos bytes que los indicados en NBODY, el servidor deberá responder con un error y cerrar la conexión.
+
+El contenido de BODY debera ser, para cada método:
+
+- **0x01: Obtener lista de usuarios conectados actualmente**:
+
+Vacío.
+
+
+- **0x02: Añadir usuario**
+
+~~~~~~~~~~
+
++-------+------------+-------+------------+-------+
+| ULEN  |  USERNAME  | PLEN  |  PASSWORD  |  ROL  |
++-------+------------+-------+------------+-------+
+|   1   |    ULEN    |   1   |    PLEN    |   1   |
++-------+------------+-------+------------+-------+
+
+~~~~~~~~~~
+{: #clientreq title="Formato de BODY para el pedido del método 0x02" alt="Respuesta del servidor a un pedido" }
+
+- **0x03: Remover usuario**
+
+~~~~~~~~~~
++-------+------------+
+| ULEN  |  USERNAME  | 
++-------+------------+
+|   1   |    ULEN    | 
++-------+------------+
+~~~~~~~~~~
+{: #clientreq title="Formato de BODY para el pedido del método 0x03" alt="Respuesta del servidor a un pedido" }
+
+- **0x04: Cambiar contraseña**
+
+~~~~~~~~~~
+
++-------+------------+-----------+--------------+
+| ULEN  |  USERNAME  | NEW_PLEN  | NEW_PASSWORD |
++-------+------------+-----------+--------------+
+|   1   |    ULEN    |     1     |   NEW_PLEN   |
++-------+------------+-----------+--------------+
+
+~~~~~~~~~~
+{: #clientreq title="Formato de BODY para el pedido del método 0x04" alt="Respuesta del servidor a un pedido" }
+- **0x05: Cambiar rol**
+
+~~~~~~~~~~
+
++-------+------------+-----------+
+| ULEN  |  USERNAME  | NEW_ROL   |
++-------+------------+-----------+
+|   1   |    ULEN    |     1     |
++-------+------------+-----------+
+
+~~~~~~~~~~
+{: #clientreq title="Formato de BODY para el pedido del método 0x05" alt="Respuesta del servidor a un pedido" }
+- **0x06: Métricas**
+
+Vacío.
+
+### Respuesta del servidor
+
+El servidor responde al pedido con un mensaje de la siguiente estructura
+
+
+~~~~~~~~~~
+
+
++-------+-----------+-------------+------------+
+|  VER  |   STATUS  |    NBODY    |    BODY    |
++-------+-----------+-------------+------------+
+|   1   |     1     |      2      |    NBODY   |
++-------+-----------+-------------+------------+
+
+
+~~~~~~~~~~
+{: #clientreq title="Respuesta del servidor a un pedido" alt="Respuesta del servidor a un pedido" }
+
+#### VER
+
+El campo VER indica la versión del protocolo. Actualmente, solo se soporta la versión 0x01.
+
+#### STATUS
+
+El campo STATUS indica el estado de la respuesta del servidor al pedido realizado. Los estados posibles son:
+- 0x00: Pedido exitoso
+- 0x01: Pedido fallido
+- 0x02: No autorizado
+- 0x03: Usuario ya existente
+- 0x04: Usuario contraseña incorrecta
+- 0x05: Usuario credenciales muy largas
+- 0x06: Usuario incorrecto
+
+
+#### NBODY
+
+El campo NBODY es un entero de 2 bytes que indica la longitud del campo BODY en bytes.
+
+#### BODY
+El campo BODY contiene la información que se desea enviarle a el usuario. 
+
 
 # Figures
 
@@ -214,3 +304,4 @@ Seriously?
 # Lorem ipsum
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur nibh mi, mollis varius imperdiet id, venenatis ut nisi. Phasellus mauris urna, ultrices at massa id, faucibus malesuada nisi.
+

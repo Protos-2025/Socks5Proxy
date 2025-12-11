@@ -17,7 +17,7 @@ static int is_number(const char* s) {
 
 void print_help(const char* prog) {
     fprintf(stderr,
-        "Usage: %s [HOST] [PORT] [OPTION] [ARGS...]\n"
+        "Usage: %s [HOST] [PORT] [OPTION] [ARGS...] -u [USR:PASS]\n"
         "\n"
         "If PORT is not specified, default 4242 is used.\n"
         "\n"
@@ -44,7 +44,44 @@ static int need_args(const char* opt) {
     return -1; // unknown
 }
 
+static int parse_password(struct ClientArgs* out, char* usr_pass){
+     static char buffer[256];
+    strncpy(buffer, usr_pass, sizeof(buffer));
+    buffer[sizeof(buffer)-1] = '\0';
+
+    char* token = strtok(buffer, ":");
+    if (!token) return -1;
+    out->user = token;
+
+    token = strtok(NULL, ":");
+    if (!token) return -1;
+    out->password = token;
+
+    return 0;
+}
+
 int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
+
+    out->usr_count = 0;
+
+    for (int k = 0; k < argc; k++) {
+   
+        if (strcmp(argv[k], "-u") == 0) {
+            if (k + 1 >= argc) {
+                fprintf(stderr, "ERROR: -u necesita un usuario.\n");
+                return -1;
+            }
+            if (out->usr_count >= 32) {
+                fprintf(stderr, "ERROR: demasiados -u.\n");
+                return -1;
+            }
+            parse_password(out, argv[k+1]);
+
+            argv[k]   = NULL;
+            argv[k+1] = NULL;
+            break;
+        }
+    }
 
     if (argc == 1) {
         fprintf(stderr, "No arguments provided.\n\n");
@@ -57,18 +94,29 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
         return 1;
     }
 
-    if (argc < 3) {
-        fprintf(stderr, "ERROR: HOST and OPTION must be specified.\n\n");
+    if (argc < 5) {
+        fprintf(stderr, "ERROR: HOST, OPTION and AUTH must be specified.\n\n");
         print_help(argv[0]);
         return -1;
     }
 
     int i = 1;
 
-    // host
+    while (i < argc && argv[i] == NULL) {
+        i++;
+    }
+
+    if (i >= argc) {
+        fprintf(stderr, "ERROR: HOST not found.\n\n");
+        print_help(argv[0]);
+        return -1;
+    }
     out->host = argv[i++];
 
-    // port (optional)
+    while (i < argc && argv[i] == NULL) {
+        i++;
+    }
+
     if (i < argc && is_number(argv[i])) {
         long p = strtol(argv[i], NULL, 10);
         if (p < 1 || p > 65535) {
@@ -79,6 +127,11 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
         i++;
     } else {
         out->port = 4242;
+    }
+
+    // Skip NULL entries
+    while (i < argc && argv[i] == NULL) {
+        i++;
     }
 
     if (i >= argc) {
@@ -96,18 +149,32 @@ int parse_client_args(int argc, char* argv[], struct ClientArgs* out) {
         return -1;
     }
 
-    if (argc - i < nArgs) {
+    int remaining = 0;
+    for (int j = i; j < argc; j++) {
+        if (argv[j] != NULL) remaining++;
+    }
+
+    if (remaining < nArgs) {
         fprintf(stderr,
             "ERROR: Option '%s' needs %d argument(s), but only %d provided.\n\n",
-            out->option, nArgs, argc - i);
+            out->option, nArgs, remaining);
         print_help(argv[0]);
         return -1;
     }
 
-    // store extra arguments
-    out->arg1 = (nArgs >= 1 ? argv[i] : NULL);
-    out->arg2 = (nArgs >= 2 ? argv[i+1] : NULL);
-    out->arg3 = (nArgs >= 3 ? argv[i+2] : NULL);
+    out->arg1 = NULL;
+    out->arg2 = NULL;
+    out->arg3 = NULL;
+
+    int argCount = 0;
+    for (int j = i; j < argc && argCount < nArgs; j++) {
+        if (argv[j] != NULL) {
+            if (argCount == 0) out->arg1 = argv[j];
+            else if (argCount == 1) out->arg2 = argv[j];
+            else if (argCount == 2) out->arg3 = argv[j];
+            argCount++;
+        }
+    }
 
     return 0;
 }

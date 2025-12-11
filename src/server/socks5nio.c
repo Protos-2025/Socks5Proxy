@@ -79,7 +79,7 @@ void socksv5_passive_accept(struct selector_key * key) {
     }
 
     char clientIp[INET6_ADDRSTRLEN] = {0};
-    uint16_t port;
+    uint16_t port = 0;
     if (clientAddr.ss_family == AF_INET) {
         struct sockaddr_in * s = (struct sockaddr_in *) &clientAddr;
         inet_ntop(AF_INET, &s->sin_addr, clientIp, INET6_ADDRSTRLEN);

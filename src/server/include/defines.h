@@ -59,4 +59,12 @@
 #define IPv6_ADDR 0x04
 #endif
 
+#ifndef IPv4_ADDR_LEN
+#define IPv4_ADDR_LEN 4
+#endif
+
+#ifndef IPv6_ADDR_LEN
+#define IPv6_ADDR_LEN 16
+#endif
+
 #endif

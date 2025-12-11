@@ -15,8 +15,6 @@
 #define CONNECT_CMD 0x01
 // #define BIND_CMD 0x02
 // #define UDP_ASSOCIATE_CDM 0x03
-#define IPv4_ADDR_LEN 4
-#define IPv6_ADDR_LEN 16
 
 #define IS_VALID_ATYP(c) ((c) == IPv4_ADDR || (c) == FQDN || (c) == IPv6_ADDR)
 #define ADDR_BYTES_BY_IP_VERSION(v) ((v) == IPv4_ADDR ? IPv4_ADDR_LEN : IPv6_ADDR_LEN)

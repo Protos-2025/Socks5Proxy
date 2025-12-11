@@ -19,6 +19,7 @@
 
 struct reply_st {
     uint8_t rep;
+    bool found_bnd_info;
 };
 
 void reply_arrival(const unsigned state, struct selector_key * key);

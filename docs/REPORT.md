@@ -39,19 +39,27 @@ Algunas dificultades encontradas durante el desarrollo del proyecto incluyen:
 
 ## 4. Limitaciones de la aplicación
 
+La aplicación se limita a soportar conexiones salientes a servicios TCP.
+
+Los usuarios y contraseñas pueden contener hasta 255 caracteres.
+
 ## 5. Posibles extensiones
 
-Existen diversas líneas de trabajo que permitirían ampliar y mejorar el alcance del proyecto. En primer lugar, podría incorporarse soporte para los comandos BIND y UDP ASSOCIATE del protocolo SOCKS5, lo cual habilitaría un conjunto más completo de funcionalidades y haría la implementación compatible con un mayor número de casos de uso.
+Existen diversas líneas de trabajo que permitirían ampliar y mejorar el alcance del proyecto.
+
+En primer lugar, podría incorporarse soporte para los comandos BIND y UDP ASSOCIATE del protocolo SOCKSv5, lo cual habilitaría un conjunto más completo de funcionalidades y haría la implementación compatible con un mayor número de casos de uso.
+
+En segundo lugar, se podría implementar un timeout para el envío de requests por parte del cliente de SOCKSv5.
 
 Otra posible extensión consiste en la incorporación de multithreading, permitiendo manejar múltiples solicitudes de manera concurrente y mejorando significativamente el rendimiento del sistema.
 
 Finalmente, una mejora en la interfaz del cliente permitiría ofrecer una experiencia de uso más clara y eficiente, facilitando la interacción con las distintas funcionalidades del servicio.
 
-## 6. Conclusiones.
+## 6. Conclusiones
 
 Este proyecto representó un gran desafío para el equipo, ya que requirió un profundo entendimiento de los distintos protocolos de comunicación. El trabajo resultó complejo pero satisfactorio, dado que plantea casos de uso reales.
 
-La implementación del SOCKS5, del protocolo propio y del cliente brindó al equipo una perspectiva amplia acerca de lo que implica trabajar con protocolos de comunicación. Además de la implementación en sí, se adquirieron conocimientos sobre el diseño y la lectura de protocolos, dado que un buen diseño y una documentación adecuada hacen que el desarrollo sea mucho más eficiente.
+La implementación del SOCKSv5, del protocolo propio y del cliente brindó al equipo una perspectiva amplia acerca de lo que implica trabajar con protocolos de comunicación. Además de la implementación en sí, se adquirieron conocimientos sobre el diseño y la lectura de protocolos, dado que un buen diseño y una documentación adecuada hacen que el desarrollo sea mucho más eficiente.
 
 ## 7. Ejemplos de prueba
 
@@ -88,7 +96,7 @@ Algunas de las variables disponibles para su modificación incluyen:
 | Variable             | Descripción                                                                                                                                     | Valor por Defecto |
 |----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|-------------------|
 | `DEBUG`              | Habilita flags de compilación para debug (-g, -fsanitize=address, etc).                                                                         | `true`            |
-| `TRACE`              | Habilita el monitoreo con `bpftrace` para syscalls bloqueantes al ejecutar server.sh (el entrypoint del servicio `server` en docker).           | `false`           |
+| `TRACE`              | Habilita el monitoreo con `bpftrace` para syscalls bloqueantes al ejecutar server.sh (el entrypoint del servicio `server` en Docker).           | `false`           |
 | `BUFFER_SIZE`        | Tamaño del buffer usado para leer/escribir datos entre sockets.                                                                                 | `1024`            |
 | `MAX_LOG_QUEUE_SIZE` | Cantidad máxima de mensajes de log que pueden estar en cola antes de descartar logs.                                                            | `100`             |
 | `MAX_LOG_SIZE`       | Tamaño máximo (en bytes) de un mensaje de log individual. Los mensajes más largos se van a truncar con puntos suspensivos.                      | `1024`            |
@@ -100,9 +108,7 @@ Además, la variable `MOCK_ETC_HOST` puede ser definida para establecer un archi
 
 ## 10. Ejemplos de configuración y monitoreo
 
-### Ejemplos de monitoreo
-
-El protocolo PAM perminte monitorear el servidor de socks5 ofreciendo métricas y estadísticas del funcionamiento de este. También ofrece opciones para poder gestionar usuarios que pueden obtener esta información. 
+El protocolo PAM perminte monitorear el servidor de SOCKSv5 ofreciendo métricas y estadísticas del funcionamiento de este. También ofrece opciones para poder gestionar usuarios. 
 
 Para poder conectarse a PAM se ofrece un cliente que puede conectarse tanto con IPV4 como IPV6. La estructura de las request es la siguiente:
 ```
@@ -204,7 +210,7 @@ Los resultados de estas pruebas se pueden encontrar en la sección de "Actions" 
 
 Para asegurar que no se bloqueara inecesariamente en syscalls de lectura y escritura, se utilizó `bpftrace` para monitorear las syscalls bloqueantes durante la ejecución del servidor proxy.
 
-El monitoreo con `bpftrace` se puede habilitar facilmente al correr el servidor utilizando la variable de entorno `TRACE=true`. Esto hace que el entrypoint del contenedor Docker para el servidor ejecute el script de `bpftrace` junto con el servidor proxy, registrando cualquier syscall bloqueante que ocurra durante su ejecución. Al correr en docker, se estandarizó el entorno y facilitó la ejecución del monitoreo sin necesidad de instalar `bpftrace` directamente en el sistema host.
+El monitoreo con `bpftrace` se puede habilitar facilmente al correr el servidor utilizando la variable de entorno `TRACE=true`. Esto hace que el entrypoint del contenedor Docker para el servidor ejecute el script de `bpftrace` junto con el servidor proxy, registrando cualquier syscall bloqueante que ocurra durante su ejecución. Al correr en Docker, se estandarizó el entorno y facilitó la ejecución del monitoreo sin necesidad de instalar `bpftrace` directamente en el sistema host.
 
 ![img/bpftrace-monitoring.jpeg](./img/bpftrace-monitoring.jpeg)
 
@@ -214,8 +220,8 @@ Esta herramienta ayudó a identificar y solucionar problemas relacionados con bl
 
 Si bien el proyecto puede compilarse y correrse directamente en un entorno local con `make`, se proveen contenedores Docker para facilitar la compilación, ejecución y pruebas del proxy SOCKSv5 en un entorno estandarizado.
 
-El uso de docker permitió contar con entornos estandarizados para la compilación y pruebas, y facilitó el uso de herramientas adicionales como `bpftrace` para monitoreo y `Apache JMeter` para pruebas de carga.
+El uso de Docker permitió contar con entornos estandarizados para la compilación y pruebas, y facilitó el uso de herramientas adicionales como `bpftrace` para monitoreo y `Apache JMeter` para pruebas de carga.
 
-A su vez, el sistema de contenedores y red de docker permitió facilmente asignar direcciones IPv4 e IPv6 fijas a los contenedores, controlar el DNS, y modificar el archivo /etc/host para simular la resolución DNS, facilitando la ejecución de pruebas de integración y performance entre el cliente, el servidor proxy y servidores de prueba.
+A su vez, el sistema de contenedores y red de Docker permitió facilmente asignar direcciones IPv4 e IPv6 fijas a los contenedores, controlar el DNS, y modificar el archivo /etc/host para simular la resolución DNS, facilitando la ejecución de pruebas de integración y performance entre el cliente, el servidor proxy y servidores de prueba.
 
 Durante las pruebas de performance, se utilizó un archivo `/etc/hosts` personalizado para controlar la resolución DNS de los servidores de prueba. Este archivo se monta en el contenedor del servidor proxy utilizando la variable de entorno `MOCK_ETC_HOST`, permitiendo así simular diferentes escenarios de resolución DNS sin afectar el sistema host. En particular, el dominio `fakegoogle.com` se mapea a las direcciones IPv4 e IPv6 del contenedor `nginx-test-server`, permitiendo así evaluar la capacidad del proxy para FQDNs y resolución DNS sin depender de las condiciones externas de la red.

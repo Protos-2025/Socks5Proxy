@@ -31,24 +31,53 @@ int main(int argc, char* argv[]) {
 
     // ------------------------------------------- CONNECTION ----------------------------------------------------->
 
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-        perror("socket");
-        return -1;
+    int sock;
+    int connect_result;
+
+
+    int ip_ver = detect_ip_version(args.host);
+    if (ip_ver == 4) {
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_port = htons(args.port);
+        addr.sin_family = AF_INET;
+        if (inet_pton(AF_INET, args.host, &addr.sin_addr) <= 0) {
+            printf("Error: Invalid host: %s\n", args.host);
+            return -1;
+        }
+        sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock < 0) {
+            perror("socket");
+            return -1;
+        }
+        connect_result = connect(sock, (struct sockaddr*)&addr, sizeof(addr));
+
+    }else if(ip_ver == 6){
+        printf("Detected IPv6 address.\n");
+        struct sockaddr_in6 addr6;
+        memset(&addr6, 0, sizeof(addr6));
+        addr6.sin6_family = AF_INET6;
+        addr6.sin6_port = htons(args.port);
+
+        if (inet_pton(AF_INET6, args.host, &addr6.sin6_addr) <= 0) {
+            printf("Error: Invalid host: %s\n", args.host);
+            return -1;
+        }
+        sock = socket(AF_INET6, SOCK_STREAM, 0);
+        if (sock < 0) {
+            perror("socket");
+            return -1;
+        }
+        connect_result = connect(sock, (struct sockaddr*)&addr6, sizeof(addr6));
     }
 
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(args.port);
-
-    if (inet_pton(AF_INET, args.host, &addr.sin_addr) <= 0) {
-        fprintf(stderr, "Error: Invalid host: %s\n", args.host);
+    else {
+        printf("Error: Invalid host: %s\n", args.host);
         close(sock);
         return -1;
     }
 	printf("Connecting to host %s and port %d...\n", args.host, args.port);
-    if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+    if (connect_result < 0) {
         perror("connect");
         close(sock);
         return -1;

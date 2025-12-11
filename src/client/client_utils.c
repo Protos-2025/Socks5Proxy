@@ -5,6 +5,8 @@
 #include <string.h>
 #include <arpa/inet.h> // htons()
 #include <unistd.h>
+#include <arpa/inet.h>
+
 
 int send_request(uint8_t ver, uint16_t method, uint16_t n_body, char *body, int sock) {
 
@@ -275,5 +277,22 @@ int get_metrics(struct ClientArgs* args, int sock){
     print_response("GET_METRICS", resp);
     
     free_response(resp);
+    return 0;
+}
+
+int detect_ip_version(const char *host) {
+    struct in_addr ipv4;
+    struct in6_addr ipv6;
+
+    // Probar IPv4
+    if (inet_pton(AF_INET, host, &ipv4) == 1) {
+        return 4;
+    }
+
+    // Probar IPv6
+    if (inet_pton(AF_INET6, host, &ipv6) == 1) {
+        return 6;
+    }
+
     return 0;
 }

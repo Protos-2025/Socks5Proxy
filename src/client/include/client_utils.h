@@ -22,6 +22,7 @@ typedef struct {
 int send_request(uint8_t ver, uint16_t method, uint16_t n_body, char *body, int sock);
 ServerResponse* receive_response(int sock);
 void free_response(ServerResponse *resp);
+int detect_ip_version(const char *host);
 
 int get_users(struct ClientArgs* args, int sock);
 int add_user(struct ClientArgs* args, int sock);

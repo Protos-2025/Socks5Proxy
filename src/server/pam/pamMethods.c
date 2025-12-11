@@ -53,6 +53,7 @@ void handle_pam_request_method(struct pam * connection, Buffer * buffer) {
 void handle_get_connected_users_list(struct pam * connection) {
     LOG_DEBUG("Handling get connected users list request");
     uint8_t buffer[PAM_BUFFER_SIZE];
+    memset(buffer, 0, PAM_BUFFER_SIZE);
     char * initalMessage = "+OK listing users\n";
 size_t len = strlen(initalMessage);
     memcpy(buffer, initalMessage, len);

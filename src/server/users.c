@@ -71,7 +71,7 @@ UserStatus user_remove(const uint8_t *username) {
     User *user = user_get_if_exists(username);
 
     if(user != NULL) {
-        list_remove(usersList, &user);
+        list_remove(usersList, user);
         return USER_OK;
     }
     return USER_BADUSERNAME;

@@ -4,20 +4,18 @@
 #include <string.h>
 #include <sys/socket.h>
 #include "logger.h"
+#include "../include/users.h"
 
 #define AUTH_VERSION 0x01
 #define AUTH_SUCCESS 0x00
 #define AUTH_FAILURE 0x01
-
-// Todo: replace with valid mechanism (harcodaeads por ahora)
-#define VALID_USERNAME "admin"
-#define VALID_PASSWORD "password"
 
 void auth_arrival(const unsigned state, struct selector_key * key) {
     struct socks5 * connection = ATTACHMENT(key);
     connection->client.auth.state = AUTH_VER;
     connection->client.auth.ulen = 0;
     connection->client.auth.plen = 0;
+    connection->client.auth.authenticated = false;
 }
 
 unsigned auth_read(struct selector_key * key) {
@@ -119,19 +117,23 @@ unsigned auth_read(struct selector_key * key) {
         LOG_TRACE("Password received (length: %d)", connection->client.auth.plen);
 
         // Check credentials
-        bool authSuccess = false;
-        if (strcmp(connection->client.auth.username, VALID_USERNAME) == 0 &&
-            strcmp(connection->client.auth.password, VALID_PASSWORD) == 0) {
-            authSuccess = true;
-            LOG_DEBUG("Authentication successful for user: %s", connection->client.auth.username);
-        } else {
-            LOG_WARN("Authentication failed for user: %s", connection->client.auth.username);
+        switch (user_authenticate((const uint8_t *)connection->client.auth.username, (const uint8_t *)connection->client.auth.password)) {
+            case USER_BADUSERNAME:
+            case USER_WRONGPASSWORD:
+                LOG_WARN("Authentication failed for user: %s", connection->client.auth.username);
+                break;
+            
+            case USER_OK:
+            default: {
+                connection->client.auth.authenticated = true;
+                LOG_DEBUG("Authentication successful for user: %s", connection->client.auth.username);
+                break;
+            }
         }
 
         buffer_write(&connection->origin_buffer, AUTH_VERSION);
-        buffer_write(&connection->origin_buffer, authSuccess ? AUTH_SUCCESS : AUTH_FAILURE);
+        buffer_write(&connection->origin_buffer, connection->client.auth.authenticated ? AUTH_SUCCESS : AUTH_FAILURE);
 
-        connection->client.auth.authenticated = authSuccess;
         selector_set_interest_key(key, OP_WRITE);
     }
 

@@ -71,11 +71,21 @@ int main(const int argc, const char ** argv) {
 
     struct socks5args args;
     parse_args(argc, (char **) argv, &args);
+
     
+    // <----------------------------------- create users ----------------------------------->
+    for (int i = 0; i < args.nusers; i++) {
+        if (user_create((const uint8_t *)args.users[i].name, (const uint8_t *)args.users[i].pass, USER_PRIVILEGE_DEFAULT) != USER_OK) {
+            errorMsg = "creating users";
+		    goto finally;
+        }
+    }
+    
+    
+    // <---------------------------- create proxy server socket ---------------------------->
     struct sockaddr_storage addr;
 	socklen_t addrlen = 0;
 
-    // <---------------------------- create proxy server socket ---------------------------->
 	if ((addrlen = interpret_socket_args(&addr, args.socks_addr, args.socks_port)) < 0) {
         errorMsg = "interpreting socket arguments";
         goto finally;
@@ -196,6 +206,7 @@ finally:
         ret = 1;
     }
 
+    users_free();
     free_logger();
 
     if (selector != NULL) {

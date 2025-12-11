@@ -1,12 +1,6 @@
 #ifndef CONSTANTS_H
 
-#define LOGGER_TRACE 0
-#define LOGGER_DEBUG 1
-#define LOGGER_INFO 2
-#define LOGGER_WARN 3
-#define LOGGER_ERROR 4
-#define LOGGER_FATAL 5
-#define LOGGER_ACCESS_LOG 6
+// <=================== These can be overriden with an env var =====================>
 
 #ifndef MAX_LOG_SIZE
 #define MAX_LOG_SIZE 1024
@@ -32,44 +26,30 @@
 #define SELECTOR_CAPACITY 1024
 #endif
 
-#ifndef SUCCESS
+#ifndef LOG_FILE_NAME
+#define LOG_FILE_NAME NULL
+#endif
+
+
+// <=================== Cannot be overriden =====================>
+#define LOGGER_TRACE 0
+#define LOGGER_DEBUG 1
+#define LOGGER_INFO 2
+#define LOGGER_WARN 3
+#define LOGGER_ERROR 4
+#define LOGGER_FATAL 5
+#define LOGGER_ACCESS_LOG 6
+
+
 #define SUCCESS 0
-#endif
-
-#ifndef FAILURE
 #define FAILURE 1
-#endif
-
-#ifndef SOCKS5_VERSION
 #define SOCKS5_VERSION 0x05
-#endif
-
-#ifndef PAM_VERSION_1
 #define PAM_VERSION_1 0x01
-#endif
-
-#ifndef RSV
 #define RSV 0x00
-#endif
-
-#ifndef IPv4_ADDR
 #define IPv4_ADDR 0x01
-#endif
-
-#ifndef FQDN
 #define FQDN 0x03
-#endif
-
-#ifndef IPv6_ADDR
 #define IPv6_ADDR 0x04
-#endif
-
-#ifndef IPv4_ADDR_LEN
 #define IPv4_ADDR_LEN 4
-#endif
-
-#ifndef IPv6_ADDR_LEN
 #define IPv6_ADDR_LEN 16
-#endif
 
 #endif

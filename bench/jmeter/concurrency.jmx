@@ -14,54 +14,20 @@
         <intProp name="ThreadGroup.num_threads">550</intProp>
         <intProp name="ThreadGroup.ramp_time">1</intProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">false</boolProp>
-        <stringProp name="ThreadGroup.on_sample_error">stopthread</stringProp>
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController">
-          <stringProp name="LoopController.loops">1</stringProp>
+          <stringProp name="LoopController.loops">5</stringProp>
           <boolProp name="LoopController.continue_forever">false</boolProp>
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <PreciseThroughputTimer guiclass="TestBeanGUI" testclass="PreciseThroughputTimer" testname="Precise Throughput Timer" enabled="false">
-          <doubleProp>
-            <name>allowedThroughputSurplus</name>
-            <value>1.0</value>
-            <savedValue>0.0</savedValue>
-          </doubleProp>
-          <intProp name="batchSize">0</intProp>
-          <intProp name="batchThreadDelay">0</intProp>
-          <longProp name="duration">10</longProp>
-          <intProp name="exactLimit">10000</intProp>
-          <longProp name="randomSeed">0</longProp>
-          <doubleProp>
-            <name>throughput</name>
-            <value>550.0</value>
-            <savedValue>0.0</savedValue>
-          </doubleProp>
-          <intProp name="throughputPeriod">10</intProp>
-        </PreciseThroughputTimer>
-        <hashTree/>
-        <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="false">
-          <stringProp name="cacheKey">true</stringProp>
-          <stringProp name="filename"></stringProp>
-          <stringProp name="parameters"></stringProp>
-          <stringProp name="script">if (System.currentTimeMillis() - (vars.get(&apos;TESTSTART.MS&apos;) as long) &lt;= ctx.getThreadGroup().getPropertyAsLong(&apos;ThreadGroup.ramp_time&apos;) * 1000) {
-    prev.setIgnore()
-}</stringProp>
-          <stringProp name="scriptLanguage">groovy</stringProp>
-        </JSR223PostProcessor>
-        <hashTree/>
-        <SyncTimer guiclass="TestBeanGUI" testclass="SyncTimer" testname="Synchronizing Timer" enabled="true">
-          <intProp name="groupSize">550</intProp>
-          <longProp name="timeoutInMs">3000</longProp>
-        </SyncTimer>
-        <hashTree/>
-        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="GET /test_file_01.txt" enabled="true">
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="GET /test_file_01.txt">
           <stringProp name="cacheKey">true</stringProp>
           <stringProp name="filename"></stringProp>
           <stringProp name="parameters"></stringProp>
           <stringProp name="script">import java.nio.charset.StandardCharsets
 
-String proxyHost = &quot;10.0.0.9&quot;
+String proxyHost = &quot;127.0.0.1&quot;
 int proxyPort    = 1080
 
 String proxyUser = &quot;admin&quot;
@@ -185,210 +151,24 @@ try {
           <stringProp name="scriptLanguage">groovy</stringProp>
         </JSR223Sampler>
         <hashTree/>
+        <UniformRandomTimer guiclass="UniformRandomTimerGui" testclass="UniformRandomTimer" testname="Uniform Random Timer">
+          <stringProp name="ConstantTimer.delay">0</stringProp>
+          <stringProp name="RandomTimer.range">1000.0</stringProp>
+        </UniformRandomTimer>
+        <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Concurrent Users" enabled="false">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Concurrent Users">
         <boolProp name="ThreadGroup.delayedStart">true</boolProp>
         <intProp name="ThreadGroup.num_threads">550</intProp>
         <intProp name="ThreadGroup.ramp_time">1</intProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">false</boolProp>
-        <stringProp name="ThreadGroup.on_sample_error">stopthread</stringProp>
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController">
           <stringProp name="LoopController.loops">5</stringProp>
           <boolProp name="LoopController.continue_forever">false</boolProp>
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <PreciseThroughputTimer guiclass="TestBeanGUI" testclass="PreciseThroughputTimer" testname="Precise Throughput Timer" enabled="false">
-          <doubleProp>
-            <name>allowedThroughputSurplus</name>
-            <value>1.0</value>
-            <savedValue>0.0</savedValue>
-          </doubleProp>
-          <intProp name="batchSize">0</intProp>
-          <intProp name="batchThreadDelay">0</intProp>
-          <longProp name="duration">10</longProp>
-          <intProp name="exactLimit">10000</intProp>
-          <longProp name="randomSeed">0</longProp>
-          <doubleProp>
-            <name>throughput</name>
-            <value>550.0</value>
-            <savedValue>0.0</savedValue>
-          </doubleProp>
-          <intProp name="throughputPeriod">10</intProp>
-        </PreciseThroughputTimer>
-        <hashTree/>
-        <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="false">
-          <stringProp name="cacheKey">true</stringProp>
-          <stringProp name="filename"></stringProp>
-          <stringProp name="parameters"></stringProp>
-          <stringProp name="script">if (System.currentTimeMillis() - (vars.get(&apos;TESTSTART.MS&apos;) as long) &lt;= ctx.getThreadGroup().getPropertyAsLong(&apos;ThreadGroup.ramp_time&apos;) * 1000) {
-    prev.setIgnore()
-}</stringProp>
-          <stringProp name="scriptLanguage">groovy</stringProp>
-        </JSR223PostProcessor>
-        <hashTree/>
-        <SyncTimer guiclass="TestBeanGUI" testclass="SyncTimer" testname="Synchronizing Timer" enabled="true">
-          <intProp name="groupSize">550</intProp>
-          <longProp name="timeoutInMs">3000</longProp>
-        </SyncTimer>
-        <hashTree/>
-        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="GET /test_file_01.txt [PIPELINED]" enabled="false">
-          <stringProp name="cacheKey">true</stringProp>
-          <stringProp name="filename"></stringProp>
-          <stringProp name="parameters"></stringProp>
-          <stringProp name="script">
-import java.nio.charset.StandardCharsets
-
-String proxyHost = &quot;10.0.0.9&quot;
-int proxyPort    = 1080
-
-String proxyUser = &quot;admin&quot;
-String proxyPass = &quot;admin&quot;
-
-String targetHost = &quot;10.0.0.111&quot;
-int targetPort    = 80
-
-Socket socket = null
-
-try {
-    socket = new Socket(proxyHost, proxyPort)
-    InputStream  in  = socket.getInputStream()
-    OutputStream out = socket.getOutputStream()
-
-    out.write([
-    0x05, 0x03, 0x00, 0x01, 0x02,
-    0x01, 0x05, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x08, 
-    0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64,
-    0x05, 0x01, 0x00, 0x01, 0x0a, 0x00, 0x00, 0x6f, 
-    0x00, 0x50,
-    0x47, 0x45, 0x54, 0x20, 0x2f, 0x74, 0x65, 0x73, 
-    0x74, 0x5f, 0x66, 0x69, 0x6c, 0x65, 0x5f, 0x30, 
-    0x31, 0x2e, 0x74, 0x78, 0x74, 0x20, 0x48, 0x54, 
-    0x54, 0x50, 0x2f, 0x31, 0x2e, 0x31, 0x0d, 0x0a, 
-    0x48, 0x6f, 0x73, 0x74, 0x3a, 0x20, 0x31, 0x30, 
-    0x2e, 0x30, 0x2e, 0x30, 0x2e, 0x31, 0x31, 0x31, 
-    0x0d, 0x0a, 0x55, 0x73, 0x65, 0x72, 0x2d, 0x41, 
-    0x67, 0x65, 0x6e, 0x74, 0x3a, 0x20, 0x63, 0x75, 
-    0x72, 0x6c, 0x2f, 0x38, 0x2e, 0x37, 0x2e, 0x31, 
-    0x0d, 0x0a, 0x41, 0x63, 0x63, 0x65, 0x70, 0x74, 
-    0x3a, 0x20, 0x2a, 0x2f, 0x2a, 0x0d, 0x0a, 0x0d, 
-    0x0a] as byte[])
-    out.flush()
-
-    byte[] handshake = in.readNBytes(2)
-    if(handshake[1] != 0x02) {
-        SampleResult.setSuccessful(false)
-        SampleResult.setResponseMessage(&quot;SOCKS5: proxy refused username/password auth&quot;)
-        return
-    }
-
-    byte[] authReply = in.readNBytes(2)
-    if(authReply[1] != 0x00) {
-        SampleResult.setSuccessful(false)
-        SampleResult.setResponseMessage(&quot;SOCKS5: authentication failed&quot;)
-        return
-    }
-
-    byte[] connectReply = in.readNBytes(10)
-    if(connectReply[1] != 0x00) {
-        SampleResult.setSuccessful(false)
-        SampleResult.setResponseMessage(&quot;SOCKS5: CONNECT failed, code=&quot; + connectReply[1])
-        return
-    }
-
-    // 5️⃣ Read server response
-    ByteArrayOutputStream body = new ByteArrayOutputStream()
-    byte[] buf = new byte[4096]
-    int n
-    while((n = in.read(buf)) != -1) {
-        body.write(buf, 0, n)
-    }
-
-    String response = new String(body.toByteArray(), StandardCharsets.UTF_8)
-    SampleResult.setResponseData(response, &quot;UTF-8&quot;)
-
-    // 6️⃣ ASSERT BODY CONTAINS EXPECTED TEXT
-    String expected = &quot;This is a text file of 31 bytes&quot;
-
-    if(!response.contains(expected)) {
-        SampleResult.setSuccessful(false)
-        SampleResult.setResponseMessage(
-             &quot;\&quot;Received: &quot; + response + &quot;. Assertion failed: expected body to contain: \&quot;&quot; + expected
-        )
-        return
-    }
-
-    // All good
-    SampleResult.setSuccessful(true)
-    SampleResult.setResponseCodeOK()
-    SampleResult.setResponseMessage(&quot;Assertion OK — connection closed cleanly&quot;)
-
-} catch(Exception e) {
-    // capture full stacktrace
-    StringWriter sw = new StringWriter()
-    e.printStackTrace(new PrintWriter(sw))
-    String fullError = sw.toString()
-
-    SampleResult.setSuccessful(false)
-    SampleResult.setResponseCode(&quot;500&quot;)
-    SampleResult.setResponseMessage(&quot;ERROR: &quot; + e.getMessage())
-    SampleResult.setResponseData(fullError, &quot;UTF-8&quot;)
-} finally {
-    if(socket != null) {
-        try { socket.close() } catch(Exception e) {}
-    }
-}
-</stringProp>
-          <stringProp name="scriptLanguage">groovy</stringProp>
-        </JSR223Sampler>
-        <hashTree/>
-      </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Concurrent Users" enabled="true">
-        <boolProp name="ThreadGroup.delayedStart">true</boolProp>
-        <intProp name="ThreadGroup.num_threads">550</intProp>
-        <intProp name="ThreadGroup.ramp_time">1</intProp>
-        <boolProp name="ThreadGroup.same_user_on_next_iteration">false</boolProp>
-        <stringProp name="ThreadGroup.on_sample_error">stopthread</stringProp>
-        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController">
-          <stringProp name="LoopController.loops">1</stringProp>
-          <boolProp name="LoopController.continue_forever">false</boolProp>
-        </elementProp>
-      </ThreadGroup>
-      <hashTree>
-        <PreciseThroughputTimer guiclass="TestBeanGUI" testclass="PreciseThroughputTimer" testname="Precise Throughput Timer" enabled="false">
-          <doubleProp>
-            <name>allowedThroughputSurplus</name>
-            <value>1.0</value>
-            <savedValue>0.0</savedValue>
-          </doubleProp>
-          <intProp name="batchSize">0</intProp>
-          <intProp name="batchThreadDelay">0</intProp>
-          <longProp name="duration">10</longProp>
-          <intProp name="exactLimit">10000</intProp>
-          <longProp name="randomSeed">0</longProp>
-          <doubleProp>
-            <name>throughput</name>
-            <value>550.0</value>
-            <savedValue>0.0</savedValue>
-          </doubleProp>
-          <intProp name="throughputPeriod">10</intProp>
-        </PreciseThroughputTimer>
-        <hashTree/>
-        <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="false">
-          <stringProp name="cacheKey">true</stringProp>
-          <stringProp name="filename"></stringProp>
-          <stringProp name="parameters"></stringProp>
-          <stringProp name="script">if (System.currentTimeMillis() - (vars.get(&apos;TESTSTART.MS&apos;) as long) &lt;= ctx.getThreadGroup().getPropertyAsLong(&apos;ThreadGroup.ramp_time&apos;) * 1000) {
-    prev.setIgnore()
-}</stringProp>
-          <stringProp name="scriptLanguage">groovy</stringProp>
-        </JSR223PostProcessor>
-        <hashTree/>
-        <SyncTimer guiclass="TestBeanGUI" testclass="SyncTimer" testname="Synchronizing Timer" enabled="true">
-          <intProp name="groupSize">550</intProp>
-          <longProp name="timeoutInMs">3000</longProp>
-        </SyncTimer>
-        <hashTree/>
         <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="GET /test_file_02.txt">
           <stringProp name="cacheKey">true</stringProp>
           <stringProp name="filename"></stringProp>
@@ -396,7 +176,7 @@ try {
           <stringProp name="script">
 import java.nio.charset.StandardCharsets
 
-String proxyHost = &quot;10.0.0.9&quot;
+String proxyHost = &quot;127.0.0.1&quot;
 int proxyPort    = 1080
 
 String proxyUser = &quot;admin&quot;
@@ -537,6 +317,11 @@ try {
           <stringProp name="scriptLanguage">groovy</stringProp>
         </JSR223Sampler>
         <hashTree/>
+        <UniformRandomTimer guiclass="UniformRandomTimerGui" testclass="UniformRandomTimer" testname="Uniform Random Timer">
+          <stringProp name="ConstantTimer.delay">0</stringProp>
+          <stringProp name="RandomTimer.range">1000.0</stringProp>
+        </UniformRandomTimer>
+        <hashTree/>
       </hashTree>
       <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Detailed Report">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
@@ -574,7 +359,7 @@ try {
         <stringProp name="filename">/root/bench/results/details.csv</stringProp>
       </ResultCollector>
       <hashTree/>
-      <kg.apc.jmeter.vizualizers.CompositeResultCollector guiclass="kg.apc.jmeter.vizualizers.CompositeGraphGui" testclass="kg.apc.jmeter.vizualizers.CompositeResultCollector" testname="jp@gc - Composite Graph" enabled="true">
+      <kg.apc.jmeter.vizualizers.CompositeResultCollector guiclass="kg.apc.jmeter.vizualizers.CompositeGraphGui" testclass="kg.apc.jmeter.vizualizers.CompositeResultCollector" testname="jp@gc - Composite Graph">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
         <objProp>
           <name>saveConfig</name>
@@ -629,7 +414,7 @@ try {
         </collectionProp>
       </kg.apc.jmeter.vizualizers.CompositeResultCollector>
       <hashTree/>
-      <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="true">
+      <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
         <objProp>
           <name>saveConfig</name>
@@ -666,7 +451,7 @@ try {
         <stringProp name="filename">/root/bench/results/summary.csv</stringProp>
       </ResultCollector>
       <hashTree/>
-      <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.ResponseTimesOverTimeGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="jp@gc - Response Times Over Time" enabled="true">
+      <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.ResponseTimesOverTimeGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="jp@gc - Response Times Over Time">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
         <objProp>
           <name>saveConfig</name>
@@ -711,7 +496,7 @@ try {
         <boolProp name="exclude_checkbox_state">false</boolProp>
       </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
       <hashTree/>
-      <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.ThreadsStateOverTimeGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="jp@gc - Active Threads Over Time" enabled="true">
+      <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.ThreadsStateOverTimeGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="jp@gc - Active Threads Over Time">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
         <objProp>
           <name>saveConfig</name>
@@ -756,7 +541,7 @@ try {
         <boolProp name="exclude_checkbox_state">false</boolProp>
       </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
       <hashTree/>
-      <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.TimesVsThreadsGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="jp@gc - Response Times vs Threads" enabled="true">
+      <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.TimesVsThreadsGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="jp@gc - Response Times vs Threads">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
         <objProp>
           <name>saveConfig</name>
@@ -801,7 +586,7 @@ try {
         <boolProp name="exclude_checkbox_state">false</boolProp>
       </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
       <hashTree/>
-      <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.BytesThroughputOverTimeGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="jp@gc - Bytes Throughput Over Time" enabled="true">
+      <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.BytesThroughputOverTimeGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="jp@gc - Bytes Throughput Over Time">
         <boolProp name="ResultCollector.error_logging">false</boolProp>
         <objProp>
           <name>saveConfig</name>

@@ -93,7 +93,7 @@ static int open_file_non_blocking(const char * filename) {
 void logger_init() {
     logQueue = create_queue(free_log, sizeof(char *), MAX_LOG_QUEUE_SIZE);
     buffer_init(&logBuffer, MAX_LOG_SIZE, NULL);
-    logFile = open_file_non_blocking(NULL);
+    logFile = open_file_non_blocking(LOG_FILE_NAME);
 }
 
 int logger_register_selector(FdSelector selector) {

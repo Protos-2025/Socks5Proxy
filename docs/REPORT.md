@@ -7,9 +7,16 @@
   - [2. Descripción](#2-descripción)
   - [3. Problemas encontrados durante el diseño y la implementación](#3-problemas-encontrados-durante-el-diseño-y-la-implementación)
   - [4. Limitaciones de la aplicación](#4-limitaciones-de-la-aplicación)
+    - [4.1 Pruebas de carga](#41-pruebas-de-carga)
   - [5. Posibles extensiones](#5-posibles-extensiones)
   - [6. Conclusiones](#6-conclusiones)
   - [7. Ejemplos de prueba](#7-ejemplos-de-prueba)
+    - [7.1 FQDN](#71-fqdn)
+    - [7.1.1 FQDN (Descarga de archivos)](#711-fqdn-descarga-de-archivos)
+    - [7.2 Pipelining](#72-pipelining)
+    - [7.3 IPv4](#73-ipv4)
+    - [7.4 IPv6](#74-ipv6)
+    - [7.5 System level](#75-system-level)
   - [8. Guía de instalación](#8-guía-de-instalación)
   - [9. Instrucciones para la configuración](#9-instrucciones-para-la-configuración)
     - [9.1 Variables](#91-variables)
@@ -42,6 +49,17 @@ Algunas dificultades encontradas durante el desarrollo del proyecto incluyen:
 La aplicación se limita a soportar conexiones salientes a servicios TCP.
 
 Los usuarios y contraseñas pueden contener hasta 255 caracteres.
+La aplicacion no es capaz de soportar mas de `SELECTOR_CAPACITY` conexiones en simulaneo (suma de conexiones desde y hacia el proxy) -- definido en [defines.h](../src/server/include/defines.h). Si se intenta establecer mas conexiones y estas no estan dentro del limite de `MAX_PENDING_CONNECTIONS`, estas seran rechazadas. La cantidad real de conexiones manejadas en simulataneo en un lapso acotado de tiempo suele ser menor debido a limitaciones de performance.
+
+### 4.1 Pruebas de carga
+
+La cantidad de conexiones simultaneas tambien se encuentra limitada por el tamaño de las solicitudes -- pues el tiempo en procesar y liberar recursos ocupados por una solicitud aumentara. Esto se pudo observar durante las pruebas de carga.
+
+Realizamos pruebas con archivos de 31 bytes y 100KB para modelar diferentes escenarios de uso. En ambos casos, se observó que el proxy podía manejar mas de 500 usuarios concurrentes sin problemas significativos. Sin embargo, si las respuestas transferidas eran demasiado grandes el tiempo de respuesta aumentaba considerablemente (lineal con respecto a los usuarios concurrentes).
+
+![Concurrent users](./img/concurrent-users.png)
+
+![Response time](./img/response-times.png)
 
 ## 5. Posibles extensiones
 
@@ -51,9 +69,9 @@ En primer lugar, podría incorporarse soporte para los comandos BIND y UDP ASSOC
 
 En segundo lugar, se podría implementar un timeout para el envío de requests por parte del cliente de SOCKSv5.
 
-Otra posible extensión consiste en la incorporación de multithreading, permitiendo manejar múltiples solicitudes de manera concurrente y mejorando significativamente el rendimiento del sistema.
+Otra posible extensión consiste en la incorporación de multithreading, permitiendo procesar múltiples solicitudes de manera concurrente y mejorando significativamente el rendimiento del sistema.
 
-Finalmente, una mejora en la interfaz del cliente permitiría ofrecer una experiencia de uso más clara y eficiente, facilitando la interacción con las distintas funcionalidades del servicio.
+Finalmente, una mejora en la interfaz del cliente y permitir mas opciones en flags sobre constantes de compilacion permitiría ofrecer una experiencia de uso más clara y eficiente, facilitando la interacción con las distintas funcionalidades del servicio.
 
 ## 6. Conclusiones
 
@@ -62,6 +80,53 @@ Este proyecto representó un gran desafío para el equipo, ya que requirió un p
 La implementación del SOCKSv5, del protocolo propio y del cliente brindó al equipo una perspectiva amplia acerca de lo que implica trabajar con protocolos de comunicación. Además de la implementación en sí, se adquirieron conocimientos sobre el diseño y la lectura de protocolos, dado que un buen diseño y una documentación adecuada hacen que el desarrollo sea mucho más eficiente.
 
 ## 7. Ejemplos de prueba
+
+### 7.1 FQDN
+
+Acceder a google.com a través del proxy SOCKSv5 utilizando curl:
+
+```sh
+curl --proxy "socks5h://admin:admin@localhost:1080" http://www.google.com
+```
+
+### 7.1.1 FQDN (Descarga de archivos)
+
+Descargar una ISO de Ubuntu 13.04 a través del proxy SOCKSv5 utilizando curl:
+
+```sh
+curl --proxy "socks5h://admin:admin@localhost:1080" https://old-releases.ubuntu.com/releases/raring/ubuntu-13.04-server-amd64.iso --output iso
+```
+
+### 7.2 Pipelining
+
+Solititud con pipelining: 
+
+```sh
+# Esta request solitita /test_file_01.txt al servidor nginx de prueba (docker compose up --build nginx-test-server)
+echo -e "\x05\x01\x02\x01\x05admin\x05admin\x05\x01\x00\x01\x0A\x00\x00\x6F\x00\x50GET /test_file_01.txt HTTP/1.1\r\nHost: 10.0.0.111\r\nConnection: close\r\n\r\n" | nc localhost 1080
+```
+
+### 7.3 IPv4
+
+Request IPv4 con curl:
+
+```sh
+curl --proxy "socks5h://admin:admin@localhost:1080" 172.217.162.14
+```
+
+### 7.4 IPv6
+
+Request IPv6 con curl:
+
+```sh
+curl --proxy "socks5h://admin:admin@localhost:1080" 'http://[fc00:00fe:0000:0000:0000:0000:0000:00fe]/test_file_01.txt'
+```
+
+### 7.5 System level
+
+El proxy tambien puede utilizarse para el sistema operativo en su totalidad, la configuracion varia segun el SO utilizado.
+
+![img/so-usage.png](./img/so-usage.png)
 
 ## 8. Guía de instalación
 
@@ -101,6 +166,7 @@ Algunas de las variables disponibles para su modificación incluyen:
 | `MAX_LOG_QUEUE_SIZE` | Cantidad máxima de mensajes de log que pueden estar en cola antes de descartar logs.                                                            | `100`             |
 | `MAX_LOG_SIZE`       | Tamaño máximo (en bytes) de un mensaje de log individual. Los mensajes más largos se van a truncar con puntos suspensivos.                      | `1024`            |
 | `LOGGER_MIN_LEVEL`   | Nivel mínimo de log a registrar. Valores posibles: `LOGGER_TRACE`, `LOGGER_DEBUG`, `LOGGER_INFO`, `LOGGER_WARN`, `LOGGER_ERROR`, `LOGGER_FATAL` | `LOGGER_INFO`     |
+| `SELECTOR_CAPACITY`  | Cantidad maxima de selectores en simultaneo                                                                                                     | `1024`            |
 
 Todas las variables del servidor y sus valores por defecto se pueden encontrar en [defines.h](./src/server/include/defines.h).
 

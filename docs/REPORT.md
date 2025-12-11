@@ -258,6 +258,7 @@ El proyecto cuenta con los siguientes módulos principales:
 - [src/server/](../src/server/): Implementa la lógica del servidor proxy SOCKSv5, incluyendo el manejo de conexiones entrantes, autenticación y transferencia de datos.
 - [src/client/](../src/client/): Implementa el cliente de [nuestro protocolo](./PROTOCOL.md)
 - [tests/](../tests/): Contiene tests unitarios y de integración para validar el correcto funcionamiento del proxy.
+- [bench/](../bench/): Scripts y configuraciones para realizar pruebas de performance y carga sobre el proxy (Apache JMeter).
 - [docs/](../docs/): Documentación del proyecto, incluyendo este reporte y el documento de diseño.
 - [scripts/](../scripts/): Scripts auxiliares para la compilación, ejecución de pruebas y otras tareas relacionadas con el desarrollo. (Utilizados principalmente como entrypoints de contenedores Docker).
 - [.github/workflows/](../.github/workflows/): Configuraciones de Github Actions para CI y pruebas automatizadas.
@@ -278,7 +279,9 @@ Para asegurar que no se bloqueara inecesariamente en syscalls de lectura y escri
 
 El monitoreo con `bpftrace` se puede habilitar facilmente al correr el servidor utilizando la variable de entorno `TRACE=true`. Esto hace que el entrypoint del contenedor Docker para el servidor ejecute el script de `bpftrace` junto con el servidor proxy, registrando cualquier syscall bloqueante que ocurra durante su ejecución. Al correr en Docker, se estandarizó el entorno y facilitó la ejecución del monitoreo sin necesidad de instalar `bpftrace` directamente en el sistema host.
 
-![img/bpftrace-monitoring.jpeg](./img/bpftrace-monitoring.jpeg)
+Ejemplo de salida al detectar una syscall bloqueante:
+
+![img/bpftrace-monitoring.png](./img/bpftrace-monitoring.png)
 
 Esta herramienta ayudó a identificar y solucionar problemas relacionados con bloqueos innecesarios, mejorando así la performance y capacidad de respuesta del proxy bajo condiciones de carga.
 
@@ -291,3 +294,10 @@ El uso de Docker permitió contar con entornos estandarizados para la compilaci�
 A su vez, el sistema de contenedores y red de Docker permitió facilmente asignar direcciones IPv4 e IPv6 fijas a los contenedores, controlar el DNS, y modificar el archivo /etc/host para simular la resolución DNS, facilitando la ejecución de pruebas de integración y performance entre el cliente, el servidor proxy y servidores de prueba.
 
 Durante las pruebas de performance, se utilizó un archivo `/etc/hosts` personalizado para controlar la resolución DNS de los servidores de prueba. Este archivo se monta en el contenedor del servidor proxy utilizando la variable de entorno `MOCK_ETC_HOST`, permitiendo así simular diferentes escenarios de resolución DNS sin afectar el sistema host. En particular, el dominio `fakegoogle.com` se mapea a las direcciones IPv4 e IPv6 del contenedor `nginx-test-server`, permitiendo así evaluar la capacidad del proxy para FQDNs y resolución DNS sin depender de las condiciones externas de la red.
+
+Ejemplo:
+
+```sh
+curl --proxy "socks5h://admin:admin@localhost:1080" fakegoogle.com/test_file_01.txt
+# This is a text file of 31 bytes
+```

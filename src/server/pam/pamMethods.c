@@ -52,7 +52,7 @@ void handle_pam_request_method(struct pam * connection) {
 
 void handle_get_connected_users_list(struct pam * connection) {
     LOG_DEBUG("Handling get connected users list request");
-    char buffer[PAM_BUFFER_SIZE];
+    uint8_t buffer[PAM_BUFFER_SIZE];
     char * initalMessage = "+OK listing users\n";
 size_t len = strlen(initalMessage);
     memcpy(buffer, initalMessage, len);
@@ -165,7 +165,7 @@ void handle_remove_user(struct pam * connection) {
     
     connection->client.request.status = PAM_REQUEST_SUCCESS;    
     
-    char * currentUserName = connection->client.auth.username;
+    uint8_t * currentUserName = connection->client.auth.username;
     if(!user_is_admin(currentUserName)) {
         connection->client.request.status = PAM_REQUEST_UNAUTHORIZED;
     } else {
@@ -266,7 +266,7 @@ void handle_change_role(struct pam * connection) {
     
     connection->client.request.status = PAM_REQUEST_SUCCESS;
     
-    char * currentUserName = connection->client.auth.username;
+    uint8_t * currentUserName = connection->client.auth.username;
     if(!user_is_admin(currentUserName)) {
         connection->client.request.status = PAM_REQUEST_UNAUTHORIZED;
     } else {

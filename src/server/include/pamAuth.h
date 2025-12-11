@@ -26,8 +26,8 @@ struct pamAuth_st {
     uint8_t ver;
     uint8_t n_user;
     uint8_t n_pass;
-    char username[PAM_AUTH_USERNAME_MAX_LENGHT];
-    char pass[PAM_AUTH_PASS_MAX_LENGHT];
+    uint8_t username[PAM_AUTH_USERNAME_MAX_LENGHT];
+    uint8_t pass[PAM_AUTH_PASS_MAX_LENGHT];
 };
 
 void pam_auth_arrival(const unsigned state, struct selector_key * key);

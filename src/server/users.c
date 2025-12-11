@@ -7,7 +7,7 @@ static List usersList = NULL;
 static int user_cmp(void * a, void * b) {
     User aa = *(User *)a;
     User bb = *(User *)b;
-    return strcmp(aa.username, bb.username);
+    return strcmp((char*)aa.username, (char*)bb.username);
 }
 
 
@@ -25,19 +25,19 @@ void users_init() {
     }
 }
 
-User* user_get_if_exists(const char *username) {
+User* user_get_if_exists(const uint8_t *username) {
 	list_begin_iter(usersList);
 	
 	while(list_has_next(usersList)) {
 		User *user = (User *)list_get_next(usersList, NULL);
-		if(0 == strcmp(user->username, username)) {
+		if(0 == strcmp((char*)user->username, (char*)username)) {
 			return user;  // Return pointer to actual user in list
 		}
 	}
 	return NULL;  // Not found
 }
 
-bool user_is_admin(const char* username) {
+bool user_is_admin(const uint8_t* username) {
     User * user = user_get_if_exists(username);
     if (user != NULL) {
         return user->privilege_level == USER_PRIVILEGE_ADMIN;
@@ -46,19 +46,19 @@ bool user_is_admin(const char* username) {
 }
 
 
-UserStatus user_create(const char *username, const char *password, UserPrivilegeLevel pl) {
-    if(strlen(username) >= USERS_MAX_USERNAME_LENGTH) {
+UserStatus user_create(const uint8_t *username, const uint8_t *password, UserPrivilegeLevel pl) {
+    if(strlen((char*)username) >= USERS_MAX_USERNAME_LENGTH) {
         return USER_CREDTOOLONG;
     }
-    if(strlen(password) >= USERS_MAX_PASSWORD_LENGTH) {
+    if(strlen((char*)password) >= USERS_MAX_PASSWORD_LENGTH) {
         return USER_CREDTOOLONG;
     }
     User * user = user_get_if_exists(username);
     if (user == NULL) {
         User user;
-        strncpy(user.username, username, USERS_MAX_USERNAME_LENGTH - 1);
+        strncpy((char*)user.username, (char*)username, USERS_MAX_USERNAME_LENGTH - 1);
         user.username[USERS_MAX_USERNAME_LENGTH - 1] = '\0';
-        strncpy(user.password, password, USERS_MAX_PASSWORD_LENGTH - 1);
+        strncpy((char*)user.password, (char*)password, USERS_MAX_PASSWORD_LENGTH - 1);
         user.password[USERS_MAX_PASSWORD_LENGTH - 1] = '\0';
         user.privilege_level = pl;
         list_add(usersList, &user);
@@ -67,7 +67,7 @@ UserStatus user_create(const char *username, const char *password, UserPrivilege
     return USER_ALREADYEXISTS;
 }
 
-UserStatus user_remove(const char *username) {
+UserStatus user_remove(const uint8_t *username) {
     User *user = user_get_if_exists(username);
 
     if(user != NULL) {
@@ -78,17 +78,17 @@ UserStatus user_remove(const char *username) {
 }
 
 
-UserStatus user_change_password(const char *username, const char *new_password) {
+UserStatus user_change_password(const uint8_t *username, const uint8_t *new_password) {
     User * user = user_get_if_exists(username);
     if(user != NULL) {
-        memcpy(user->password, new_password, strlen(new_password));
+        memcpy(user->password, new_password, strlen((char*)new_password));
         return USER_OK;
     }
     return USER_BADUSERNAME;
 }
 
 
-UserStatus user_change_role(const char *username, UserPrivilegeLevel new_role) {
+UserStatus user_change_role(const uint8_t *username, UserPrivilegeLevel new_role) {
     User *user = user_get_if_exists(username);
     if(user != NULL) {
         user->privilege_level = new_role;
@@ -98,19 +98,19 @@ UserStatus user_change_role(const char *username, UserPrivilegeLevel new_role) {
 }
 
 
-UserStatus user_authenticate(const char *username, const char *password) {
+UserStatus user_authenticate(const uint8_t *username, const uint8_t *password) {
   User * user = user_get_if_exists(username);
   if(user == NULL) {
     return USER_BADUSERNAME;
   }
-  if(0 != strcmp(user->password, password)) {
+  if(0 != strcmp((char *)user->password, (char *)password)) {
     return USER_WRONGPASSWORD;
   }
   return USER_OK;
 }
 
 
-int users_get_connected_users_list(char * buffer, int from) {
+int users_get_connected_users_list(uint8_t * buffer, int from) {
     size_t copied = from; 
     list_begin_iter(usersList);
     
@@ -121,8 +121,8 @@ int users_get_connected_users_list(char * buffer, int from) {
         buffer[copied++] = pl == USER_PRIVILEGE_ADMIN ? '@' : '#';
         
         // append user.username to the result string
-        char * username = user.username;
-        size_t usernameLength = strlen(username);
+        uint8_t * username = user.username;
+        size_t usernameLength = strlen((char *)username);
         memcpy(buffer + copied, username, usernameLength);
         copied += usernameLength;
         

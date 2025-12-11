@@ -34,6 +34,7 @@ jobs:
           echo "DEBUG=false" > .env
           echo "TRACE=false" >> .env
           echo "LOGGER_MIN_LEVEL=LOGGER_FATAL" >> .env
+          echo "MAX_LOG_QUEUE_SIZE=10000" >> .env
           echo "MOCK_ETC_HOST=./bench/data/mock-etc-host" >> .env
           echo "BUFFER_SIZE=${{ matrix.buffer_size }}" >> .env
           echo "SELECTOR_CAPACITY=${{ matrix.selector_capacity }}" >> .env

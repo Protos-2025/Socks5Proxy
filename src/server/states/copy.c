@@ -4,6 +4,7 @@
 #include "errno.h"
 #include <string.h>
 #include "selector.h"
+#include "metrics.h"
 
 #include <fcntl.h>
 
@@ -94,11 +95,12 @@ unsigned socksv5_copy_read(struct selector_key * key) {
     if (readBytes > 0) {
         LOG_TRACE("Read %zd bytes from %s... writing to %s buffer (fd=%d into fd=%d): '%.*s'", readBytes, IS_CLIENT_DATA(connection, key) ? "client" : "origin", IS_CLIENT_DATA(connection, key) ? "origin" : "client", from->fd, to->fd, (int)readBytes, writePtr);
         buffer_write_adv(to->buffer, readBytes);
-        if (update_target_interests(key->s, from) < 0) {
-            LOG_ERROR("Failed to update interests after read");
+		register_bytes_transferred(0, readBytes);
+		if (update_target_interests(key->s, from) < 0) {
+			LOG_ERROR("Failed to update interests after read");
             return ERROR;
-        };
-    } else {
+		};
+	} else {
         LOG_TRACE("Couldn't read from %s (fd=%d)", IS_CLIENT_DATA(connection, key) ? "client" : "origin", from->fd);
         if (readBytes < 0) {
             LOG_WARN("Read error (%d) from fd=%d: %s", errno, from->fd, strerror(errno));
@@ -139,6 +141,7 @@ unsigned socksv5_copy_write(struct selector_key * key) {
     if (writtenBytes > 0) {
         LOG_TRACE("Wrote %zd bytes to %s (fd=%d) from %s (fd=%d) - '%.*s'", writtenBytes, IS_CLIENT_DATA(connection, key) ? "client" : "origin", toFd, IS_CLIENT_DATA(connection, key) ? "origin" : "client", from->fd, (int)writtenBytes, readPtr);
         buffer_read_adv(from->buffer, writtenBytes);
+        register_bytes_transferred(writtenBytes, 0);
         if (update_target_interests(key->s, from) < 0) {
             LOG_ERROR("Failed to update interests after write");
             return ERROR;

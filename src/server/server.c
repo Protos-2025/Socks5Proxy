@@ -17,6 +17,7 @@
 #include "include/users.h"
 #include "logger.h"
 #include "args.h"
+#include "metrics.h"
 
 static void signal_handler(const int signal);
 static int interpret_socket_args(struct sockaddr_storage * addr_storage, char * addr, unsigned short port);
@@ -215,7 +216,9 @@ finally:
 }
 
 static void signal_handler(const int signal) {
-    LOG_FATAL("Signal %d, cleaning up and exiting\n", signal);
+    struct metricSnapshot snapshot;
+    get_metrics_snapshot(&snapshot);
+    LOG_FATAL("Signal %d, cleaning up and exiting.\nMetrics:\n\tBytes transferred\n\tSent: %zu\n\tReceived: %zu.\n\tTotal connections: %zu", signal, snapshot.totalBytesSent, snapshot.totalBytesReceived, snapshot.totalConnections);
     flush_all_logs();
     free_logger();
     done = true;

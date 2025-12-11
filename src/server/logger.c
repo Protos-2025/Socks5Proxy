@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include "selector.h"
 #include "defines.h"
+#include "assert.h"
 
 #define LOG_FILE_FLAGS (O_APPEND | O_WRONLY | O_CREAT | O_NONBLOCK)
 #define LOG_FILE_PERMISSIONS (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH)
@@ -42,6 +43,7 @@ static const char* log_level_to_string(int level) {
             case LOGGER_WARN:  return "WARN";
             case LOGGER_ERROR: return "ERROR";
             case LOGGER_FATAL: return "FATAL";
+            case LOGGER_ACCESS_LOG: return "ACCESS";
             default:    return "UNKNOWN";
         }
     #endif
@@ -102,8 +104,18 @@ int logger_register_selector(FdSelector selector) {
         return -1;
     };
 
-	SelectorStatus ss = SELECTOR_SUCCESS;
-    ss = selector_register(selector, logFile, &loggerHandlers, OP_WRITE, NULL);
+
+    SelectorStatus ss = SELECTOR_SUCCESS;
+    if (loggerSelector == NULL) {
+        ss = selector_register(selector, logFile, &loggerHandlers, OP_WRITE, NULL);
+    } else {
+        selector_set_interest(selector, logFile, OP_WRITE);
+    }
+
+    if (loggerSelector == NULL) {
+        loggerSelector = selector;
+    }
+
     if (ss != SELECTOR_SUCCESS) {
         fprintf(stderr, "Failed to register logger flush handler: %s\n", selector_error(ss));
     }
@@ -116,7 +128,7 @@ int logger_unregister_selector(FdSelector selector) {
 
     SelectorStatus ss = SELECTOR_SUCCESS;
 	// avoid checking, since it's either successfull or was already unregistered
-	ss = selector_unregister_fd(selector, STDOUT_FILENO);
+    ss = selector_set_interest(selector, logFile, OP_NOOP);
 
 	return ss == SELECTOR_SUCCESS ? 0 : -1;
 }
@@ -166,16 +178,18 @@ void logger_log_message_deferred(int level, const char* file, int line, time_t *
 
     if (formattedMsg) {
         enqueue(logQueue, &formattedMsg);
-		if (loggerSelector > 0) logger_register_selector(loggerSelector);
+		if (loggerSelector > 0 && ((logAlwaysIncrementalId % (MAX_LOG_QUEUE_SIZE / 3)) == 0)) {
+            logger_register_selector(loggerSelector);
+        }
 	}
 }
 
 static void write_logs_deferred(struct selector_key* key) {
 	uint8_t* rPtr = 0;
-	size_t toRead = 0;
+	size_t toRead = 0, queueSize;
 	int written = 0;
 
-    while (queue_size(logQueue) > 0) {
+    while ((queueSize = queue_size(logQueue)) > 0) {
         char * peekPtr = NULL;
         if (toRead == 0 && written == toRead && queue_peek(logQueue, &peekPtr) != NULL) {
             dequeue(logQueue, &currentLog);
@@ -196,7 +210,8 @@ static void write_logs_deferred(struct selector_key* key) {
 		}
 	}
 
-	logger_unregister_selector(loggerSelector);
+    if (queueSize == 0 && written == toRead)
+        logger_unregister_selector(loggerSelector);
 }
 
 void flush_all_logs() {

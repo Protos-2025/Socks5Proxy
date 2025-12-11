@@ -1,5 +1,6 @@
 #include "../include/connection_utils.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <netdb.h>
 #include <errno.h>
 #include <arpa/inet.h>
